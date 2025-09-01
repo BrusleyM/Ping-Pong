@@ -17,39 +17,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
+      # Step 1: Checkout repository
       - name: Checkout repository
-        uses: actions/checkout@v3
-
-      # Step 2: Ensure build folder exists
-      - name: Ensure build folder exists
-        run: mkdir -p Builds/Android
-
-      # Step 3: Activate Unity Personal License
-      - name: Activate Unity Personal License
-        uses: game-ci/unity-activate@v2
+        uses: actions/checkout@v4
         with:
-          # If using raw .ulf content
-          personal: true
-          unityLicense: ${{ secrets.UNITY_LICENSE }}
+          lfs: true
 
-      # Step 4: Run the Unity build script
-      - name: Build Project
-        run: |
-          BUILD_LOG="$GITHUB_WORKSPACE/build.log"
-          /opt/unity/Editor/Unity \
-            -projectPath $GITHUB_WORKSPACE \
-            -executeMethod BuildScript.Execute \
-            -quit -batchmode -nographics \
-            -logFile "$BUILD_LOG"
+      # Step 2: Cache Library folder to speed up builds
+      - name: Cache Library
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-
 
-          # Fail workflow if Unity reported errors or exceptions
-          if grep -E "(error|exception)" "$BUILD_LOG"; then
-            echo "Build failed due to errors in Unity log."
-            exit 1
-          fi
+      # Step 3: Optional - Run tests if you add any later
+      - name: Run Unity Tests
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 5: Upload build artifacts
+      # Step 4: Build the project
+      - name: Build Unity Project
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: Android
+          buildMethod: BuildScript.Execute
+          buildsPath: Builds/Android
+
+      # Step 5: Upload the build artifacts
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
