@@ -1,0 +1,17 @@
+Unity Editor version:    2022.3.51f1 (9f9d16c45e54)
+Branch:                  2022.3/staging
+Build type:              Release
+Batch mode:              YES
+System name:             Linux
+Distro version:          #1 SMP Thu Aug 14 19:26:13 UTC 2025
+Kernel version:          6.10.14-linuxkit
+Architecture:            x86_64
+Available memory:        3919 MB
+[Licensing::Module] Trying to connect to existing licensing client channel...
+[Licensing::IpcConnector] Error: Connection attempt to the License Client on channel: "LicenseClient-root" failed because Connection Refused; code: "0x8000000a"
+[Licensing::Module] Successfully launched the LicensingClient (PId: 19)
+assertion failed [block != nullptr]: BasicBlock requested for unrecognized address
+(BuilderBase.h:557 block_for_offset)
+ [Licensing::IpcConnector] Error: Connection attempt to the License Client on channel: "LicenseClient-root" failed because Connection Refused; code: "0x8000000a"
+[Licensing::Module] Timed-out after 60.00s, waiting for channel: "LicenseClient-root"
+IPC channel to LicensingClient doesn't exist; aborting

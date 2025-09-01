@@ -275,6 +275,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1822540310881654094, guid: 6f3600e2e5e7b4a8d8df54551d28c355, type: 3}
+      propertyPath: CelShaderConfigurationInitializer
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 3162978153436163139, guid: 6f3600e2e5e7b4a8d8df54551d28c355, type: 3}
       propertyPath: m_Name
       value: Multiplayer setup
