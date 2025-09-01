@@ -191,6 +191,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Game Assets
       objectReference: {fileID: 0}
+    - target: {fileID: 8402042739207367241, guid: 87568cd902b604952ba60d400ab25696, type: 3}
+      propertyPath: _enableDynamicResolution
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8402042739207367241, guid: 87568cd902b604952ba60d400ab25696, type: 3}
+      propertyPath: requestScenePermissionOnStartup
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
