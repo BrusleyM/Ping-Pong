@@ -30,6 +30,7 @@ jobs:
         uses: game-ci/unity-activate@v2
         with:
           # If using raw .ulf content
+          personal: true
           unityLicense: ${{ secrets.UNITY_LICENSE }}
 
       # Step 4: Run the Unity build script
