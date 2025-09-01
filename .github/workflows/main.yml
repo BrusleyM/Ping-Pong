@@ -27,12 +27,6 @@ jobs:
       - name: Ensure build folder exists
         run: mkdir -p Builds/Android
 
-      # Step 3: Remove Meta XR Simulator (editor-only) to prevent CI compilation errors
-      - name: Remove Oculus/Meta Simulator
-        run: |
-          echo "Removing Meta XR Simulator editor code to avoid CI compilation errors"
-          find Library/PackageCache -type d -name "com.meta.xr.simulator*" -exec rm -rf {} +
-
       # Step 4: Build Unity Project (handles license automatically)
       - name: Build Unity Project
         uses: game-ci/unity-builder@v4
