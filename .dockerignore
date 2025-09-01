@@ -1,0 +1,21 @@
+﻿# Unity folders to ignore
+Library/
+Temp/
+Obj/
+Builds/
+Logs/
+MemoryCaptures/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# VS / Rider files
+*.csproj
+*.sln
+*.user
+*.pidb
+*.booproj
+
+# Node / npm (if any)
+node_modules/
