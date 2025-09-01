@@ -32,8 +32,7 @@ jobs:
           unityVersion: 2022.3.51f1
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           personal: true
-          unityEmail: ${{ secrets.UNITY_EMAIL }}      # from GitHub Secrets
-          unityPassword: ${{ secrets.UNITY_PASSWORD }} # from GitHub Secrets
+          unityLicense: ${{ secrets.UNITY_LICENSE }}
 
       # Step 4: Run the Unity build script
       - name: Build Project
