@@ -23,26 +23,17 @@ jobs:
         with:
           lfs: true
 
-      # Step 2: Cache Library folder to speed up builds
-      - name: Cache Library
-        uses: actions/cache@v3
-        with:
-          path: Library
-          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: |
-            Library-
+      # Step 2: Ensure build folder exists
+      - name: Ensure build folder exists
+        run: mkdir -p Builds/Android
 
-      # Step 3: Optional - Run tests if you add any later
-      #- name: Run Unity Tests
-        #uses: game-ci/unity-test-runner@v4
-        #env:
-         # UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          #UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          #UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        #with:
-         # githubToken: ${{ secrets.GITHUB_TOKEN }}
+      # Step 3: Remove Meta XR Simulator (editor-only) to prevent CI compilation errors
+      - name: Remove Oculus/Meta Simulator
+        run: |
+          echo "Removing Meta XR Simulator editor code to avoid CI compilation errors"
+          find Library/PackageCache -type d -name "com.meta.xr.simulator*" -exec rm -rf {} +
 
-      # Step 4: Build the project
+      # Step 4: Build Unity Project (handles license automatically)
       - name: Build Unity Project
         uses: game-ci/unity-builder@v4
         env:
@@ -50,12 +41,11 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
-          unityVersion: 2022.3.51f1
           targetPlatform: Android
           buildMethod: BuildScript.Execute
           buildsPath: Builds/Android
 
-      # Step 5: Upload the build artifacts
+      # Step 5: Upload build artifacts
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
