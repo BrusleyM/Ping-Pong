@@ -27,9 +27,10 @@ jobs:
 
       # Step 3: Activate Unity Personal License
       - name: Activate Unity Personal License
-        run: |
-          printf "%s" "${{ secrets.UNITY_LICENSE }}" > unity.ulf
-          /opt/unity/Editor/Unity -quit -batchmode -manualLicense unity.ulf
+        uses: game-ci/unity-activate@v2
+        with:
+          # If using raw .ulf content
+          unityLicense: ${{ secrets.UNITY_LICENSE }}
 
       # Step 4: Run the Unity build script
       - name: Build Project
