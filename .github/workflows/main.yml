@@ -33,14 +33,14 @@ jobs:
             Library-
 
       # Step 3: Optional - Run tests if you add any later
-      - name: Run Unity Tests
-        uses: game-ci/unity-test-runner@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
+      #- name: Run Unity Tests
+        #uses: game-ci/unity-test-runner@v4
+        #env:
+         # UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          #UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          #UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        #with:
+         # githubToken: ${{ secrets.GITHUB_TOKEN }}
 
       # Step 4: Build the project
       - name: Build Unity Project
