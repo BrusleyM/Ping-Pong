@@ -1,47 +1,57 @@
-name: Unity VR Android Build
+name: Unity Android CI
 
 on:
   push:
-    branches:
-      - main
-      - develop
+    branches: [main, develop]
   pull_request:
-    types: [opened, synchronize, reopened]
-    branches:
-      - main
-      - develop
+    branches: [main, develop]
+  workflow_dispatch:
 
 jobs:
   build:
-    name: Build Unity VR Project
     runs-on: ubuntu-latest
+    env:
+      CI: true
+      UNITY_CI: true
+      GITHUB_ACTIONS: true
+      UNITY_PROJECT_PATH: ${{ github.workspace }}
 
     steps:
-      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Remove Meta XR Simulator from manifest
+        run: |
+          manifest="$UNITY_PROJECT_PATH/Packages/manifest.json"
+          if grep -q "com.meta.xr.simulator" "$manifest"; then
+            echo "Removing Meta XR Simulator from manifest..."
+            sudo apt-get install -y jq
+            jq 'del(.dependencies["com.meta.xr.simulator"])' "$manifest" > "$manifest.tmp"
+            mv "$manifest.tmp" "$manifest"
+          else
+            echo "Simulator package not found in manifest"
+          fi
+
+      - name: Remove cached simulator assemblies
+        run: |
+          rm -rf "$UNITY_PROJECT_PATH/Library/PackageCache/com.meta.xr.simulator*" || true
+
+      - name: Setup Unity (Personal)
+        uses: game-ci/unity-setup@v2
         with:
-          lfs: true
+          unityVersion: 2022.3.51f1
+          android: true
 
-      # Step 2: Ensure build folder exists
-      - name: Ensure build folder exists
-        run: mkdir -p Builds/Android
+      - name: Build Android APK
+        run: |
+          /opt/unity/Editor/Unity \
+            -projectPath "$UNITY_PROJECT_PATH" \
+            -quit -batchmode -nographics \
+            -executeMethod BuildScript.Execute \
+            -logFile "$UNITY_PROJECT_PATH/unity_build.log"
 
-      # Step 4: Build Unity Project (handles license automatically)
-      - name: Build Unity Project
-        uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          targetPlatform: Android
-          buildMethod: BuildScript.Execute
-          buildsPath: Builds/Android
-
-      # Step 5: Upload build artifacts
-      - name: Upload Build Artifacts
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Unity-Build
-          path: Builds/Android
+          name: android-build
+          path: "$UNITY_PROJECT_PATH/Builds/Android/**/*.apk"
