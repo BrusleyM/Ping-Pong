@@ -1,46 +1,34 @@
-name: Unity Android CI
+name: Unity Android CI 😎
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
 
 jobs:
-  build:
-    name: Build Android APK
+  build-android:
     runs-on: ubuntu-latest
-
+    env:
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
     steps:
       # Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Git LFS
-      - name: Pull LFS files
-        run: |
-          git lfs pull
-          git reset --hard
-
-      # Unity Library cache
-      - uses: actions/cache@v3
+      # Restore Library cache
+      - name: Restore Library cache
+        uses: actions/cache@v3
         with:
           path: Library
           key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: |
-            Library-
+          restore-keys: Library-
 
-      # Remove Meta XR Simulator **before Unity starts**
-      - name: Remove Meta XR Simulator
-        run: |
-          manifest="Packages/manifest.json"
-          if grep -q "com.meta.xr.simulator" "$manifest"; then
-            echo "Removing Meta XR Simulator from manifest..."
-            sudo apt-get install -y jq
-            jq 'del(.dependencies["com.meta.xr.simulator"])' "$manifest" > "$manifest.tmp"
-            mv "$manifest.tmp" "$manifest"
-          else
-            echo "Simulator package not found in manifest"
-          fi
-          rm -rf Library/PackageCache/com.meta.xr.simulator* || true
-
-      - name: Unity Android Build
+      # Unity Android Build
+      - name: Build project
         id: unity_build
         run: |
           /opt/unity/Editor/Unity \
@@ -51,22 +39,26 @@ jobs:
             -logFile "$GITHUB_WORKSPACE/unity_build.log"
         continue-on-error: true
 
-      # Check build logs for critical errors
-      - name: Check for critical errors
-        if: steps.unity_build.outcome == 'failure'
+      # Check for critical errors (ignore simulator)
+      - name: Check build log
         run: |
-          # Replace this with the exact simulator error message(s)
           SIMULATOR_ERROR="Library/PackageCache/com.meta.xr.simulator"
           if grep -q "$SIMULATOR_ERROR" "$GITHUB_WORKSPACE/unity_build.log"; then
-            echo "Simulator compile errors detected. Ignoring as non-critical."
-          else
-            echo "Critical build errors detected. Failing workflow."
+            echo "Simulator errors detected. Ignored."
+          elif grep -i "error" "$GITHUB_WORKSPACE/unity_build.log"; then
+            echo "Critical errors detected. Failing build."
             cat "$GITHUB_WORKSPACE/unity_build.log"
             exit 1
+          else
+            echo "Build succeeded."
           fi
 
-      # Upload APK artifact
-      - uses: actions/upload-artifact@v4
+      # Upload artifacts
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: Android-Build
-          path: Builds/Android/**/*.apk
+          name: Unity-Build-Artifacts
+          path: |
+            unity_build.log
+            Builds/Android/**/*.apk
+            Builds/Android/**/*.obb
