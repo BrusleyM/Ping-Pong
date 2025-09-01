@@ -78,3 +78,11 @@ crashlytics-build.properties
 /UserSettings
 /Logs
 /*.sln
+# Ignore ZIP files (prebuilt assets)
+*.zip
+
+# Ignore DDS texture files
+*.dds
+
+# Ignore HDR environment files
+*.hdr
