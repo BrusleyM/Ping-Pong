@@ -28,12 +28,8 @@ jobs:
       # Step 3: Activate Unity Personal License
       - name: Activate Unity Personal License
         run: |
-          # Decode base64-encoded .ulf license stored in GitHub secret
-          echo "${{ secrets.UNITY_LICENSE }}" | base64 --decode > unity.ulf
-          
-          # Activate Unity headlessly using the license file
-          /opt/unity/Editor/Unity \
-            -quit -batchmode -manualLicense unity.ulf
+          printf "%s" "${{ secrets.UNITY_LICENSE }}" > unity.ulf
+          /opt/unity/Editor/Unity -quit -batchmode -manualLicense unity.ulf
 
       # Step 4: Run the Unity build script
       - name: Build Project
