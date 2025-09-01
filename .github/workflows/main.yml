@@ -1,28 +1,35 @@
 name: Unity Android CI
 
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
-  workflow_dispatch:
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
   build:
+    name: Build Android APK
     runs-on: ubuntu-latest
-    env:
-      CI: true
-      UNITY_CI: true
-      GITHUB_ACTIONS: true
-      UNITY_PROJECT_PATH: ${{ github.workspace }}
 
     steps:
+      # Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Remove Meta XR Simulator from manifest
+      # Git LFS
+      - name: Pull LFS files
         run: |
-          manifest="$UNITY_PROJECT_PATH/Packages/manifest.json"
+          git lfs pull
+          git reset --hard
+
+      # Unity Library cache
+      - uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      # Remove Meta XR Simulator **before Unity starts**
+      - name: Remove Meta XR Simulator
+        run: |
+          manifest="Packages/manifest.json"
           if grep -q "com.meta.xr.simulator" "$manifest"; then
             echo "Removing Meta XR Simulator from manifest..."
             sudo apt-get install -y jq
@@ -31,27 +38,22 @@ jobs:
           else
             echo "Simulator package not found in manifest"
           fi
+          rm -rf Library/PackageCache/com.meta.xr.simulator* || true
 
-      - name: Remove cached simulator assemblies
-        run: |
-          rm -rf "$UNITY_PROJECT_PATH/Library/PackageCache/com.meta.xr.simulator*" || true
-
-      - name: Setup Unity (Personal)
-        uses: game-ci/unity-setup@v2
+      # Build Android APK
+      - name: Build project
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
-          unityVersion: 2022.3.51f1
-          android: true
+          targetPlatform: Android
+          buildMethod: BuildScript.Execute
+          buildPath: Builds/Android
 
-      - name: Build Android APK
-        run: |
-          /opt/unity/Editor/Unity \
-            -projectPath "$UNITY_PROJECT_PATH" \
-            -quit -batchmode -nographics \
-            -executeMethod BuildScript.Execute \
-            -logFile "$UNITY_PROJECT_PATH/unity_build.log"
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      # Upload APK artifact
+      - uses: actions/upload-artifact@v4
         with:
-          name: android-build
-          path: "$UNITY_PROJECT_PATH/Builds/Android/**/*.apk"
+          name: Android-Build
+          path: Builds/Android/**/*.apk
