@@ -10,6 +10,7 @@ on:
     branches:
       - main
       - develop
+  workflow_dispatch:
 
 jobs:
   build:
@@ -26,6 +27,15 @@ jobs:
       # Step 2: Ensure build folder exists
       - name: Ensure build folder exists
         run: mkdir -p Builds/Android
+
+      # Step 3: Prepare CI manifests
+      - name: Swap CI manifest and lock
+        run: |
+          echo "Resetting Unity package files..."
+          rm -f Packages/manifest.json Packages/packages-lock.json
+          cp Packages/manifest.ci.json Packages/manifest.json
+          cp Packages/packages-lock.ci.json Packages/packages-lock.json
+          echo "CI manifests in place."
 
       # Step 4: Build Unity Project (handles license automatically)
       - name: Build Unity Project
