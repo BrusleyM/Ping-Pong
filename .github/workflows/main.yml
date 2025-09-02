@@ -18,32 +18,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout repository
+      # Step 1: Checkout repository in detached HEAD
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           lfs: true
+      - name: Checkout detached HEAD
+        run: |
+          git fetch --depth=1
+          git checkout --detach
 
       # Step 2: Ensure build folder exists
       - name: Ensure build folder exists
         run: mkdir -p Builds/Android
 
-      # Step 3: Prepare CI manifests
-      - name: Swap CI manifest and lock
+      # Step 3: Swap in CI manifests (temporary)
+      - name: Apply CI manifests
         run: |
-          echo "Resetting Unity package files..."
-          rm -f Packages/manifest.json Packages/packages-lock.json
+          echo "Applying CI manifests temporarily..."
           cp Packages/manifest.ci.json Packages/manifest.json
           cp Packages/packages-lock.ci.json Packages/packages-lock.json
-          echo "CI manifests in place."
+          echo "CI manifests applied."
 
-      # Step 4: Build Unity Project (handles license automatically)
+      # Step 4: Build Unity Project
       - name: Build Unity Project
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          CI: true
         with:
           targetPlatform: Android
           buildMethod: BuildScript.Execute
