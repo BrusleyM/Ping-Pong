@@ -10,8 +10,6 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
-    container:
-      image: unityci/editor:ubuntu-2022.3.51f1-android-3
     env:
       UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
       UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
@@ -31,14 +29,15 @@ jobs:
 
       # Unity Android Build
       - name: Build project
-        id: unity_build
-        run: |
-          /opt/unity/Editor/Unity \
-            -projectPath "$GITHUB_WORKSPACE" \
-            -executeMethod BuildScript.Execute \
-            -quit -batchmode -nographics \
-            -buildTarget Android \
-            -logFile "$GITHUB_WORKSPACE/unity_build.log"
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: Android
+          buildMethod: BuildScript.Execute
+          buildsPath: Builds/Android
         continue-on-error: true
 
       # Check for critical errors (ignore simulator)
@@ -62,5 +61,5 @@ jobs:
           name: Unity-Build-Artifacts
           path: |
             unity_build.log
-            Builds/Android/**/*.apk
-            Builds/Android/**/*.obb
+            Builds/Android/*.apk
+            Builds/Android/*.obb
