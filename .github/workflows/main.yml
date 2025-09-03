@@ -13,35 +13,50 @@ on:
   workflow_dispatch:
 
 jobs:
-  prep-meta:
-    name: Prepare Meta CLI
+  prep:
+    name: Prep Environment
     runs-on: ubuntu-latest
     outputs:
-      ovr-cli-path: ${{ steps.ovr-path.outputs.path }}
+      prep-done: true
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup ovr-platform-util
-        id: ovr
-        uses: RageAgainstThePixel/setup-ovr-platform-util@v1
+      # Cache Unity Library
+      - name: Cache Unity Library
+        uses: actions/cache@v3
         with:
-          self-update: true
-      - name: Test OVR CLI
-        run: |
-          echo "OVR CLI path: ${{ steps.ovr.outputs.ovr-platform-util }}"
-          ${{ steps.ovr.outputs.ovr-platform-util }} --help
+          path: Library
+          key: Library-Android-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-Android-
 
-      - name: Upload CLI Artifact
-        uses: actions/upload-artifact@v4
+      # Cache Gradle
+      - name: Cache Gradle
+        uses: actions/cache@v3
         with:
-          name: ovr-cli
-          path: $OVR_PLATFORM_UTIL
+          path: ~/.gradle
+          key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-
 
-  build-android:
+      # Ensure build folder exists
+      - name: Ensure build folder
+        run: mkdir -p Builds/Android
+
+      # Free disk space
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+
+  build:
     name: Build Unity Android
     runs-on: ubuntu-latest
-    needs: prep-meta
+    needs: prep
     steps:
       - name: Checkout Repository in Detached HEAD
         uses: actions/checkout@v4
@@ -52,41 +67,11 @@ jobs:
           git fetch --depth=1
           git checkout --detach
 
-      # Cache Library and Gradle
-      - name: Cache Unity Library
-        uses: actions/cache@v3
-        with:
-          path: Library
-          key: Library-Android-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: Library-Android-
-
-      - name: Cache Gradle
-        uses: actions/cache@v3
-        with:
-          path: ~/.gradle
-          key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: gradle-
-
-      # Ensure build folder
-      - name: Ensure build folder exists
-        run: mkdir -p Builds/Android
-
       # Apply CI manifests temporarily
       - name: Apply CI manifests
         run: |
           cp Packages/manifest.ci.json Packages/manifest.json
           cp Packages/packages-lock.ci.json Packages/packages-lock.json
-
-      # Free disk space before build
-      - name: Free disk space
-        uses: jlumbroso/free-disk-space@v1.3.1
-        with:
-          tool-cache: true
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
 
       # Build Unity Project
       - name: Build Unity Project
@@ -102,28 +87,36 @@ jobs:
           buildsPath: Builds/Android
           allowDirtyBuild: true
 
-      # Download Meta CLI from prep job
-      - name: Download Meta CLI
-        uses: actions/download-artifact@v4
-        with:
-          name: ovr-cli
-          path: ovr-cli
-
-      # Upload Meta Quest build
-      - name: Upload Meta Quest Build
-        run: |
-          ./ovr-cli/ovr-platform-util upload \
-            --app-id ${{ secrets.META_APP_ID }} \
-            --app-secret ${{ secrets.META_APP_SECRET }} \
-            --build-dir Builds/Android \
-            --channel ALPHA \
-            --notes "Automated CI upload" \
-            --age-group TEENS_AND_ADULTS \
-            --draft false
-
-      # Upload build artifacts
+      # Upload build artifacts for next job
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Unity-Build
           path: Builds/Android
+
+  deploy-meta:
+    name: Upload to Meta Quest
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Download the build artifacts
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Unity-Build
+          path: Builds/Android
+
+      # Upload to Meta Quest
+      - name: Upload Meta Quest Build
+        uses: RageAgainstThePixel/upload-meta-quest-build@v2
+        with:
+          appId: ${{ secrets.META_APP_ID }}
+          appSecret: ${{ secrets.META_APP_SECRET }}
+          buildDir: 'Builds/Android'
+          releaseChannel: 'ALPHA'
+          ageGroup: 'TEENS_AND_ADULTS'
+          draft: false
+          releaseNotes: 'Automated CI upload'
