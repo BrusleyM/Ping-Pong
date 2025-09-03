@@ -28,11 +28,27 @@ jobs:
           git fetch --depth=1
           git checkout --detach
 
-      # Step 2: Ensure build folder exists
+      # Step 2: Cache Unity Library folder
+      - name: Cache Unity Library
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-
+
+      # Step 3: Cache Gradle dependencies (for Android)
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle
+          key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      # Step 4: Ensure build folder exists
       - name: Ensure build folder exists
         run: mkdir -p Builds/Android
 
-      # Step 3: Swap in CI manifests (temporary)
+      # Step 5: Apply CI manifests (temporary)
       - name: Apply CI manifests
         run: |
           echo "Applying CI manifests temporarily..."
@@ -40,7 +56,7 @@ jobs:
           cp Packages/packages-lock.ci.json Packages/packages-lock.json
           echo "CI manifests applied."
 
-      # Step 4: Build Unity Project
+      # Step 6: Build Unity Project
       - name: Build Unity Project
         uses: game-ci/unity-builder@v4
         env:
@@ -49,12 +65,12 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           CI: true
         with:
-          allowDirtyBuild: true
           targetPlatform: Android
           buildMethod: BuildScript.Execute
           buildsPath: Builds/Android
+          allowDirtyBuild: true
 
-      # Step 5: Upload build artifacts
+      # Step 7: Upload build artifacts
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
