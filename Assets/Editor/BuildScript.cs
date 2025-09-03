@@ -12,8 +12,7 @@ public class BuildScript
             "ping pong",
             "***REMOVED***"
         );
-        var versionManager = new MyVersionManager();
-        var androidBuilder = new AndroidBuildStrategy("Builds/Android", keystoreManager, versionManager);
+        var androidBuilder = new AndroidBuildStrategy("Builds/Android", keystoreManager);
         androidBuilder.Build();
     }
 }
