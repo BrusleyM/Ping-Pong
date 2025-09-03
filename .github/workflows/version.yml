@@ -1,0 +1,45 @@
+name: Version Bump
+
+on:
+  push:
+    branches:
+      - "*"   # Trigger on push to any branch
+
+jobs:
+  version-bump:
+    name: Bump Unity Project Version
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Unity (headless)
+      - name: Setup Unity
+        uses: game-ci/unity-builder@v4
+        with:
+          unityVersion: 2022.3.51f1  # replace with your Unity version
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 3: Run version bump script
+      - name: Run VersionBump Script
+        run: |
+          echo "Running Unity version bump..."
+          /opt/unity/Editor/Unity \
+            -batchmode \
+            -quit \
+            -projectPath $GITHUB_WORKSPACE \
+            -executeMethod MyVersionManager.EnsureVersion \
+            -logFile versionbump.log
+
+      # Step 4: Commit and push updated version
+      - name: Commit version changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add ProjectSettings/ProjectSettings.asset
+          git add Packages/manifest.json
+          git commit -m "Version bump via CI on branch $GITHUB_REF" || echo "No changes to commit"
+          git push origin HEAD:$GITHUB_REF
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
