@@ -26,7 +26,7 @@ jobs:
         id: ovr
         uses: RageAgainstThePixel/setup-ovr-platform-util@v1
         with:
-          version: latest
+          self-update: true
       - name: Test OVR CLI
         run: |
           echo "OVR CLI path: ${{ steps.ovr.outputs.ovr-platform-util }}"
