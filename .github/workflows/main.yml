@@ -123,5 +123,6 @@ jobs:
           appSecret: ${{ secrets.META_APP_SECRET }}
           buildDir: 'Builds/Android'
           releaseChannel: 'ALPHA'
+          ageGroup: 'MIXED_AGES'
           draft: true
           releaseNotes: 'Automated CI upload'
