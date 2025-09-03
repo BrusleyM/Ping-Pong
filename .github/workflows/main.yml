@@ -81,7 +81,19 @@ jobs:
           buildsPath: Builds/Android
           allowDirtyBuild: true
 
-      # Step 8: Upload build artifacts
+      # Step 8: Upload Meta Quest Build
+      - name: Upload Meta Quest Build
+        uses: RageAgainstThePixel/upload-meta-quest-build@v2
+        with:
+          appId: ${{ secrets.META_APP_ID }}
+          appSecret: ${{ secrets.META_APP_SECRET }}
+          buildDir: 'Builds/Android'
+          releaseChannel: 'ALPHA'
+          ageGroup: 'TEENS_AND_ADULTS'
+          draft: false
+          releaseNotes: 'Automated build upload'
+          
+      # Step 9: Upload build artifacts
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
