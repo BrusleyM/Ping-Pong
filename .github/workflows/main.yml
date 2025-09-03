@@ -18,23 +18,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout repository in detached HEAD
+      # Step 1: Checkout repository normally
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           lfs: true
-      - name: Checkout detached HEAD
-        run: |
-          git fetch --depth=1
-          git checkout --detach
 
-      # Step 2: Cache Unity Library folder
+      # Step 2: Cache Unity Library folder (limited to Android builds)
       - name: Cache Unity Library
         uses: actions/cache@v3
         with:
           path: Library
-          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: Library-
+          key: Library-Android-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-Android-
 
       # Step 3: Cache Gradle dependencies (for Android)
       - name: Cache Gradle
@@ -55,8 +51,19 @@ jobs:
           cp Packages/manifest.ci.json Packages/manifest.json
           cp Packages/packages-lock.ci.json Packages/packages-lock.json
           echo "CI manifests applied."
-
-      # Step 6: Build Unity Project
+          
+      # Step 6: Free disk space before Unity build
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true      
+          
+      # Step 7: Build Unity Project
       - name: Build Unity Project
         uses: game-ci/unity-builder@v4
         env:
@@ -70,9 +77,16 @@ jobs:
           buildsPath: Builds/Android
           allowDirtyBuild: true
 
-      # Step 7: Upload build artifacts
+      # Step 8: Discard changes after build (instead of detached HEAD)
+      - name: Reset repository
+        run: |
+          echo "Resetting repository to clean state..."
+          git reset --hard
+          git clean -fdx
+
+      # Step 9: Upload build artifacts (APK will be here)
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Unity-Build
-          path: build/Android/
+          path: Builds/Android
