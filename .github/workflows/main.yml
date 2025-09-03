@@ -15,7 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: lfs: true
+        with:
+        lfs: true
       - name: Cache Unity Library
         uses: actions/cache@v3
         with:
