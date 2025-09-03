@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-        lfs: true
+          lfs: true
       - name: Cache Unity Library
         uses: actions/cache@v3
         with:
@@ -42,7 +42,8 @@ jobs:
     needs: prep
     steps:
       - uses: actions/checkout@v4
-        with: lfs: true
+        with:
+          lfs: true
       - name: Ensure build folder exists
         run: mkdir -p Builds/Android
       - name: Apply CI manifests
@@ -74,7 +75,8 @@ jobs:
     needs: unity-build
     steps:
       - uses: actions/checkout@v4
-        with: lfs: true
+        with:
+          lfs: true
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
