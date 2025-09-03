@@ -27,23 +27,30 @@ jobs:
         run: |
           git fetch --depth=1
           git checkout --detach
+      - name: Cache Git LFS
+        uses: actions/cache@v4
+        with:
+          path: .git/lfs/objects
+          key: ${{ runner.os }}-lfs-${{ hashFiles('**/Assets/**') }}
 
-      # Cache Unity Library
+      # Cache the Unity Library folder (the most important cache)
       - name: Cache Unity Library
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: Library
-          key: Library-Android-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: Library-Android-
+          key: Library-Android-${{ hashFiles('Assets/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-Android-
 
-      # Cache Gradle packages
-      - name: Cache Gradle packages
+      # Cache Gradle dependencies and build cache
+      - name: Cache Gradle packages and build cache
         uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+            ~/.android/build-cache
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle-wrapper.properties', '**/build.gradle') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
