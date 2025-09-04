@@ -2,7 +2,7 @@
 using UnityEditor;
 public class MyVersionManager
 {
-    public static void PerformVersionBump()
+    public void PerformVersionBump()
     {
         string branch = Environment.GetEnvironmentVariable("BRANCH_NAME");
 
@@ -11,19 +11,17 @@ public class MyVersionManager
         int minor = int.Parse(version[1]);
         int patch = int.Parse(version[2]);
 
-        if (branch == "main")
-        {
-            major++; minor = 0; patch = 0;
-            PlayerSettings.Android.bundleVersionCode++;
-        }
-        else if (branch=="develop")
-        {
-            minor++; patch = 0;
-            PlayerSettings.Android.bundleVersionCode++;
-        }
-        else
+        if(branch == "develop")
         { 
             patch++;
+        }
+        else if (branch=="main")
+        {
+            minor++; patch = 0;
+        }
+        else
+        {
+            major++; minor = 0; patch = 0;
         }
 
         PlayerSettings.bundleVersion = $"{major}.{minor}.{patch}";
