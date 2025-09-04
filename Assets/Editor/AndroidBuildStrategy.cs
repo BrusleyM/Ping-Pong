@@ -7,13 +7,13 @@ public class AndroidBuildStrategy : IBuildStrategy
 {
     private readonly string _outputFolder;
     private readonly MyKeystoreManager _keystoreManager;
-    private readonly MyVersionManager _versionManager;
+    private readonly MyVersionManager _myVersionManager;
 
-    public AndroidBuildStrategy(string outputFolder, MyKeystoreManager keystoreManager, MyVersionManager versionManager)
+    public AndroidBuildStrategy(string outputFolder, MyKeystoreManager keystoreManager,MyVersionManager myVersionManager)
     {
         _outputFolder = outputFolder;
         _keystoreManager = keystoreManager;
-        _versionManager = versionManager;
+        _myVersionManager = myVersionManager;
     }
 
     public void Build()
@@ -38,7 +38,7 @@ public class AndroidBuildStrategy : IBuildStrategy
             Directory.CreateDirectory(_outputFolder);
 
         // Apply versioning and keystore
-        _versionManager.EnsureVersion();
+        _myVersionManager.PerformVersionBump();
         _keystoreManager.ApplyKeystore();
 
         // Remove Meta XR Simulator if running in CI
