@@ -1,45 +1,82 @@
 name: Unity VR Android Build
 
 on:
-  push:
-    branches:
-      - main
-      - develop
   pull_request:
-    types: [opened, synchronize, reopened]
     branches:
       - main
       - develop
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
-    name: Build Unity VR Project
+    name: Build Unity Android
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout repository
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           lfs: true
 
-      # Step 2: Ensure build folder exists
-      - name: Ensure build folder exists
+      - name: Cache Git LFS
+        uses: actions/cache@v4
+        with:
+          path: .git/lfs/objects
+          key: ${{ runner.os }}-lfs-${{ hashFiles('**/Assets/**') }}
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-Android-${{ hashFiles('Assets/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-Android-
+
+      - name: Cache Gradle packages and build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.android/build-cache
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle-wrapper.properties', '**/build.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Ensure build folder
         run: mkdir -p Builds/Android
 
-      # Step 4: Build Unity Project (handles license automatically)
+      - name: Apply CI manifests
+        run: |
+          cp Packages/manifest.ci.json Packages/manifest.json
+          cp Packages/packages-lock.ci.json Packages/packages-lock.json
+
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+
       - name: Build Unity Project
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          CI: true
         with:
           targetPlatform: Android
           buildMethod: BuildScript.Execute
           buildsPath: Builds/Android
+          allowDirtyBuild: true
 
-      # Step 5: Upload build artifacts
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:

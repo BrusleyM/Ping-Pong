@@ -1,15 +1,35 @@
 ﻿using System;
 using UnityEditor;
-using UnityEngine;
 public class MyVersionManager
 {
-    public void EnsureVersion()
+    public void PerformVersionBump()
     {
-        if (string.IsNullOrEmpty(PlayerSettings.bundleVersion))
-            PlayerSettings.bundleVersion = "1.0.0";
+        string branch = Environment.GetEnvironmentVariable("BRANCH_NAME");
 
-        PlayerSettings.Android.bundleVersionCode += 1;
-        Debug.Log($"Bundle Version: {PlayerSettings.bundleVersion}, Bundle Code: {PlayerSettings.Android.bundleVersionCode}");
+        string[] version = PlayerSettings.bundleVersion.Split('.');
+        int major = int.Parse(version[0]);
+        int minor = int.Parse(version[1]);
+        int patch = int.Parse(version[2]);
+
+        if (branch == "develop")
+        {
+            minor++; patch = 0;
+        }
+        else if (branch == "main")
+        {
+            major++; minor = 0; patch = 0;
+        }
+        else
+        {
+            patch++;
+        }
+        PlayerSettings.Android.bundleVersionCode++;
+        PlayerSettings.bundleVersion = $"{major}.{minor}.{patch}";
+    }
+    public static void VersionBump()
+    {
+        var manager = new MyVersionManager();
+        manager.PerformVersionBump();
     }
 }
 
