@@ -12,16 +12,16 @@ public class MyVersionManager
         int patch = int.Parse(version[2]);
 
         if(branch == "develop")
-        { 
-            patch++;
-        }
-        else if (branch=="main")
         {
             minor++; patch = 0;
         }
-        else
+        else if (branch=="main")
         {
             major++; minor = 0; patch = 0;
+        }
+        else
+        {
+            patch++;
         }
         PlayerSettings.Android.bundleVersionCode++;
         PlayerSettings.bundleVersion = $"{major}.{minor}.{patch}";
