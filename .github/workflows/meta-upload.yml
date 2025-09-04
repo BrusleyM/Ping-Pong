@@ -26,6 +26,8 @@ jobs:
           name: Unity-Build
           path: Builds/Android
 
+      
+
       - name: Setup ovr-platform-util
         uses: RageAgainstThePixel/setup-ovr-platform-util@v1
 
@@ -39,9 +41,33 @@ jobs:
           ageGroup: 'MIXED_AGES'
           draft: true
           releaseNotes: 'Automated CI upload'
+          
+      - name: Apply CI manifests
+        run: |
+          cp Packages/manifest.ci.json Packages/manifest.json
+          cp Packages/packages-lock.ci.json Packages/packages-lock.json
 
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          
+      - name: Run Version Bump
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: Android
+          buildMethod: MyVersionManager.VersionBump
+          
       - name: Commit version changes
-        if: ${{ github.event_name == 'pull_request' }}
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
