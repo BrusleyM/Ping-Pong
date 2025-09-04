@@ -78,7 +78,7 @@ jobs:
           allowDirtyBuild: true
 
       - name: Commit version changes
-        if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' }}
+        if: ${{ github.event_name == 'pull_request' }}
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
