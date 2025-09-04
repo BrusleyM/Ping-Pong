@@ -23,7 +23,7 @@ jobs:
       - name: Download PR Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: Unity-Build-PR-${{ github.event.pull_request.number }}
+          name: "*.apk"
           path: Builds/Android/PR-${{ github.event.pull_request.number }}
 
       - name: Setup ovr-platform-util
