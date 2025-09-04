@@ -1,4 +1,4 @@
-name: Upload to Meta Quest & Commit Version
+name: PR Merged Upload & Cleanup
 
 on:
   pull_request:
@@ -20,16 +20,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download Build Artifacts
+      - name: Download PR Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: Unity-Build
-          path: Builds/Android
-
-      - name: Download bumped project files
-        uses: actions/download-artifact@v4
-        with:
-          name: bumped-files
+          name: Unity-Build-PR-${{ github.event.pull_request.number }}
+          path: Builds/Android/PR-${{ github.event.pull_request.number }}
 
       - name: Setup ovr-platform-util
         uses: RageAgainstThePixel/setup-ovr-platform-util@v1
@@ -39,24 +34,25 @@ jobs:
         with:
           appId: ${{ secrets.META_APP_ID }}
           appSecret: ${{ secrets.META_APP_SECRET }}
-          buildDir: 'Builds/Android'
+          buildDir: 'Builds/Android/PR-${{ github.event.pull_request.number }}'
           releaseChannel: 'ALPHA'
           ageGroup: 'MIXED_AGES'
           draft: true
           releaseNotes: 'Automated CI upload'
 
-      - name: Commit version changes
+      - name: Commit ProjectSettings.asset changes
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          [ -f Packages/manifest.json ] && git checkout -- Packages/manifest.json || echo "manifest.json not found"
-          [ -f Packages/packages-lock.json ] && git checkout -- Packages/packages-lock.json || echo "packages-lock.json not found"
-          git add ProjectSettings/ProjectSettings.asset Packages/manifest.json Packages/packages-lock.json
-          git commit -m "Version bump and revert CI manifest swap on branch $GITHUB_REF" || echo "No changes to commit"
-          git push origin HEAD:$GITHUB_REF
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM=${{ github.event.pull_request.number }}
+          if [ -f Builds/Android/PR-${PR_NUM}/ProjectSettings.asset ]; then
+            mv Builds/Android/PR-${PR_NUM}/ProjectSettings.asset ProjectSettings/ProjectSettings.asset
+            git config user.name "GitHub Actions"
+            git config user.email "actions@github.com"
+            git add ProjectSettings/ProjectSettings.asset
+            git commit -m "Update ProjectSettings for PR ${PR_NUM}" || echo "No changes to commit"
+            git push origin HEAD:${GITHUB_REF}
+          fi
 
-      - name: Delete bumped files after commit
+      - name: Remove only ProjectSettings.asset (merged PR)
         run: |
-          rm -f ProjectSettings/ProjectSettings.asset Packages/manifest.json Packages/packages-lock.json
+          PR_NUM=${{ github.event.pull_request.number }}
+          rm -f Builds/Android/PR-${PR_NUM}/ProjectSettings.asset
