@@ -34,23 +34,27 @@ jobs:
           docker-images: true
       # Step 2: Setup Unity (batchmode)
       - name: Setup Unity
-        uses: game-ci/unity-actions/setup@v3
+        uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        
+        with:
+          projectPath: .
+          executeMethod: MyVersionManager.EnsureVersion
+          buildTarget: StandaloneWindows64
+          unityVersion: 2022.3.51f1
       # Step 3: Run version bump script
-      - name: Run VersionBump Script
-        run: |
-          echo "Running Unity version bump..."
-          /opt/unity/Editor/Unity \
-            -batchmode \
-            -quit \
-            -projectPath $GITHUB_WORKSPACE \
-            -executeMethod MyVersionManager.EnsureVersion \
-            -logFile versionbump.log
-
+      #- name: Run VersionBump Script
+        #run: |
+          #echo "Running Unity version bump..."
+          #/opt/unity/Editor/Unity \
+            #-batchmode \
+            #-quit \
+            #-projectPath $GITHUB_WORKSPACE \
+            #-executeMethod MyVersionManager.EnsureVersion \
+            #-logFile versionbump.log
+        
       # Step 4: Commit and push updated version
       - name: Commit version changes
         run: |
