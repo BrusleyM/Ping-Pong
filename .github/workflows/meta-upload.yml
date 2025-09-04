@@ -1,17 +1,24 @@
 name: Upload to Meta Quest
 
 on:
-  push:
-    branches:
-      -main
-      -develop
+  workflow_run:
+    workflows: ["Unity VR Android Build"]
+    types: [completed]
 
 permissions:
   contents: write
 
 jobs:
   deploy-meta:
-    if: ${{ github.workflow_run.conclusion == 'success' && (github.workflow_run.head_branch == 'main' || github.workflow_run.head_branch == 'develop') }}
+    # This condition is key. It checks for two things:
+    # 1. The conclusion of the triggering workflow (`CI on Pull Request`) was 'success'.
+    # 2. The event that triggered the first workflow was a merged pull request.
+    
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'develop'
+      
     name: Upload to Meta Quest
     runs-on: ubuntu-latest
 
