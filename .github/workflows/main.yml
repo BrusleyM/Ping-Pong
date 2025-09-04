@@ -94,5 +94,5 @@ jobs:
         with:
           name: Unity-Build-PR-${{ github.event.pull_request.number }}
           path: |
-            Builds/Android/PR-${{ github.event.pull_request.number }}/*.apk
+            Builds/Android/PR-${{ github.event.pull_request.number }}/
             Builds/Android/PR-${{ github.event.pull_request.number }}/ProjectSettings.asset
