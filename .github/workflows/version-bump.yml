@@ -21,7 +21,11 @@ jobs:
           key: Library-Android-${{ hashFiles('Assets/**', 'ProjectSettings/**') }}
           restore-keys: |
             Library-Android-
-
+      # Apply CI manifests temporarily
+      - name: Apply CI manifests
+        run: |
+          cp Packages/manifest.ci.json Packages/manifest.json
+          cp Packages/packages-lock.ci.json Packages/packages-lock.json
       # Free disk space before build
       - name: Free disk space
         uses: jlumbroso/free-disk-space@v1.3.1
@@ -61,7 +65,8 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add ProjectSettings/ProjectSettings.asset
-          git add Packages/manifest.json
+          git checkout -- Packages/manifest.json
+          git checkout -- Packages/packages-lock.json
           git commit -m "Version bump via CI on branch $GITHUB_REF" || echo "No changes to commit"
           git push origin HEAD:$GITHUB_REF
         env:
