@@ -1,0 +1,26 @@
+name: PR Declined Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.event.pull_request.merged == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove PR-specific build folder
+        run: |
+          PR_NUM=${{ github.event.pull_request.number }}
+          rm -rf Builds/Android/PR-${PR_NUM}
+
+      - name: Delete PR Build Artifact
+        uses: c-hive/delete-artifact@v2
+        with:
+          name: Unity-Build-PR-${{ github.event.pull_request.number }}
