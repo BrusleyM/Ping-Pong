@@ -6,7 +6,6 @@ on:
     branches:
       - main
       - develop
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -65,6 +64,11 @@ jobs:
           large-packages: true
           docker-images: true
 
+      # Pass PR number to Unity (optional if you want the APK named in C#)
+      - name: Export PR number for Unity
+        run: |
+          echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+
       - name: Build Unity Project
         uses: game-ci/unity-builder@v4
         env:
@@ -72,21 +76,41 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           CI: true
+          PR_NUMBER: ${{ github.event.pull_request.number }} # pass to Unity if needed
         with:
           targetPlatform: Android
           buildMethod: BuildScript.Execute
           buildsPath: Builds/Android
           allowDirtyBuild: true
 
+      # Rename outputs to include PR number if Unity doesn't do it for you
+      - name: Tag build files with PR number
+        run: |
+          PR_NUM=${{ github.event.pull_request.number }}
+          for f in Builds/Android/*.apk; do
+            mv "$f" "Builds/Android/$(basename "$f" .apk)_PR-${PR_NUM}.apk"
+          done
+          if [ -f ProjectSettings/ProjectSettings.asset ]; then
+            mv ProjectSettings/ProjectSettings.asset ProjectSettings/ProjectSettings_PR-${PR_NUM}.asset
+          fi
+          if [ -f Packages/manifest.json ]; then
+            mv Packages/manifest.json Packages/manifest_PR-${PR_NUM}.json
+          fi
+          if [ -f Packages/packages-lock.json ]; then
+            mv Packages/packages-lock.json Packages/packages-lock_PR-${PR_NUM}.json
+          fi
+
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Unity-Build
-          path: Builds/Android
+          name: Unity-Build-PR-${{ github.event.pull_request.number }}
+          path: Builds/Android/*_PR-${{ github.event.pull_request.number }}.apk
 
       - name: Upload bumped project files
         uses: actions/upload-artifact@v4
         with:
-          name: bumped-files
+          name: bumped-files-PR-${{ github.event.pull_request.number }}
           path: |
-            ProjectSettings/ProjectSettings.asset
+            ProjectSettings/ProjectSettings_PR-${{ github.event.pull_request.number }}.asset
+            Packages/manifest_PR-${{ github.event.pull_request.number }}.json
+            Packages/packages-lock_PR-${{ github.event.pull_request.number }}.json
