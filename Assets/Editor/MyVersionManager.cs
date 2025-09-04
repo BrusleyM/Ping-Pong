@@ -11,11 +11,11 @@ public class MyVersionManager
         int minor = int.Parse(version[1]);
         int patch = int.Parse(version[2]);
 
-        if(branch == "develop")
+        if (branch == "develop")
         {
             minor++; patch = 0;
         }
-        else if (branch=="main")
+        else if (branch == "main")
         {
             major++; minor = 0; patch = 0;
         }
@@ -25,6 +25,11 @@ public class MyVersionManager
         }
         PlayerSettings.Android.bundleVersionCode++;
         PlayerSettings.bundleVersion = $"{major}.{minor}.{patch}";
+    }
+    public static void VersionBump()
+    {
+        var manager = new MyVersionManager();
+        manager.PerformVersionBump();
     }
 }
 
