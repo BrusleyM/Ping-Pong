@@ -1,1 +1,23 @@
-name: PR Cleanup
+name: Cleanup PR Artifacts
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+      - develop
+
+jobs:
+  cleanup:
+    if: github.event.pull_request.merged == false
+    runs-on: ubuntu-latest
+    steps:
+      # Use a GitHub Action or script to delete artifacts for this PR
+      - name: Delete artifacts
+        uses: c-hive/delete-artifact@v2
+        with:
+          name: Unity-Build
+      - name: Delete bumped files artifact
+        uses: c-hive/delete-artifact@v2
+        with:
+          name: bumped-files
