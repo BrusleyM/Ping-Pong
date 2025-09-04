@@ -1,11 +1,10 @@
 name: Upload to Meta Quest
 
 on:
-  workflow_run:
-    workflows:
-      - Unity VR Android Build
-    types:
-      - completed
+  push:
+    branches:
+      -main
+      -develop
 
 permissions:
   contents: write
