@@ -23,7 +23,7 @@ public class MyVersionManager
         {
             major++; minor = 0; patch = 0;
         }
-
+        PlayerSettings.Android.bundleVersionCode++;
         PlayerSettings.bundleVersion = $"{major}.{minor}.{patch}";
     }
 }
