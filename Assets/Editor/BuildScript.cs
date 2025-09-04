@@ -12,7 +12,8 @@ public class BuildScript
             "ping pong",
             "pass1234"
         );
-        var androidBuilder = new AndroidBuildStrategy("Builds/Android", keystoreManager);
+        var versionManager = new MyVersionManager();
+        var androidBuilder = new AndroidBuildStrategy("Builds/Android", keystoreManager, versionManager);
         androidBuilder.Build();
     }
 }
