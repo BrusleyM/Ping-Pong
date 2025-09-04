@@ -9,19 +9,9 @@ permissions:
   contents: write
 
 jobs:
-  deploy-meta:
-    # This condition is key. It checks for two things:
-    # 1. The conclusion of the triggering workflow (`CI on Pull Request`) was 'success'.
-    # 2. The event that triggered the first workflow was a merged pull request.
-    
-    if: |
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'develop'
-      
-    name: Upload to Meta Quest
+  setup-unity:
+    name: Setup Unity, Version Bump, and Environment
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -32,22 +22,6 @@ jobs:
           name: Unity-Build
           path: Builds/Android
 
-      
-
-      - name: Setup ovr-platform-util
-        uses: RageAgainstThePixel/setup-ovr-platform-util@v1
-
-      - name: Upload Meta Quest Build
-        uses: RageAgainstThePixel/upload-meta-quest-build@v2
-        with:
-          appId: ${{ secrets.META_APP_ID }}
-          appSecret: ${{ secrets.META_APP_SECRET }}
-          buildDir: 'Builds/Android'
-          releaseChannel: 'ALPHA'
-          ageGroup: 'MIXED_AGES'
-          draft: true
-          releaseNotes: 'Automated CI upload'
-          
       - name: Apply CI manifests
         run: |
           cp Packages/manifest.ci.json Packages/manifest.json
@@ -62,7 +36,7 @@ jobs:
           haskell: true
           large-packages: true
           docker-images: true
-          
+
       - name: Run Version Bump
         uses: game-ci/unity-builder@v4
         env:
@@ -72,14 +46,59 @@ jobs:
         with:
           targetPlatform: Android
           buildMethod: MyVersionManager.VersionBump
-          
+
+      - name: Upload bumped project files
+        uses: actions/upload-artifact@v4
+        with:
+          name: bumped-files
+          path: |
+            ProjectSettings/ProjectSettings.asset
+            Packages/manifest.json
+            Packages/packages-lock.json
+
+  upload-meta:
+    name: Upload to Meta Quest & Commit Version
+    needs: setup-unity
+    runs-on: ubuntu-latest
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'develop')
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download bumped project files
+        uses: actions/download-artifact@v4
+        with:
+          name: bumped-files
+
+      - name: Setup ovr-platform-util
+        uses: RageAgainstThePixel/setup-ovr-platform-util@v1
+
+      - name: Upload Meta Quest Build
+        uses: RageAgainstThePixel/upload-meta-quest-build@v2
+        with:
+          appId: ${{ secrets.META_APP_ID }}
+          appSecret: ${{ secrets.META_APP_SECRET }}
+          buildDir: 'Builds/Android'
+          releaseChannel: 'ALPHA'
+          ageGroup: 'MIXED_AGES'
+          draft: true
+          releaseNotes: 'Automated CI upload'
+
       - name: Commit version changes
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git checkout -- Packages/manifest.json Packages/packages-lock.json
+          [ -f Packages/manifest.json ] && git checkout -- Packages/manifest.json || echo "manifest.json not found"
+          [ -f Packages/packages-lock.json ] && git checkout -- Packages/packages-lock.json || echo "packages-lock.json not found"
           git add ProjectSettings/ProjectSettings.asset Packages/manifest.json Packages/packages-lock.json
           git commit -m "Version bump and revert CI manifest swap on branch $GITHUB_REF" || echo "No changes to commit"
           git push origin HEAD:$GITHUB_REF
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete bumped files after commit
+        run: |
+          rm -f ProjectSettings/ProjectSettings.asset Packages/manifest.json Packages/packages-lock.json
