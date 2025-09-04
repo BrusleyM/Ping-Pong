@@ -2,10 +2,10 @@ name: Unity VR Android Build
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
     branches:
       - main
       - develop
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -46,8 +46,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Ensure build folder
-        run: mkdir -p Builds/Android
+      - name: Ensure PR-specific build folder
+        run: |
+          mkdir -p Builds/Android/PR-${{ github.event.pull_request.number }}
 
       - name: Apply CI manifests
         run: |
@@ -77,8 +78,21 @@ jobs:
           buildsPath: Builds/Android
           allowDirtyBuild: true
 
-      - name: Upload Build Artifacts
+      # Move APK(s) and ProjectSettings.asset to PR folder
+      - name: Move build and project settings to PR folder
+        run: |
+          PR_NUM=${{ github.event.pull_request.number }}
+          mkdir -p Builds/Android/PR-${PR_NUM}
+          find Builds/Android -maxdepth 1 -type f -name "*.apk" -exec mv {} Builds/Android/PR-${PR_NUM}/ \;
+          if [ -f ProjectSettings/ProjectSettings.asset ]; then
+            mv ProjectSettings/ProjectSettings.asset Builds/Android/PR-${PR_NUM}/ProjectSettings.asset
+          fi
+
+      # Upload build and project settings only
+      - name: Upload PR Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Unity-Build
-          path: Builds/Android
+          name: Unity-Build-PR-${{ github.event.pull_request.number }}
+          path: |
+            Builds/Android/PR-${{ github.event.pull_request.number }}/*.apk
+            Builds/Android/PR-${{ github.event.pull_request.number }}/ProjectSettings.asset
