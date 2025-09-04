@@ -1,12 +1,7 @@
 name: Unity VR Android Build
 
 on:
-  push:
-    branches:
-      - main
-      - develop
   pull_request:
-    types: [opened, synchronize, reopened]
     branches:
       - main
       - develop
@@ -83,6 +78,7 @@ jobs:
           allowDirtyBuild: true
 
       - name: Commit version changes
+        if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' }}
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"

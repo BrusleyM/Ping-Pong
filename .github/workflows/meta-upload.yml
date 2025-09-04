@@ -2,7 +2,8 @@ name: Upload to Meta Quest
 
 on:
   workflow_run:
-    workflows: ["Unity VR Android Build"]
+    workflows:
+      - Unity VR Android Build
     types:
       - completed
 
@@ -11,8 +12,7 @@ permissions:
 
 jobs:
   deploy-meta:
-    if: ${{ github.event.workflow_run.conclusion == 'success' &&
-           (github.event.workflow_run.head_branch == 'develop' || github.event.workflow_run.head_branch == 'main') }}
+    if: ${{ github.workflow_run.conclusion == 'success' && (github.workflow_run.head_branch == 'main' || github.workflow_run.head_branch == 'develop') }}
     name: Upload to Meta Quest
     runs-on: ubuntu-latest
 
