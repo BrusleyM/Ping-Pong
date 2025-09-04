@@ -2,10 +2,6 @@
 using UnityEditor;
 public class MyVersionManager
 {
-    public void EnsureVersion()
-    {
-        PerformVersionBump();
-    }
     public static void PerformVersionBump()
     {
         string branch = Environment.GetEnvironmentVariable("BRANCH_NAME");
