@@ -48,6 +48,7 @@ jobs:
           executeMethod: MyVersionManager.EnsureVersion
           buildTarget: StandaloneWindows64
           unityVersion: 2022.3.51f1
+          allowDirtyBuild: true
       # Step 3: Run version bump script
       #- name: Run VersionBump Script
         #run: |
