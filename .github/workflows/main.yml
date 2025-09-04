@@ -2,6 +2,7 @@ name: Unity VR Android Build
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
     branches:
       - main
       - develop
@@ -82,3 +83,10 @@ jobs:
         with:
           name: Unity-Build
           path: Builds/Android
+
+      - name: Upload bumped project files
+        uses: actions/upload-artifact@v4
+        with:
+          name: bumped-files
+          path: |
+            ProjectSettings/ProjectSettings.asset
