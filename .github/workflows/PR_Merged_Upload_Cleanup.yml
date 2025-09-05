@@ -31,7 +31,7 @@ jobs:
         with:
           appId: ${{ secrets.META_APP_ID }}
           appSecret: ${{ secrets.META_APP_SECRET }}
-          buildDir: 'Builds/Android/
+          buildDir: 'Builds/Android/'
           releaseChannel: 'ALPHA'
           ageGroup: 'MIXED_AGES'
           draft: true
