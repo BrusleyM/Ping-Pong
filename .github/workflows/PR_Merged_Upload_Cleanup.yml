@@ -39,15 +39,6 @@ jobs:
           ageGroup: 'MIXED_AGES'
           draft: true
           releaseNotes: 'Automated CI upload'
-      
-      # Upload build and project settings only
-      - name: Upload PR Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Unity-Build-PR-${{ github.event.pull_request.number }}
-          path: |
-            Builds/Android/PR-${{ github.event.pull_request.number }}/
-            Builds/Android/PR-${{ github.event.pull_request.number }}/ProjectSettings.asset
             
       - name: Commit ProjectSettings changes
         run: |
@@ -57,9 +48,11 @@ jobs:
             git config user.name "GitHub Actions"
             git config user.email "actions@github.com"
             git add ProjectSettings/ProjectSettings.asset
-            git commit -m "Update ProjectSettings for PR ${PR_NUM}" || echo "No changes to commit"
-            git push origin HEAD:${GITHUB_REF}
+            git commit -m "Version bump after PR #${PR_NUM} merged" || echo "No changes to commit"
+            git push origin HEAD:${{ github.event.pull_request.base.ref }}
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Remove only ProjectSettings.asset (merged PR)
         run: |
