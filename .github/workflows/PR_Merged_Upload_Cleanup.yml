@@ -20,8 +20,8 @@ jobs:
       - name: Download PR Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: Unity-Build-PR-${{ github.event.pull_request.number }}
-          path: Builds/Android/PR-${{ github.event.pull_request.number }}
+          name: Unity-Build
+          path: Builds/Android/
 
       - name: Setup ovr-platform-util
         uses: RageAgainstThePixel/setup-ovr-platform-util@v1
@@ -31,7 +31,7 @@ jobs:
         with:
           appId: ${{ secrets.META_APP_ID }}
           appSecret: ${{ secrets.META_APP_SECRET }}
-          buildDir: 'Builds/Android/PR-${{ github.event.pull_request.number }}'
+          buildDir: 'Builds/Android/
           releaseChannel: 'ALPHA'
           ageGroup: 'MIXED_AGES'
           draft: true
