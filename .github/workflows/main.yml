@@ -6,7 +6,11 @@ on:
     branches:
       - main
       - develop
-
+      
+concurrency:
+  group: unity-android-build-${{ github.ref }}
+  cancel-in-progress: true
+  
 permissions:
   contents: write
 
