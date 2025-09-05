@@ -101,6 +101,6 @@ jobs:
       - name: Upload PR Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Unity-Build-PR-${{ github.event.pull_request.number }}
-          path: Builds/Android/PR-${{ github.event.pull_request.number }}/
+          name: Unity-Build
+          path: Builds/Android/
           retention-days: 30
