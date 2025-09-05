@@ -39,8 +39,17 @@ jobs:
           ageGroup: 'MIXED_AGES'
           draft: true
           releaseNotes: 'Automated CI upload'
-
-      - name: Commit ProjectSettings.asset changes
+      
+      # Upload build and project settings only
+      - name: Upload PR Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unity-Build-PR-${{ github.event.pull_request.number }}
+          path: |
+            Builds/Android/PR-${{ github.event.pull_request.number }}/
+            Builds/Android/PR-${{ github.event.pull_request.number }}/ProjectSettings.asset
+            
+      - name: Commit ProjectSettings changes
         run: |
           PR_NUM=${{ github.event.pull_request.number }}
           if [ -f Builds/Android/PR-${PR_NUM}/ProjectSettings.asset ]; then
