@@ -7,12 +7,9 @@ on:
       - main
       - develop
 
-permissions:
-  contents: write
-
 jobs:
   upload-meta:
-    name: Upload to Meta Quest & Commit Version
+    name: Upload to Meta Quest
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
@@ -39,22 +36,3 @@ jobs:
           ageGroup: 'MIXED_AGES'
           draft: true
           releaseNotes: 'Automated CI upload'
-            
-      - name: Commit ProjectSettings changes
-        run: |
-          PR_NUM=${{ github.event.pull_request.number }}
-          if [ -f Builds/Android/PR-${PR_NUM}/ProjectSettings.asset ]; then
-            mv Builds/Android/PR-${PR_NUM}/ProjectSettings.asset ProjectSettings/ProjectSettings.asset
-            git config user.name "GitHub Actions"
-            git config user.email "actions@github.com"
-            git add ProjectSettings/ProjectSettings.asset
-            git commit -m "Version bump after PR #${PR_NUM} merged" || echo "No changes to commit"
-            git push origin HEAD:${{ github.event.pull_request.base.ref }}
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Remove only ProjectSettings.asset (merged PR)
-        run: |
-          PR_NUM=${{ github.event.pull_request.number }}
-          rm -f Builds/Android/PR-${PR_NUM}/ProjectSettings.asset
