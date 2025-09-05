@@ -7,12 +7,9 @@ on:
       - main
       - develop
 
-permissions:
-  contents: write
-
 jobs:
   upload-meta:
-    name: Upload to Meta Quest & Commit Version
+    name: Upload to Meta Quest
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
@@ -39,29 +36,3 @@ jobs:
           ageGroup: 'MIXED_AGES'
           draft: true
           releaseNotes: 'Automated CI upload'
-      
-      # Upload build and project settings only
-      - name: Upload PR Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Unity-Build-PR-${{ github.event.pull_request.number }}
-          path: |
-            Builds/Android/PR-${{ github.event.pull_request.number }}/
-            Builds/Android/PR-${{ github.event.pull_request.number }}/ProjectSettings.asset
-            
-      - name: Commit ProjectSettings changes
-        run: |
-          PR_NUM=${{ github.event.pull_request.number }}
-          if [ -f Builds/Android/PR-${PR_NUM}/ProjectSettings.asset ]; then
-            mv Builds/Android/PR-${PR_NUM}/ProjectSettings.asset ProjectSettings/ProjectSettings.asset
-            git config user.name "GitHub Actions"
-            git config user.email "actions@github.com"
-            git add ProjectSettings/ProjectSettings.asset
-            git commit -m "Update ProjectSettings for PR ${PR_NUM}" || echo "No changes to commit"
-            git push origin HEAD:${GITHUB_REF}
-          fi
-
-      - name: Remove only ProjectSettings.asset (merged PR)
-        run: |
-          PR_NUM=${{ github.event.pull_request.number }}
-          rm -f Builds/Android/PR-${PR_NUM}/ProjectSettings.asset
