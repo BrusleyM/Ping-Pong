@@ -1,16 +1,19 @@
-name: Unity VR Android Build
+name: Unity VR Android Build and Upload
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  push:
     branches:
       - main
       - develop
-      
+  pull_request:
+    branches:
+      - main
+      - develop
+
 concurrency:
   group: unity-android-build-${{ github.ref }}
   cancel-in-progress: true
-  
+
 permissions:
   contents: write
 
@@ -24,7 +27,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
-
+          
       - name: Cache Git LFS
         uses: actions/cache@v4
         with:
@@ -49,10 +52,9 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle-wrapper.properties', '**/build.gradle') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-
-      - name: Ensure PR-specific build folder
-        run: |
-          mkdir -p Builds/Android/PR-${{ github.event.pull_request.number }}
+            
+      - name: Ensure build folder
+        run: mkdir -p Builds/Android/
 
       - name: Apply CI manifests
         run: |
@@ -82,7 +84,24 @@ jobs:
           buildsPath: Builds/Android
           allowDirtyBuild: true
 
-      - name: Commit ProjectSettings.asset to PR branch
+      - name: Upload Unity Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unity-Build
+          path: Builds/Android/
+          retention-days: 30
+
+  commit-settings:
+    name: Commit ProjectSettings.asset to PR branch
+    if: github.event_name == 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Commit ProjectSettings.asset
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -90,17 +109,28 @@ jobs:
           git commit -m "Update ProjectSettings.asset from CI build" || echo "No changes to commit"
           git push origin HEAD:${{ github.head_ref }}
 
-      # Move APK(s) to PR folder
-      - name: Move APK(s) to PR folder
-        run: |
-          PR_NUM=${{ github.event.pull_request.number }}
-          mkdir -p Builds/Android/PR-${PR_NUM}
-          find Builds/Android -maxdepth 1 -type f -name "*.apk" -exec mv {} Builds/Android/PR-${PR_NUM}/ \;
-          
-      # Upload build APK(s) only
-      - name: Upload PR Build Artifact
-        uses: actions/upload-artifact@v4
+  upload-meta:
+    name: Upload Meta Quest Build
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Download Unity Build Artifact
+        uses: actions/download-artifact@v4
         with:
           name: Unity-Build
           path: Builds/Android/
-          retention-days: 30
+      - name: Setup ovr-platform-util
+        uses: RageAgainstThePixel/setup-ovr-platform-util@v1
+      - name: Upload Meta Quest Build
+        uses: RageAgainstThePixel/upload-meta-quest-build@v2
+        with:
+          appId: ${{ secrets.META_APP_ID }}
+          appSecret: ${{ secrets.META_APP_SECRET }}
+          buildDir: 'Builds/Android/'
+          releaseChannel: 'ALPHA'
+          ageGroup: 'MIXED_AGES'
+          draft: true
+          releaseNotes: 'Automated CI upload after PR merge'
