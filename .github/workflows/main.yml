@@ -23,17 +23,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout repo
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           lfs: true
-          
+
+      # Cache Git LFS
       - name: Cache Git LFS
         uses: actions/cache@v4
         with:
           path: .git/lfs/objects
           key: ${{ runner.os }}-lfs-${{ hashFiles('**/Assets/**') }}
 
+      # Cache Unity Library
       - name: Cache Unity Library
         uses: actions/cache@v4
         with:
@@ -42,6 +45,7 @@ jobs:
           restore-keys: |
             Library-Android-
 
+      # Cache Gradle packages
       - name: Cache Gradle packages and build cache
         uses: actions/cache@v4
         with:
@@ -52,15 +56,28 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle-wrapper.properties', '**/build.gradle') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-            
+
+      # Ensure build folder
       - name: Ensure build folder
         run: mkdir -p Builds/Android/
 
+      # Apply CI manifests
       - name: Apply CI manifests
         run: |
           cp Packages/manifest.ci.json Packages/manifest.json
           cp Packages/packages-lock.ci.json Packages/packages-lock.json
 
+      # Extract branch name (PR only)
+      - name: Set BranchName and IsPR
+        run: |
+         if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+          echo "BranchName=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
+          echo "IsPR=true" >> $GITHUB_ENV
+         else
+          echo "IsPR=false" >> $GITHUB_ENV
+         fi
+
+      # Free disk space (always last before Unity build)
       - name: Free disk space
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
@@ -71,6 +88,7 @@ jobs:
           large-packages: true
           docker-images: true
 
+      # Build Unity Project (version bump handled inside BuildScript.Execute)
       - name: Build Unity Project
         uses: game-ci/unity-builder@v4
         env:
@@ -83,7 +101,11 @@ jobs:
           buildMethod: BuildScript.Execute
           buildsPath: Builds/Android
           allowDirtyBuild: true
+          customParameters: |
+            BranchName=${{ env.BranchName }}
+            IsPR=${{ env.IsPR }}
 
+      # Upload build artifact
       - name: Upload Unity Build Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -92,25 +114,24 @@ jobs:
           retention-days: 30
 
   commit-settings:
-    name: Commit ProjectSettings.asset to PR branch
     if: github.event_name == 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
+          fetch-depth: 0
       - name: Commit ProjectSettings.asset
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add ProjectSettings/ProjectSettings.asset
-          git commit -m "Update ProjectSettings.asset from CI build" || echo "No changes to commit"
+          git commit -m "Update ProjectSettings.asset from CI version bump" || echo "No changes to commit"
           git push origin HEAD:${{ github.head_ref }}
 
   upload-meta:
-    name: Upload Meta Quest Build
     if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
