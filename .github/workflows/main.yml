@@ -68,10 +68,10 @@ jobs:
           cp Packages/packages-lock.ci.json Packages/packages-lock.json
 
       # Extract branch name (PR only)
-      - name: Set BranchName and IsPR
+      - name: Set ENV variables
         run: |
          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-          echo "BranchName=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
+          echo "BranchName=${GITHUB_HEAD_REF##*/}" >> $GITHUB_ENV
           echo "IsPR=true" >> $GITHUB_ENV
          else
           echo "IsPR=false" >> $GITHUB_ENV
