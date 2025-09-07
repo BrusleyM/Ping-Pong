@@ -113,23 +113,14 @@ jobs:
           path: Builds/Android/
           retention-days: 30
 
-  commit-settings:
-    if: github.event_name == 'pull_request'
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout PR branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
       - name: Commit ProjectSettings.asset
+        if: github.event_name == 'pull_request'
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add ProjectSettings/ProjectSettings.asset
-          git commit -m "Update ProjectSettings.asset from CI version bump" || echo "No changes to commit"
-          git push origin HEAD:${{ github.head_ref }}
+         git config user.name "github-actions[bot]"
+         git config user.email "github-actions[bot]@users.noreply.github.com"
+         git add ProjectSettings/ProjectSettings.asset
+         git commit -m "Update ProjectSettings.asset from CI version bump" || echo "No changes to commit"
+         git push origin HEAD:${{ github.head_ref }}
 
   upload-meta:
     if: github.event_name == 'push'
