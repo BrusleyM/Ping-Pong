@@ -16,11 +16,8 @@ public class AndroidBuildStrategy : IBuildStrategy
         _myVersionManager = myVersionManager;
     }
 
-    public void Build()
+    public void Build(string branch,bool isPR)
     {
-        // Detect if we are running in CI environment
-        bool isCi = IsCiEnvironment();
-
         // Get enabled scenes
         var scenes = EditorBuildSettings.scenes
                         .Where(s => s.enabled)
@@ -38,14 +35,9 @@ public class AndroidBuildStrategy : IBuildStrategy
             Directory.CreateDirectory(_outputFolder);
 
         // Apply versioning and keystore
-        _myVersionManager.PerformVersionBump();
+        if(isPR)
+            _myVersionManager.PerformVersionBump(branch);
         _keystoreManager.ApplyKeystore();
-
-        // Remove Meta XR Simulator if running in CI
-        if (isCi)
-        {
-            RemoveMetaXrSimulator();
-        }
 
         // Generate APK name
         string apkName = $"{PlayerSettings.productName}_{PlayerSettings.bundleVersion}_{PlayerSettings.Android.bundleVersionCode}.apk";
@@ -66,23 +58,5 @@ public class AndroidBuildStrategy : IBuildStrategy
             Debug.Log($"Android build complete: {apkPath}");
         else
             Debug.LogError("Build failed. Check console for details.");
-    }
-
-    private bool IsCiEnvironment()
-    {
-        // Typical CI environment variables
-        string[] ciVars = { "CI", "GITHUB_ACTIONS", "GITLAB_CI", "BUILD_NUMBER", "UNITY_CI" };
-        return ciVars.Any(v => !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(v)));
-    }
-
-    private void RemoveMetaXrSimulator()
-    {
-        string simulatorPath = Path.Combine(Application.dataPath, "../Packages/com.meta.xr.simulator");
-        if (Directory.Exists(simulatorPath))
-        {
-            Directory.Delete(simulatorPath, true);
-            File.Delete(simulatorPath + ".meta");
-            Debug.Log("Meta XR Simulator removed for CI build.");
-        }
     }
 }

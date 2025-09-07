@@ -2,9 +2,8 @@
 using UnityEditor;
 public class MyVersionManager
 {
-    public void PerformVersionBump()
+    public void PerformVersionBump(string branch)
     {
-        string branch = Environment.GetEnvironmentVariable("BRANCH_NAME");
 
         string[] version = PlayerSettings.bundleVersion.Split('.');
         int major = int.Parse(version[0]);
@@ -25,11 +24,6 @@ public class MyVersionManager
         }
         PlayerSettings.Android.bundleVersionCode++;
         PlayerSettings.bundleVersion = $"{major}.{minor}.{patch}";
-    }
-    public static void VersionBump()
-    {
-        var manager = new MyVersionManager();
-        manager.PerformVersionBump();
     }
 }
 
