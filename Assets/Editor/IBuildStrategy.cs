@@ -1,6 +1,6 @@
 ﻿using System;
 public interface IBuildStrategy
 {
-    void Build();
+    void Build(string branch,bool ShouldRun);
 }
 
