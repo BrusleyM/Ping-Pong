@@ -149,12 +149,12 @@ jobs:
       - name: Promote ALPHA build to BETA
         if: github.ref == 'refs/heads/main'
         run: |
-          ovr-platform-util promote-build \
+          ovr-platform-util set-release-channel-build \
+            --age-group MIXED_AGES \
             --app-id ${{ secrets.META_APP_ID }} \
             --app-secret ${{ secrets.META_APP_SECRET }} \
-            --release-channel ALPHA \
-            --target-channel BETA \
-            --build-id latest
+            --source-channel ALPHA \
+            --destination-channel BETA
 
       - name: Create Git Tag
         env:
