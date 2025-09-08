@@ -125,6 +125,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download Unity Build Artifact
+        if: github.ref == 'refs/heads/develop'
         uses: actions/download-artifact@v4
         with:
           name: Unity-Build
@@ -133,16 +134,27 @@ jobs:
       - name: Setup ovr-platform-util
         uses: RageAgainstThePixel/setup-ovr-platform-util@v1
 
-      - name: Upload Meta Quest Build
+      - name: Upload Meta Quest Build to ALPHA
+        if: github.ref == 'refs/heads/develop'
         uses: RageAgainstThePixel/upload-meta-quest-build@v2
         with:
           appId: ${{ secrets.META_APP_ID }}
           appSecret: ${{ secrets.META_APP_SECRET }}
           buildDir: 'Builds/Android/'
-          releaseChannel: ${{ github.ref == 'refs/heads/main' && 'BETA' || 'ALPHA' }}
+          releaseChannel: 'ALPHA'
           ageGroup: 'MIXED_AGES'
-          draft: true
+          draft: false
           releaseNotes: 'Automated CI upload after PR merge'
+
+      - name: Promote ALPHA build to BETA
+        if: github.ref == 'refs/heads/main'
+        run: |
+          ovr-platform-util promote-build \
+            --app-id ${{ secrets.META_APP_ID }} \
+            --app-secret ${{ secrets.META_APP_SECRET }} \
+            --release-channel ALPHA \
+            --target-channel BETA \
+            --build-id latest
 
       - name: Create Git Tag
         env:
