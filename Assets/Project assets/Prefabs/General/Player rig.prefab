@@ -2712,6 +2712,7 @@ MonoBehaviour:
   - {fileID: 3366186668793983124}
   - {fileID: 5684021734658303370}
   _handler: {fileID: 6310458561945332486}
+  _handlers: []
 --- !u!114 &6626598103303058663
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9645,7 +9646,7 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 0.64, y: 0.64}
+  m_Size: {x: 3.81, y: 3.81}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -11318,7 +11319,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e933e81d3c20c74ea6fdc708a67e3a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  useRecommendedMSAALevel: 1
   _monoscopic: 0
   _sharpenType: 0
   _enableDynamicResolution: 0
@@ -11939,6 +11939,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _ovrCameraRig: {fileID: 1574048976225083185}
+  _leftHand: {fileID: 0}
+  _rightHand: {fileID: 0}
   _requireOvrHands: 1
 --- !u!114 &6221475677325738426
 MonoBehaviour:
@@ -26511,6 +26513,7 @@ MonoBehaviour:
   - {fileID: 2626059010563005907}
   - {fileID: 4493522684991752851}
   _handler: {fileID: 6310458561945332486}
+  _handlers: []
 --- !u!114 &1367458199324331730
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -31921,6 +31924,7 @@ MonoBehaviour:
   - {fileID: 490432817555399210}
   - {fileID: 7558139856132743680}
   _handler: {fileID: 6310458561945332486}
+  _handlers: []
 --- !u!1 &5838053538235149715
 GameObject:
   m_ObjectHideFlags: 0
@@ -37659,7 +37663,7 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 0.64, y: 0.64}
+  m_Size: {x: 3.81, y: 3.81}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -43827,6 +43831,7 @@ MonoBehaviour:
   - {fileID: 7186178085782615359}
   - {fileID: 4422916364423074979}
   _handler: {fileID: 6310458561945332486}
+  _handlers: []
 --- !u!1 &7772558160305230324
 GameObject:
   m_ObjectHideFlags: 0
