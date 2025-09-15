@@ -279,6 +279,14 @@ PrefabInstance:
       propertyPath: CelShaderConfigurationInitializer
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 2718301734589112725, guid: 6f3600e2e5e7b4a8d8df54551d28c355, type: 3}
+      propertyPath: _SkinToTextureShader
+      value: 
+      objectReference: {fileID: 4800000, guid: ee1f1406edf162945868fafc408691aa, type: 3}
+    - target: {fileID: 2718301734589112725, guid: 6f3600e2e5e7b4a8d8df54551d28c355, type: 3}
+      propertyPath: _CombineMorphTargetsShader
+      value: 
+      objectReference: {fileID: 4800000, guid: bef2973cf0137a04fbdd59ed0bab09bc, type: 3}
     - target: {fileID: 3162978153436163139, guid: 6f3600e2e5e7b4a8d8df54551d28c355, type: 3}
       propertyPath: m_Name
       value: Multiplayer setup
