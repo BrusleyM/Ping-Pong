@@ -298,7 +298,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 1631814298
+  GlobalObjectIdHash: 975126954
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 0
@@ -438,9 +438,9 @@ MonoBehaviour:
   assetVersionQuest2: 10
   streamingAssetFileExtension: .glb.zst
   ovrAvatar2AssetFolder: Oculus
-  _defaultModelColor: {r: 0.11764706, g: 0.6156863, b: 1, a: 1}
   ShaderManager: {fileID: 1822540310881654094}
   _useCriticalJointJobs: 0
+  extraJsonPayload: 
   TimesliceBudgetStrategy: 1
   FastLoadAvatarEnabled: 0
   AllowExperimentalSystemsOverride: 0
@@ -594,6 +594,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   DefaultShaderConfigurationInitializer: {fileID: 11400000, guid: b450b25fcb13b4d6f864b0d7c7a08d46, type: 2}
   FastLoadConfigurationInitializer: {fileID: 11400000, guid: fbf59dac2c199e44fb42aa5ecd07dd33, type: 2}
+  CelShaderConfigurationInitializer: {fileID: 0}
 --- !u!1 &6514012538448172255
 GameObject:
   m_ObjectHideFlags: 0
