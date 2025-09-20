@@ -8,6 +8,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -6869026783378300764, guid: 68ce26158b7c54bfa983c028178f8430, type: 3}
+      propertyPath: m_Name
+      value: Floor
+      objectReference: {fileID: 0}
     - target: {fileID: -6689036041284674117, guid: 68ce26158b7c54bfa983c028178f8430, type: 3}
       propertyPath: m_Name
       value: experimental_neon_room
@@ -69,7 +73,37 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 7970442109582073599, guid: 68ce26158b7c54bfa983c028178f8430, type: 3}
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: -6869026783378300764, guid: 68ce26158b7c54bfa983c028178f8430, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6407771841824500410}
   m_SourcePrefab: {fileID: -5645937942226959685, guid: 68ce26158b7c54bfa983c028178f8430, type: 3}
+--- !u!1 &7370708127587566897 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -6869026783378300764, guid: 68ce26158b7c54bfa983c028178f8430, type: 3}
+  m_PrefabInstance: {fileID: 5108862590480983445}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &6407771841824500410
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7370708127587566897}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 234.683, y: 521.8866, z: 5.348408e-12}
+  m_Center: {x: 0, y: -0.00006103517, z: 93.844086}
