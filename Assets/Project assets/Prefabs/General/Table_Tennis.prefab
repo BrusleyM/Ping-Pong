@@ -10,15 +10,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 9798a45f74cce4851967e455c612acf0, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -0.000003643334
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9798a45f74cce4851967e455c612acf0, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.24
+      value: -0.53206235
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9798a45f74cce4851967e455c612acf0, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 0.0000282477
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9798a45f74cce4851967e455c612acf0, type: 3}
       propertyPath: m_LocalRotation.w
@@ -55,5 +55,34 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: -4129609002446584640, guid: 9798a45f74cce4851967e455c612acf0, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4409154894255924262}
   m_SourcePrefab: {fileID: 100100000, guid: 9798a45f74cce4851967e455c612acf0, type: 3}
+--- !u!1 &5480754779971315805 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -4129609002446584640, guid: 9798a45f74cce4851967e455c612acf0, type: 3}
+  m_PrefabInstance: {fileID: 774376224550841501}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &4409154894255924262
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5480754779971315805}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.5740323, y: 0.04, z: 1.5521083}
+  m_Center: {x: 0, y: 0.72, z: 0}
