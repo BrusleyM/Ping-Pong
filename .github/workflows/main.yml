@@ -46,6 +46,7 @@ jobs:
       - name: Read Unity version
         run: |
           version=$(sed -n 's/^m_EditorVersion: //p' ProjectSettings/ProjectVersion.txt)
+          if [ -z "$version" ]; then echo "::error::No m_EditorVersion in ProjectSettings/ProjectVersion.txt"; exit 1; fi
           echo "Unity $version"
           echo "UNITY_VERSION=$version" >> "$GITHUB_ENV"
 
@@ -85,7 +86,7 @@ jobs:
           # Same image as the build: no second image pull, and no switch away from the Android
           # build target (the default Linux image re-imports ~2000 assets for StandaloneLinux64).
           customImage: unityci/editor:ubuntu-${{ env.UNITY_VERSION }}-android-3
-          coverageOptions: ''   # no code-coverage instrumentation or reports
+          coverageEnabled: false   # no coverage package, instrumentation or reports
           artifactsPath: test-results
           checkName: EditMode test results
           githubToken: ${{ secrets.GITHUB_TOKEN }}
