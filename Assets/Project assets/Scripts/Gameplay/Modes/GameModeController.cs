@@ -27,8 +27,8 @@ namespace PingPong.Gameplay
         /// <summary>Raised when the mode or AI level changes.</summary>
         public event Action Changed;
 
-        bool GameOver => _match.Phase is MatchPhase.GameOver or MatchPhase.FreePlay;
-        bool BetweenPoints => GameOver || _match.Phase == MatchPhase.WaitingForServe;
+        bool CanRestart => _match.Phase is MatchPhase.GameOver or MatchPhase.FreePlay;
+        bool BetweenPoints => CanRestart || _match.Phase == MatchPhase.WaitingForServe;
 
         void OnValidate()
         {
@@ -73,7 +73,7 @@ namespace PingPong.Gameplay
             IPlayerCommands c = _commands.Value;
             if (c == null) return;
             if (c.TogglePassthroughPressed) TogglePassthrough();
-            if (GameOver && c.RestartPressed) Restart();
+            if (CanRestart && c.RestartPressed) Restart();
             if (BetweenPoints && c.EasierPressed) ChangeDifficulty(-1);
             if (BetweenPoints && c.HarderPressed) ChangeDifficulty(1);
         }

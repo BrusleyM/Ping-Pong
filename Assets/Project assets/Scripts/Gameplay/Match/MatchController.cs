@@ -100,7 +100,7 @@ namespace PingPong.Gameplay
             if (IsAuthority) Engine.RegisterHit(player, _table.Frame.IsOverTable(hitPosition));
         }
 
-        /// <summary>Network clients mirror the authority's rules state through this.</summary>
+        /// <summary>Network clients mirror the authority's rules state through this; point and game events fire as on the authority.</summary>
         public void ApplySnapshot(MatchSnapshot snapshot) => Engine.Restore(snapshot);
 
         void OnTableBounce(Side side)
@@ -134,8 +134,8 @@ namespace PingPong.Gameplay
         void OnPointAwarded(Side winner, PointReason reason)
         {
             PointWon?.Invoke(winner, reason);
-            // The engine decides game over right after this event; the coroutine checks before serving.
-            _pendingServe = StartCoroutine(NextServeAfterPause());
+            // The engine's state is final here. Only the authority schedules serves; clients follow snapshots.
+            if (IsAuthority && Phase == MatchPhase.PointOver) _pendingServe = StartCoroutine(NextServeAfterPause());
         }
 
         IEnumerator NextServeAfterPause()

@@ -24,9 +24,12 @@ namespace PingPong.Core
 
         /// <summary>Raised after any state change.</summary>
         public event Action Changed;
-        /// <summary>Raised when a point is awarded (before <see cref="Changed"/>).</summary>
+        /// <summary>
+        /// Raised when a point is awarded, after the state is final (score, next server, game over).
+        /// Also raised by <see cref="Restore"/> when the snapshot carries a new point.
+        /// </summary>
         public event Action<Side, PointReason> PointAwarded;
-        /// <summary>Raised when the game is won (before <see cref="Changed"/>).</summary>
+        /// <summary>Raised after <see cref="PointAwarded"/> when that point won the game.</summary>
         public event Action<Side> GameWon;
 
         public void StartMatch(Side firstServer)
@@ -98,6 +101,7 @@ namespace PingPong.Core
 
                 case MatchPhase.FreePlay:
                     _s.LastHitter = player;
+                    Changed?.Invoke();
                     return;
             }
         }
@@ -136,18 +140,31 @@ namespace PingPong.Core
             else Award(other, PointReason.Out);
         }
 
-        /// <summary>Replaces the whole state (network clients, replays). Raises <see cref="Changed"/> if it differs.</summary>
+        /// <summary>
+        /// Replaces the whole state (network clients, replays) and raises the events a local peer would
+        /// have seen: <see cref="PointAwarded"/> if the snapshot carries a new point, <see cref="GameWon"/>
+        /// if it ends the game, then <see cref="Changed"/>. If several points arrive in one snapshot, only
+        /// the latest is reported (the score is still exact).
+        /// </summary>
         public void Restore(MatchSnapshot snapshot)
         {
             if (snapshot.Equals(_s)) return;
+            MatchSnapshot previous = _s;
             _s = snapshot;
+            bool newPoint = snapshot.PointsPlayed > previous.PointsPlayed && snapshot.LastPointWinner.IsPlayer();
+            if (newPoint) PointAwarded?.Invoke(snapshot.LastPointWinner, snapshot.LastPointReason);
+            if (snapshot.Phase == MatchPhase.GameOver && previous.Phase != MatchPhase.GameOver && snapshot.Winner.IsPlayer())
+                GameWon?.Invoke(snapshot.Winner);
             Changed?.Invoke();
         }
 
         void Award(Side winner, PointReason reason)
         {
+            // Finish the whole state first, so every event handler sees the final, consistent state.
             if (winner == Side.Near) _s.ScoreNear++; else _s.ScoreFar++;
-            _s.Phase = MatchPhase.PointOver;
+            _s.PointsPlayed++;
+            _s.LastPointWinner = winner;
+            _s.LastPointReason = reason;
             _s.IsServing = false;
 
             bool deuce = _s.ScoreNear >= _rules.PointsToWin - 1 && _s.ScoreFar >= _rules.PointsToWin - 1;
@@ -158,15 +175,13 @@ namespace PingPong.Core
                 _s.ServesThisTurn = 0;
             }
 
-            PointAwarded?.Invoke(winner, reason);
-
             int lead = _s.Score(winner) - _s.Score(winner.Opponent());
-            if (_s.Score(winner) >= _rules.PointsToWin && lead >= _rules.WinBy)
-            {
-                _s.Phase = MatchPhase.GameOver;
-                _s.Winner = winner;
-                GameWon?.Invoke(winner);
-            }
+            bool gameWon = _s.Score(winner) >= _rules.PointsToWin && lead >= _rules.WinBy;
+            _s.Phase = gameWon ? MatchPhase.GameOver : MatchPhase.PointOver;
+            if (gameWon) _s.Winner = winner;
+
+            PointAwarded?.Invoke(winner, reason);
+            if (gameWon) GameWon?.Invoke(winner);
             Changed?.Invoke();
         }
 

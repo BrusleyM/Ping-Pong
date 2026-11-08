@@ -238,6 +238,52 @@ namespace PingPong.Tests
         }
 
         [Test]
+        public void PointEvents_SeeTheFinalState()
+        {
+            var seen = new List<MatchSnapshot>();
+            _engine.PointAwarded += (w, r) => seen.Add(_engine.State);
+
+            WinPoint(Side.Near); // 1-0: rally over, same server
+            WinPoint(Side.Near); // 2-0: server rotates
+            Assert.That(seen[0].Phase, Is.EqualTo(MatchPhase.PointOver));
+            Assert.That(seen[1].Server, Is.EqualTo(Side.Far), "server already rotated when the event fires");
+            Assert.That((seen[1].PointsPlayed, seen[1].LastPointWinner), Is.EqualTo((2, Side.Near)));
+
+            PlayTo(10, 0);
+            WinPoint(Side.Near); // game point
+            MatchSnapshot last = seen[seen.Count - 1];
+            Assert.That(last.Phase, Is.EqualTo(MatchPhase.GameOver), "game over is already decided when the point event fires");
+            Assert.That(last.Winner, Is.EqualTo(Side.Near));
+        }
+
+        [Test]
+        public void Restore_RaisesPointAndGameEventsOnAClient()
+        {
+            var client = new MatchRulesEngine(MatchRules.Standard);
+            var clientPoints = new List<(Side, PointReason)>();
+            Side clientWinner = Side.None;
+            client.PointAwarded += (w, r) => clientPoints.Add((w, r));
+            client.GameWon += w => clientWinner = w;
+
+            client.Restore(S); // waiting for serve: no point yet
+            Assert.That(clientPoints, Is.Empty);
+
+            _engine.RegisterHit(Side.Near, false);
+            _engine.RegisterTableBounce(Side.Far); // serve fault
+            client.Restore(S);
+            Assert.That(clientPoints, Is.EqualTo(new[] { (Side.Far, PointReason.ServeMissedOwnSide) }));
+
+            client.Restore(S); // same snapshot again: no duplicate event
+            Assert.That(clientPoints.Count, Is.EqualTo(1));
+
+            _engine.BeginServe();
+            PlayTo(0, 11);
+            client.Restore(S);
+            Assert.That(clientWinner, Is.EqualTo(Side.Far));
+            Assert.That(clientPoints[clientPoints.Count - 1].Item1, Is.EqualTo(Side.Far), "only the latest point is reported");
+        }
+
+        [Test]
         public void InvalidRules_AreRejected()
         {
             Assert.Throws<System.ArgumentException>(() => new MatchRulesEngine(new MatchRules()));
