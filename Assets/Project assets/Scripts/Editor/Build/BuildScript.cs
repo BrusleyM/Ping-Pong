@@ -1,43 +1,46 @@
 using UnityEditor;
 using UnityEngine;
 
-// High-level entry point (DIP + SRP)
-public class BuildScript
+namespace PingPong.EditorTools.Build
 {
-    [MenuItem("Build/Build Android APK (SOLID)")]
-    public static void Execute()
+    // High-level entry point (DIP + SRP)
+    public class BuildScript
     {
-        // Parse custom parameters from CI
-        string[] args = System.Environment.GetCommandLineArgs();
-        string buildNumber = GetArg(args, "BuildNumber");
-
-        var versionManager = new MyVersionManager();
-
-        var keystoreManager = new MyKeystoreManager(); // CI secrets, or the key set in Player Settings
-        var androidBuilder = new AndroidBuildStrategy("Builds/Android", keystoreManager, versionManager);
-
-        // In CI (batch mode) any failure must end Unity with a non-zero exit code, so the job fails here
-        // instead of later with "no APK found".
-        try
+        [MenuItem("Build/Build Android APK (SOLID)")]
+        public static void Execute()
         {
-            androidBuilder.Build(buildNumber);
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError("[Build] " + e.Message);
-            if (Application.isBatchMode) EditorApplication.Exit(1);
-            throw;
-        }
-    }
-    private static string GetArg(string[] args, string name)
-    {
-        foreach (string arg in args)
-        {
-            if (arg.StartsWith(name + "="))
+            // Parse custom parameters from CI
+            string[] args = System.Environment.GetCommandLineArgs();
+            string buildNumber = GetArg(args, "BuildNumber");
+
+            var versionManager = new MyVersionManager();
+
+            var keystoreManager = new MyKeystoreManager(); // CI secrets, or the key set in Player Settings
+            var androidBuilder = new AndroidBuildStrategy("Builds/Android", keystoreManager, versionManager);
+
+            // In CI (batch mode) any failure must end Unity with a non-zero exit code, so the job fails here
+            // instead of later with "no APK found".
+            try
             {
-                return arg.Substring(name.Length + 1);
+                androidBuilder.Build(buildNumber);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError("[Build] " + e.Message);
+                if (Application.isBatchMode) EditorApplication.Exit(1);
+                throw;
             }
         }
-        return null;
+        private static string GetArg(string[] args, string name)
+        {
+            foreach (string arg in args)
+            {
+                if (arg.StartsWith(name + "="))
+                {
+                    return arg.Substring(name.Length + 1);
+                }
+            }
+            return null;
+        }
     }
 }

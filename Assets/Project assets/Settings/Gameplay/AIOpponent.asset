@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60c854cd5415749b58ecb0f68af429ed, type: 3}
+  m_Name: AIOpponent
+  m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.AIProfile
+  _levels:
+  - Name: Easy
+    ReactionTime: 0.35
+    MoveSpeed: 1.6
+    ShotSpeed: {x: 3.5, y: 4.5}
+    AimError: 0.25
+    Depth: {x: 0.35, y: 0.7}
+    MissChance: 0.15
+  - Name: Normal
+    ReactionTime: 0.22
+    MoveSpeed: 2.6
+    ShotSpeed: {x: 4.5, y: 6.5}
+    AimError: 0.15
+    Depth: {x: 0.45, y: 0.85}
+    MissChance: 0.06
+  - Name: Hard
+    ReactionTime: 0.12
+    MoveSpeed: 4
+    ShotSpeed: {x: 6, y: 9}
+    AimError: 0.08
+    Depth: {x: 0.6, y: 0.92}
+    MissChance: 0.02
+  _defaultLevel: 1
+  _behaviour:
+    Reach: 0.3
+    ServeDelay: 1.2
+    ServeSpeed: {x: 2.8, y: 4.2}
+    RestOffset: {x: 0.25, y: 0.35}
+    TargetMargins:
+      Edge: 0.05
+      FromNet: 0.2
+      FromEnd: 0.05
+    AcrossSpread: 0.6
+    NetRetry:
+      Attempts: 5
+      SpeedFalloff: 0.85
+    ServeFirstBounce: {x: 0.4, y: 0.7}
+    ServeAcrossSpread: 0.3
+    ServeMinReceiverDepth: 0.15
+    ComfortHeight: 0.3
+    BehindBall: 0.04
+    Swing: {x: 40, y: 4}
