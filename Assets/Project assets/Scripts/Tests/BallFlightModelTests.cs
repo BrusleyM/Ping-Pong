@@ -65,7 +65,7 @@ namespace PingPong.Tests
             // A short serve from the game's real serve position: own side first, then the receiver's side.
             MatchPacing pacing = MatchPacing.Default;
             Vector3 from = _table.ToWorld(new Vector3(0f, pacing.ServeHeight, -_table.HalfLength - pacing.ServeBehind));
-            Vector3 first = _table.PointOnSide(Side.Near, 0f, 0.4f);
+            Vector3 first = _table.PointOnSide(Side.Near, 0f, 0.4f * _table.HalfLength);
             _model.SolveLaunch(_table, from, first, 3.2f, out Vector3 v);
             int n = _model.Simulate(_table, from, v, 3f, _bounces, out bool net);
             Assert.That(net, Is.False);
@@ -112,6 +112,57 @@ namespace PingPong.Tests
             Assert.That((back - world).magnitude, Is.LessThan(1e-4f));
             Assert.That(rotated.SideOf(rotated.PointOnSide(Side.Near, 0f, 0.5f)), Is.EqualTo(Side.Near));
             Assert.That(rotated.SideOf(rotated.PointOnSide(Side.Far, 0f, 0.5f)), Is.EqualTo(Side.Far));
+        }
+
+        [Test]
+        public void PointOnSide_MeasuresFromTheNetTowardsThatPlayer()
+        {
+            Vector3 near = _table.ToLocal(_table.PointOnSide(Side.Near, 0.3f, 1.0f, 0.25f));
+            Vector3 far = _table.ToLocal(_table.PointOnSide(Side.Far, -0.2f, 1.6f));
+            Assert.That((near - new Vector3(0.3f, 0.25f, -1.0f)).magnitude, Is.LessThan(1e-5f));
+            Assert.That((far - new Vector3(-0.2f, 0f, 1.6f)).magnitude, Is.LessThan(1e-5f), "beyond HalfLength is behind the end line");
+        }
+
+        [Test]
+        public void ClampToSide_KeepsTheSpotInsideTheMargins()
+        {
+            var margins = new LandingMargins(edge: 0.1f, fromNet: 0.3f, fromEnd: 0.12f);
+
+            Vector3 wild = _table.ToLocal(_table.ClampToSide(Side.Far, 5f, 9f, margins));
+            Assert.That(wild.x, Is.EqualTo(_table.HalfWidth - 0.1f).Within(1e-5f));
+            Assert.That(wild.z, Is.EqualTo(_table.HalfLength - 0.12f).Within(1e-5f));
+
+            Vector3 shortLeft = _table.ToLocal(_table.ClampToSide(Side.Near, -5f, 0.05f, margins));
+            Assert.That(shortLeft.x, Is.EqualTo(-_table.HalfWidth + 0.1f).Within(1e-5f));
+            Assert.That(shortLeft.z, Is.EqualTo(-0.3f).Within(1e-5f), "never closer to the net than the margin, on the right side");
+
+            Vector3 inside = _table.ToLocal(_table.ClampToSide(Side.Far, 0.2f, 0.9f, margins));
+            Assert.That((inside - new Vector3(0.2f, 0f, 0.9f)).magnitude, Is.LessThan(1e-5f), "legal spots are unchanged");
+        }
+
+        [TestCase(0.2f, 10f, 0.8f)]
+        [TestCase(0.25f, 8f, 0.4f)]
+        public void SolveLaunchClearingNet_AddsArcWhenTheFastShotHitsTheNet(float height, float speed, float fromNet)
+        {
+            Vector3 from = _table.PointOnSide(Side.Near, 0f, _table.HalfLength + 0.2f, height);
+            Vector3 target = _table.PointOnSide(Side.Far, 0f, fromNet);
+            var retry = new NetClearRetry(attempts: 5, speedFalloff: 0.85f);
+
+            Assert.That(_model.SolveLaunch(_table, from, target, speed, out _), Is.False, "precondition: the fast shot hits the net");
+            Assert.That(_model.SolveLaunchClearingNet(_table, from, target, speed, retry, out Vector3 v), Is.True);
+            Assert.That(new Vector2(v.x, v.z).magnitude, Is.LessThan(speed), "the retry slowed the shot down");
+            _model.Simulate(_table, from, v, 3f, _bounces, out bool net);
+            Assert.That(net, Is.False);
+            Assert.That(_bounces[0].Side, Is.EqualTo(Side.Far));
+        }
+
+        [Test]
+        public void SolveLaunchClearingNet_StopsAfterTheConfiguredAttempts()
+        {
+            Vector3 from = _table.ToWorld(new Vector3(0f, 0.05f, -0.6f)); // below the net, right next to it
+            Vector3 target = _table.PointOnSide(Side.Far, 0f, 0.2f);
+            bool ok = _model.SolveLaunchClearingNet(_table, from, target, 12f, new NetClearRetry(attempts: 1, speedFalloff: 0.5f), out _);
+            Assert.That(ok, Is.False);
         }
     }
 }

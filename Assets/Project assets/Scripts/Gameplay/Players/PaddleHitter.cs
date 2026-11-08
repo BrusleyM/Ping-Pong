@@ -57,9 +57,8 @@ namespace PingPong.Gameplay
 
         void OnValidate()
         {
-            if (_feel == null) Debug.LogWarning($"{name}: assign a Paddle Feel Profile.", this);
-            string error = _haptics.Validate(nameof(_haptics));
-            if (error != null) Debug.LogError(error, this);
+            Validation.Require(_feel, "a Paddle Feel Profile", this);
+            Validation.Seam(_haptics, nameof(_haptics), this);
         }
 
         void Start()
@@ -133,10 +132,9 @@ namespace PingPong.Gameplay
             if (outVel.magnitude > feel.MaxSpeed) outVel = outVel.normalized * feel.MaxSpeed;
 
             _lastHit = Time.time;
-            _ball.Launch(hitPos, outVel);
+            _match.Strike(_player, hitPos, outVel);
             _haptics.Value?.Pulse(Mathf.Clamp01(outVel.magnitude / feel.HapticFullSpeed), feel.HapticDuration);
             Hit?.Invoke(hitPos, outVel);
-            _match.ReportPaddleHit(_player, hitPos);
         }
 
         /// <summary>Velocity of a world point on the blade, from the last two rendered frames.</summary>
@@ -156,6 +154,7 @@ namespace PingPong.Gameplay
         /// <summary>Bends a rally shot towards a legal landing spot on the opponent's half.</summary>
         Vector3 ApplyAssist(Vector3 from, Vector3 vel, float assist)
         {
+            PaddleFeel feel = Feel;
             if (assist <= 0f) return vel;
             MatchPhase phase = _match.Phase;
             if (phase == MatchPhase.WaitingForServe || phase == MatchPhase.FreePlay) return vel; // serves must bounce own side first
@@ -178,13 +177,9 @@ namespace PingPong.Gameplay
                 float flat = new Vector2(lv.x, lv.z).magnitude;
                 landing = l0 + new Vector3(lv.x, 0, lv.z) * (Mathf.Abs(l0.z) + table.HalfLength) / Mathf.Max(flat, 0.1f);
             }
-            const float edgeMargin = 0.1f, minDepth = 0.3f, endMargin = 0.12f, minSpeed = 3f, maxSpeed = 12f;
-            var target = new Vector3(
-                Mathf.Clamp(landing.x, -table.HalfWidth + edgeMargin, table.HalfWidth - edgeMargin), 0f,
-                opp.Sign() * Mathf.Clamp(Mathf.Abs(landing.z), minDepth, table.HalfLength - endMargin));
-            float speed = Mathf.Clamp(new Vector2(lv.x, lv.z).magnitude, minSpeed, maxSpeed);
-            if (!model.SolveLaunch(table, from, table.ToWorld(target), speed, out Vector3 solved))
-                model.SolveLaunch(table, from, table.ToWorld(target), speed * 0.8f, out solved);
+            Vector3 target = table.ClampToSide(opp, landing.x, Mathf.Abs(landing.z), feel.AssistMargins);
+            float speed = Mathf.Clamp(new Vector2(lv.x, lv.z).magnitude, feel.AssistSpeed.x, feel.AssistSpeed.y);
+            model.SolveLaunchClearingNet(table, from, target, speed, feel.AssistNetRetry, out Vector3 solved);
             return Vector3.Lerp(vel, solved, assist);
         }
     }

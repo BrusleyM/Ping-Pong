@@ -27,14 +27,10 @@ namespace PingPong.Gameplay
         /// <summary>Raised when the difficulty level changes.</summary>
         public event Action<int> LevelChanged;
 
+        // Search limits (not design tuning; design values live in the AI profile).
         const float PredictionTime = 3f;
         const int MaxHitSearchSteps = 240;
-        const float ComfortHeight = 0.3f;   // hit the ball as it drops through this height
-        const float BehindBall = 0.04f;     // stand this far behind the ball, away from the net
-        const float SwingAngle = 40f;
-        const float SwingRecovery = 4f;
         const int ServeAttempts = 12;
-        const int ReturnAttempts = 5;
         const float PastEndMargin = 0.15f; // stop the hit search once the ball is this far past the end line
 
         readonly BallBounce[] _bounces = new BallBounce[2];
@@ -57,10 +53,7 @@ namespace PingPong.Gameplay
             if (_level < 0) _level = _profile.DefaultLevel;
         }
 
-        void OnValidate()
-        {
-            if (_profile == null) Debug.LogWarning($"{name}: assign an AI Profile.", this);
-        }
+        void OnValidate() => Validation.Require(_profile, "an AI Profile", this);
 
         void SetLevel(int value)
         {
@@ -80,7 +73,7 @@ namespace PingPong.Gameplay
         Vector3 RestPosition()
         {
             Vector2 rest = Behaviour.RestOffset;
-            return Table.ToWorld(new Vector3(0f, rest.x, _player.Sign() * (Table.HalfLength + rest.y)));
+            return Table.PointOnSide(_player, 0f, Table.HalfLength + rest.y, rest.x);
         }
 
         void Update()
@@ -89,7 +82,7 @@ namespace PingPong.Gameplay
             switch (_match.Phase)
             {
                 case MatchPhase.WaitingForServe when _match.Server == _player:
-                    _target = ball.transform.position + Table.Forward * (_player.Sign() * BehindBall * 1.5f);
+                    _target = ball.transform.position + Table.Forward * (_player.Sign() * Behaviour.BehindBall * 1.5f);
                     _serveTimer += Time.deltaTime;
                     if (_serveTimer > Behaviour.ServeDelay) { _serveTimer = 0f; Serve(); }
                     break;
@@ -105,8 +98,8 @@ namespace PingPong.Gameplay
             }
 
             _paddle.position = Vector3.MoveTowards(_paddle.position, _target, Difficulty.MoveSpeed * Time.deltaTime);
-            _swing = Mathf.MoveTowards(_swing, 0f, Time.deltaTime * SwingRecovery);
-            _paddle.rotation = _restRotation * Quaternion.Euler(-SwingAngle * _swing, 0f, 0f);
+            _swing = Mathf.MoveTowards(_swing, 0f, Time.deltaTime * Behaviour.Swing.y);
+            _paddle.rotation = _restRotation * Quaternion.Euler(-Behaviour.Swing.x * _swing, 0f, 0f);
         }
 
         void FixedUpdate()
@@ -145,11 +138,11 @@ namespace PingPong.Gameplay
                 t += Model.SimStep;
                 Vector3 l = table.ToLocal(p);
                 bool pastEnd = Mathf.Abs(l.z) > endZ;
-                bool dropping = v.y < 0f && l.y < ComfortHeight;
+                bool dropping = v.y < 0f && l.y < Behaviour.ComfortHeight;
                 if (pastEnd || dropping || l.y < Model.Radius) break;
             }
 
-            _target = p + table.Forward * (_player.Sign() * BehindBall);
+            _target = p + table.Forward * (_player.Sign() * Behaviour.BehindBall);
             _strikeTime = Time.time + t;
             _willMiss = Random.value < Difficulty.MissChance;
         }
@@ -158,21 +151,13 @@ namespace PingPong.Gameplay
         {
             TableFrame table = Table;
             AIDifficulty d = Difficulty;
-            Side opp = _player.Opponent();
-            const float acrossSpread = 0.6f, edgeMargin = 0.05f, minDepth = 0.2f;
-            float across = Mathf.Clamp(Random.Range(-acrossSpread, acrossSpread) * table.HalfWidth + Random.Range(-d.AimError, d.AimError),
-                -table.HalfWidth + edgeMargin, table.HalfWidth - edgeMargin);
-            float depth = Mathf.Clamp(Random.Range(d.Depth.x, d.Depth.y) * table.HalfLength + Random.Range(-d.AimError, d.AimError),
-                minDepth, table.HalfLength - edgeMargin);
-            Vector3 target = table.ToWorld(new Vector3(across, 0f, opp.Sign() * depth));
+            AIBehaviour b = Behaviour;
+            float across = Random.Range(-b.AcrossSpread, b.AcrossSpread) * table.HalfWidth + Random.Range(-d.AimError, d.AimError);
+            float depth = Random.Range(d.Depth.x, d.Depth.y) * table.HalfLength + Random.Range(-d.AimError, d.AimError);
+            Vector3 target = table.ClampToSide(_player.Opponent(), across, depth, b.TargetMargins);
 
             float speed = Random.Range(d.ShotSpeed.x, d.ShotSpeed.y);
-            Vector3 vel = Vector3.zero;
-            for (int i = 0; i < ReturnAttempts; i++)
-            {
-                if (Model.SolveLaunch(table, from, target, speed, out vel)) break;
-                speed *= 0.85f; // more arc to clear the net
-            }
+            Model.SolveLaunchClearingNet(table, from, target, speed, b.NetRetry, out Vector3 vel);
             HitBall(from, vel);
         }
 
@@ -181,33 +166,31 @@ namespace PingPong.Gameplay
             TableFrame table = Table;
             Vector3 from = _match.Ball.transform.position;
             Side opp = _player.Opponent();
-            const float acrossSpread = 0.3f, minReceiverDepth = 0.15f;
-            Vector2 firstBounceDepth = new Vector2(0.4f, 0.7f);
+            AIBehaviour b = Behaviour;
             // Try a few first-bounce spots and speeds; keep one whose second bounce lands on the opponent's half.
             for (int attempt = 0; attempt < ServeAttempts; attempt++)
             {
-                Vector3 first = table.PointOnSide(_player, Random.Range(-acrossSpread, acrossSpread) * table.HalfWidth,
-                    Random.Range(firstBounceDepth.x, firstBounceDepth.y));
+                Vector3 first = table.PointOnSide(_player, Random.Range(-b.ServeAcrossSpread, b.ServeAcrossSpread) * table.HalfWidth,
+                    Random.Range(b.ServeFirstBounce.x, b.ServeFirstBounce.y) * table.HalfLength);
                 float speed = Random.Range(Behaviour.ServeSpeed.x, Behaviour.ServeSpeed.y);
                 Model.SolveLaunch(table, from, first, speed, out Vector3 vel);
                 int n = Model.Simulate(table, from, vel, PredictionTime, _bounces, out bool net);
                 if (net || n < 2 || _bounces[0].Side != _player || _bounces[1].Side != opp) continue;
-                if (table.ToLocal(_bounces[1].Position).z * opp.Sign() < minReceiverDepth) continue;
+                if (table.ToLocal(_bounces[1].Position).z * opp.Sign() < b.ServeMinReceiverDepth) continue;
                 HitBall(from, vel);
                 return;
             }
             // Fallback: a simple short serve.
-            Model.SolveLaunch(table, from, table.PointOnSide(_player, 0f, 0.5f), Behaviour.ServeSpeed.x, out Vector3 fallback);
+            Model.SolveLaunch(table, from, table.PointOnSide(_player, 0f, 0.5f * table.HalfLength), b.ServeSpeed.x, out Vector3 fallback);
             HitBall(from, fallback);
         }
 
         void HitBall(Vector3 from, Vector3 vel)
         {
-            _match.Ball.Launch(from, vel);
+            _match.Strike(_player, from, vel);
             _swing = 1f;
             _strikeTime = -1f;
             _target = RestPosition();
-            _match.ReportPaddleHit(_player, from);
         }
     }
 }

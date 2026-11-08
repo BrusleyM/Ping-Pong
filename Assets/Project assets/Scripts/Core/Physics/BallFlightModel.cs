@@ -2,6 +2,20 @@ using UnityEngine;
 
 namespace PingPong.Core
 {
+    /// <summary>How a shot that would hit the net is retried with more arc.</summary>
+    [System.Serializable]
+    public struct NetClearRetry
+    {
+        [Tooltip("Total tries, including the first.")] public int Attempts;
+        [Tooltip("Speed multiplier per retry, 0-1 (lower = more arc).")] public float SpeedFalloff;
+
+        public NetClearRetry(int attempts, float speedFalloff)
+        {
+            Attempts = attempts;
+            SpeedFalloff = speedFalloff;
+        }
+    }
+
     /// <summary>A predicted table bounce.</summary>
     public struct BallBounce
     {
@@ -118,6 +132,24 @@ namespace PingPong.Core
             }
             int bounces = Simulate(table, from, velocity, SolveTime, _solveBuffer, checkNet: true, out bool hitNet);
             return !hitNet && bounces > 0 && _solveBuffer[0].Side == table.SideOf(target);
+        }
+
+        /// <summary>
+        /// Like <see cref="SolveLaunch"/>, but if the shot would hit the net, retries with less speed (more arc)
+        /// as configured by 'retry'. Returns false if no attempt clears it (velocity is then the last attempt).
+        /// </summary>
+        public bool SolveLaunchClearingNet(in TableFrame table, Vector3 from, Vector3 target, float horizontalSpeed,
+            in NetClearRetry retry, out Vector3 velocity)
+        {
+            float speed = horizontalSpeed;
+            velocity = Vector3.zero;
+            int attempts = Mathf.Max(1, retry.Attempts);
+            for (int i = 0; i < attempts; i++)
+            {
+                if (SolveLaunch(table, from, target, speed, out velocity)) return true;
+                speed *= retry.SpeedFalloff;
+            }
+            return false;
         }
 
         /// <summary>Drag-free launch from 'from' to 'to' at the given horizontal speed.</summary>

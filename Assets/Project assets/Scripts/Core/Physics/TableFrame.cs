@@ -57,8 +57,35 @@ namespace PingPong.Core
             return Mathf.Abs(l.x) <= HalfWidth + margin && Mathf.Abs(l.z) <= HalfLength + margin;
         }
 
-        /// <summary>World point on the surface at a fraction of this side's half (0 = net, 1 = end line).</summary>
-        public Vector3 PointOnSide(Side side, float across, float depth01) =>
-            ToWorld(new Vector3(across, 0f, side.Sign() * depth01 * HalfLength));
+        /// <summary>
+        /// World point on a player's side: 'across' from the centre line, 'fromNet' metres from the net
+        /// towards that player's end (beyond HalfLength is behind the end line), 'height' above the surface.
+        /// </summary>
+        public Vector3 PointOnSide(Side side, float across, float fromNet, float height = 0f) =>
+            ToWorld(new Vector3(across, height, side.Sign() * fromNet));
+
+        /// <summary>A legal landing spot on 'side': the requested point clamped inside the given margins.</summary>
+        public Vector3 ClampToSide(Side side, float across, float fromNet, in LandingMargins margins)
+        {
+            float x = Mathf.Clamp(across, -HalfWidth + margins.Edge, HalfWidth - margins.Edge);
+            float d = Mathf.Clamp(fromNet, margins.FromNet, HalfLength - margins.FromEnd);
+            return PointOnSide(side, x, d);
+        }
+    }
+
+    /// <summary>Keeps aimed landing spots away from the net, the end line and the side edges, metres.</summary>
+    [Serializable]
+    public struct LandingMargins
+    {
+        [Tooltip("Distance kept from each side edge.")] public float Edge;
+        [Tooltip("Minimum distance from the net.")] public float FromNet;
+        [Tooltip("Distance kept from the end line.")] public float FromEnd;
+
+        public LandingMargins(float edge, float fromNet, float fromEnd)
+        {
+            Edge = edge;
+            FromNet = fromNet;
+            FromEnd = fromEnd;
+        }
     }
 }

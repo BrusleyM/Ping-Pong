@@ -20,3 +20,11 @@ MonoBehaviour:
     Cooldown: 0.12
     HapticFullSpeed: 12
     HapticDuration: 0.04
+    AssistMargins:
+      Edge: 0.1
+      FromNet: 0.3
+      FromEnd: 0.12
+    AssistSpeed: {x: 3, y: 12}
+    AssistNetRetry:
+      Attempts: 2
+      SpeedFalloff: 0.8

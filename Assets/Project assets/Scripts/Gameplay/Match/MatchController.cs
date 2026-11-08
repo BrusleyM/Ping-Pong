@@ -65,10 +65,7 @@ namespace PingPong.Gameplay
             CancelPendingServe();
         }
 
-        void OnValidate()
-        {
-            if (_profile == null) Debug.LogWarning($"{name}: assign a Match Rules Profile.", this);
-        }
+        void OnValidate() => Validation.Require(_profile, "a Match Rules Profile", this);
 
         public void StartMatch(Side firstServer)
         {
@@ -86,18 +83,22 @@ namespace PingPong.Gameplay
         public Vector3 ServePosition(Side side)
         {
             TableFrame f = _table.Frame;
-            return f.ToWorld(new Vector3(0f, Pacing.ServeHeight, side.Sign() * (f.HalfLength + Pacing.ServeBehind)));
+            return f.PointOnSide(side, 0f, f.HalfLength + Pacing.ServeBehind, Pacing.ServeHeight);
         }
 
         public bool CanHit(Side player) => Engine.CanHit(player);
 
-        /// <summary>Called by paddles (and the AI) after they strike the ball.</summary>
-        public void ReportPaddleHit(Side player, Vector3 hitPosition)
+        /// <summary>
+        /// The one way a player strikes the ball (local paddle, AI, and later the network): launches the
+        /// ball from 'from' with 'velocity', raises <see cref="PaddleHit"/> and lets the rules judge the hit.
+        /// </summary>
+        public void Strike(Side player, Vector3 from, Vector3 velocity)
         {
+            _ball.Launch(from, velocity);
             LastHitTime = Time.time;
             HitCount++;
             PaddleHit?.Invoke(player);
-            if (IsAuthority) Engine.RegisterHit(player, _table.Frame.IsOverTable(hitPosition));
+            if (IsAuthority) Engine.RegisterHit(player, _table.Frame.IsOverTable(from));
         }
 
         /// <summary>Network clients mirror the authority's rules state through this; point and game events fire as on the authority.</summary>

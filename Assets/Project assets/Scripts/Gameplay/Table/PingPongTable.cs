@@ -74,14 +74,14 @@ namespace PingPong.Gameplay
             Rebuild();
             if (_top == null) return;
             TableFrame f = _frame;
-            Vector3 a = f.ToWorld(new Vector3(-f.HalfWidth, 0, -f.HalfLength)), b = f.ToWorld(new Vector3(f.HalfWidth, 0, -f.HalfLength));
-            Vector3 c = f.ToWorld(new Vector3(f.HalfWidth, 0, f.HalfLength)), d = f.ToWorld(new Vector3(-f.HalfWidth, 0, f.HalfLength));
+            Vector3 a = f.PointOnSide(Side.Near, -f.HalfWidth, f.HalfLength), b = f.PointOnSide(Side.Near, f.HalfWidth, f.HalfLength);
+            Vector3 c = f.PointOnSide(Side.Far, f.HalfWidth, f.HalfLength), d = f.PointOnSide(Side.Far, -f.HalfWidth, f.HalfLength);
             Gizmos.color = Color.cyan;
             Gizmos.DrawLine(a, b); Gizmos.DrawLine(b, c); Gizmos.DrawLine(c, d); Gizmos.DrawLine(d, a);
             Gizmos.color = Color.yellow;
-            Gizmos.DrawLine(f.ToWorld(new Vector3(-f.HalfWidth, f.NetHeight, 0)), f.ToWorld(new Vector3(f.HalfWidth, f.NetHeight, 0)));
+            Gizmos.DrawLine(f.PointOnSide(Side.Near, -f.HalfWidth, 0f, f.NetHeight), f.PointOnSide(Side.Near, f.HalfWidth, 0f, f.NetHeight));
             Gizmos.color = Color.green;
-            Gizmos.DrawSphere(f.ToWorld(new Vector3(0, 0, -f.HalfLength)), 0.03f); // Near end
+            Gizmos.DrawSphere(f.PointOnSide(Side.Near, 0f, f.HalfLength), 0.03f); // Near end
         }
 #endif
     }

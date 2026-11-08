@@ -32,8 +32,8 @@ namespace PingPong.Gameplay
 
         void OnValidate()
         {
-            foreach (string error in new[] { _commands.Validate(nameof(_commands)), _passthrough.Validate(nameof(_passthrough)) })
-                if (error != null) Debug.LogError(error, this);
+            Validation.Seam(_commands, nameof(_commands), this);
+            Validation.Seam(_passthrough, nameof(_passthrough), this);
         }
 
         void OnEnable() { if (_ai != null) _ai.LevelChanged += OnLevelChanged; }

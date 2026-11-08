@@ -46,9 +46,8 @@ namespace PingPong.Gameplay
 
         void OnValidate()
         {
-            if (_physics == null) Debug.LogWarning($"{name}: assign a Ball Physics Profile.", this);
-            string error = _audio.Validate(nameof(_audio));
-            if (error != null) Debug.LogError(error, this);
+            Validation.Require(_physics, "a Ball Physics Profile", this);
+            Validation.Seam(_audio, nameof(_audio), this);
         }
 
         void FixedUpdate()
@@ -99,8 +98,8 @@ namespace PingPong.Gameplay
             transform.position = position;
         }
 
-        /// <summary>Releases the ball from 'position' with 'velocity' (a paddle hit or a serve).</summary>
-        public void Launch(Vector3 position, Vector3 velocity, bool byPaddle = true)
+        /// <summary>Releases the ball from 'position' with 'velocity'. Players strike through MatchController.Strike.</summary>
+        internal void Launch(Vector3 position, Vector3 velocity, bool byPaddle = true)
         {
             Body.isKinematic = false;
             Body.position = position;

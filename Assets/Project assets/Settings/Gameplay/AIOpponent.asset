@@ -40,3 +40,17 @@ MonoBehaviour:
     ServeDelay: 1.2
     ServeSpeed: {x: 2.8, y: 4.2}
     RestOffset: {x: 0.25, y: 0.35}
+    TargetMargins:
+      Edge: 0.05
+      FromNet: 0.2
+      FromEnd: 0.05
+    AcrossSpread: 0.6
+    NetRetry:
+      Attempts: 5
+      SpeedFalloff: 0.85
+    ServeFirstBounce: {x: 0.4, y: 0.7}
+    ServeAcrossSpread: 0.3
+    ServeMinReceiverDepth: 0.15
+    ComfortHeight: 0.3
+    BehindBall: 0.04
+    Swing: {x: 40, y: 4}
