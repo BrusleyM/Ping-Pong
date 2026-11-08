@@ -63,8 +63,11 @@ jobs:
           large-packages: false   # slowest step; the others free enough space
           docker-images: true
 
-      # Rules and ball-flight unit tests (PingPong.Tests). A failure stops the build.
+      # Rules and ball-flight unit tests (PingPong.Tests). Unity sometimes crashes while shutting down
+      # after a successful run (exit 139), so this step may "fail"; the next step decides from the results.
       - name: Run EditMode tests
+        id: tests
+        continue-on-error: true
         uses: game-ci/unity-test-runner@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -75,6 +78,28 @@ jobs:
           artifactsPath: test-results
           checkName: EditMode test results
           githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      # Fails the job unless the results file exists, at least one test ran and none failed.
+      - name: Check test results
+        env:
+          RESULTS: test-results/editmode-results.xml
+          RUNNER_OUTCOME: ${{ steps.tests.outcome }}
+        run: |
+          if [ ! -f "$RESULTS" ]; then
+            echo "::error::No test results ($RESULTS); the test runner failed with: $RUNNER_OUTCOME"
+            exit 1
+          fi
+          run=$(grep -m1 -o '<test-run [^>]*>' "$RESULTS")
+          total=$(echo "$run" | sed -n 's/.* total="\([0-9]*\)".*/\1/p')
+          failed=$(echo "$run" | sed -n 's/.* failed="\([0-9]*\)".*/\1/p')
+          echo "EditMode tests: total=${total:-?} failed=${failed:-?} (runner step: $RUNNER_OUTCOME)"
+          if [ -z "$total" ] || [ "$total" -eq 0 ] || [ "${failed:-1}" -ne 0 ]; then
+            echo "::error::EditMode tests failed or did not run."
+            exit 1
+          fi
+          if [ "$RUNNER_OUTCOME" != "success" ]; then
+            echo "::warning::All tests passed, but Unity exited abnormally afterwards (known shutdown crash); continuing."
+          fi
 
       - name: Build Unity Project
         uses: game-ci/unity-builder@v4
