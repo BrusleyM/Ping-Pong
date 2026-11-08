@@ -20,6 +20,7 @@ concurrency:
 
 permissions:
   contents: write
+  checks: write   # unity-test-runner publishes the test results as a check
 
 jobs:
   build:
@@ -60,6 +61,19 @@ jobs:
           large-packages: false   # slowest step; the others free enough space
           docker-images: true
 
+      # Rules and ball-flight unit tests (PingPong.Tests). A failure stops the build.
+      - name: Run EditMode tests
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          testMode: editmode
+          artifactsPath: test-results
+          checkName: EditMode test results
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build Unity Project
         uses: game-ci/unity-builder@v4
         env:
@@ -68,7 +82,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: Android
-          buildMethod: BuildScript.Execute
+          buildMethod: PingPong.EditorTools.Build.BuildScript.Execute
           buildsPath: Builds/Android
           allowDirtyBuild: true
           androidKeystoreName: .keystore.keystore
