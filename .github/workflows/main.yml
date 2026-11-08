@@ -42,6 +42,13 @@ jobs:
           cp Packages/manifest.ci.json Packages/manifest.json
           cp Packages/packages-lock.ci.json Packages/packages-lock.json
 
+      # One source for the editor version: tests and build run in the same Android image.
+      - name: Read Unity version
+        run: |
+          version=$(sed -n 's/^m_EditorVersion: //p' ProjectSettings/ProjectVersion.txt)
+          echo "Unity $version"
+          echo "UNITY_VERSION=$version" >> "$GITHUB_ENV"
+
       # Restore the newest Library for this Unity version + packages. Only develop pushes save it
       # (see the end of this job), so PR runs don't fill the 10 GB cache limit and evict it.
       - name: Restore Unity Library
@@ -75,6 +82,10 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           testMode: editmode
+          # Same image as the build: no second image pull, and no switch away from the Android
+          # build target (the default Linux image re-imports ~2000 assets for StandaloneLinux64).
+          customImage: unityci/editor:ubuntu-${{ env.UNITY_VERSION }}-android-3
+          coverageOptions: ''   # no code-coverage instrumentation or reports
           artifactsPath: test-results
           checkName: EditMode test results
           githubToken: ${{ secrets.GITHUB_TOKEN }}
