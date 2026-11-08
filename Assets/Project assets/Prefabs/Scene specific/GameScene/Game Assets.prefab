@@ -292,6 +292,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1858761110731943687}
     m_Modifications:
+    - target: {fileID: 5486565972145284219, guid: ce7950d73a3ed4a69a57453e70a4c679, type: 3}
+      propertyPath: _physics
+      value: 
+      objectReference: {fileID: 11400000, guid: 2fe9a7370ad8242f082325dbaed1c259, type: 2}
     - target: {fileID: 6913287927650320432, guid: ce7950d73a3ed4a69a57453e70a4c679, type: 3}
       propertyPath: m_Name
       value: ball(Unity primitive)

@@ -241,6 +241,25 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 62270339}
   m_Mesh: {fileID: 7925126547185662051, guid: c9c383339b1414784acd0c1e752c0c16, type: 3}
+--- !u!114 &137411147
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 866840684}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b420c566d62c640269b080d9525c03d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.AudioSourceImpactAudio
+  _table: {fileID: 8300000, guid: c68f605b3a40145fb873f4210b4ecc23, type: 3}
+  _paddle: {fileID: 0}
+  _net: {fileID: 0}
+  _other: {fileID: 0}
+  _fullVolumeSpeed: 8
+  _pitchVariation: 0.05
+  _minSpeed: 0.3
 --- !u!1 &164773247
 GameObject:
   m_ObjectHideFlags: 0
@@ -272,6 +291,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4865993576303460585}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &184904929
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4865993576303460586}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e8afd011ebcd4810be335aae20d2b0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PingPong.Platform.Meta::PingPong.Platform.Meta.OvrControllerHaptics
+  _controller: 2
+  _frequency: 0.5
 --- !u!114 &197713198
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -519,6 +552,17 @@ MonoBehaviour:
   _modes: {fileID: 1567005531}
   _height: 0.55
   _characterSize: 0.012
+  _messageSeconds: 1.5
+--- !u!4 &866840683 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4939353254231125160, guid: 87568cd902b604952ba60d400ab25696, type: 3}
+  m_PrefabInstance: {fileID: 4865993576303460583}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &866840684 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3262049283212326037, guid: 87568cd902b604952ba60d400ab25696, type: 3}
+  m_PrefabInstance: {fileID: 4865993576303460583}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &893482383
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -597,18 +641,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1be9555cfe93840408c107b715b21c90, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PingPong.Gameplay.PaddleHitter
-  _playerIndex: 0
+  _player: 0
   _match: {fileID: 1567005534}
   _ball: {fileID: 4865993576303460587}
+  _feel: {fileID: 11400000, guid: d50f75fc0c6114950abea816b0cd87bd, type: 2}
+  _haptics:
+    _component: {fileID: 184904929}
   _blade: {fileID: 164773248}
   _faceNormalLocal: {x: 0, y: 0, z: 1}
   _bladeRadius: 0.095338516
   _bladeHalfThickness: 0.019498881
-  _restitution: 0.85
-  _tangentialRetain: 0.6
-  _aimAssist: 0.35
-  _maxSpeed: 20
-  _cooldown: 0.12
 --- !u!1 &1350050308
 GameObject:
   m_ObjectHideFlags: 0
@@ -712,6 +754,7 @@ GameObject:
   - component: {fileID: 1567005533}
   - component: {fileID: 1567005532}
   - component: {fileID: 1567005531}
+  - component: {fileID: 1567005536}
   m_Layer: 0
   m_Name: Match
   m_TagString: Untagged
@@ -733,8 +776,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PingPong.Gameplay.GameModeController
   _match: {fileID: 1567005534}
   _ai: {fileID: 1567005533}
-  _passthrough: {fileID: 1567005532}
+  _commands:
+    _component: {fileID: 1567005536}
+  _passthrough:
+    _component: {fileID: 1567005532}
   _startSoloOnPlay: 1
+  _localPlayer: 0
 --- !u!114 &1567005532
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -751,20 +798,20 @@ MonoBehaviour:
   _cameras:
   - {fileID: 4865993576303460604}
   _hideInPassthrough:
-  - {fileID: 4865993576303460603}
+  - {fileID: 4865993576303460584}
+  - {fileID: 4865993576303460591}
   - {fileID: 4865993576303460602}
-  - {fileID: 4865993576303460601}
-  - {fileID: 4865993576303460600}
-  - {fileID: 4865993576303460599}
   - {fileID: 4865993576303460598}
-  - {fileID: 4865993576303460597}
   - {fileID: 4865993576303460596}
-  - {fileID: 4865993576303460595}
+  - {fileID: 4865993576303460601}
+  - {fileID: 4865993576303460592}
   - {fileID: 4865993576303460594}
   - {fileID: 4865993576303460593}
-  - {fileID: 4865993576303460592}
-  - {fileID: 4865993576303460591}
-  - {fileID: 4865993576303460584}
+  - {fileID: 4865993576303460597}
+  - {fileID: 4865993576303460599}
+  - {fileID: 4865993576303460595}
+  - {fileID: 4865993576303460603}
+  - {fileID: 4865993576303460600}
   _startEnabled: 0
 --- !u!114 &1567005533
 MonoBehaviour:
@@ -780,32 +827,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PingPong.Gameplay.AIOpponent
   _match: {fileID: 1567005534}
   _paddle: {fileID: 323333703}
-  _playerIndex: 1
-  _reach: 0.3
-  _serveDelay: 1.2
-  _level: 1
-  _levels:
-  - Name: Easy
-    ReactionTime: 0.35
-    MoveSpeed: 1.6
-    ShotSpeed: {x: 3.5, y: 4.5}
-    AimError: 0.25
-    Depth: {x: 0.35, y: 0.7}
-    MissChance: 0.15
-  - Name: Normal
-    ReactionTime: 0.22
-    MoveSpeed: 2.6
-    ShotSpeed: {x: 4.5, y: 6.5}
-    AimError: 0.15
-    Depth: {x: 0.45, y: 0.85}
-    MissChance: 0.06
-  - Name: Hard
-    ReactionTime: 0.12
-    MoveSpeed: 4
-    ShotSpeed: {x: 6, y: 9}
-    AimError: 0.08
-    Depth: {x: 0.6, y: 0.92}
-    MissChance: 0.02
+  _player: 1
+  _profile: {fileID: 11400000, guid: a041f1d0f25a14858b51c811488da174, type: 2}
 --- !u!114 &1567005534
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -820,11 +843,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PingPong.Gameplay.MatchController
   _table: {fileID: 197713198}
   _ball: {fileID: 4865993576303460587}
-  _pointsToWin: 11
-  _pointPause: 1.5
-  _serveHeight: 0.3
-  _serveBehind: 0.1
-  _rallyTimeout: 4
+  _profile: {fileID: 11400000, guid: e658a33cbf1044f9d8cd8c042367f6e0, type: 2}
 --- !u!4 &1567005535
 Transform:
   m_ObjectHideFlags: 0
@@ -843,6 +862,118 @@ Transform:
   - {fileID: 778416429}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1567005536
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1567005530}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f28a60560e671434f8e34a57ded624de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.InputSystemPlayerCommands
+  _restart:
+    m_Name: Restart
+    m_Type: 1
+    m_ExpectedControlType: 
+    m_Id: aa7309e2-600c-43ee-affe-ac3f62342dee
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings:
+    - m_Name: 
+      m_Id: 6856268b-b830-4178-b094-0ce977bc6e54
+      m_Path: <XRController>{RightHand}/primaryButton
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Restart
+      m_Flags: 0
+    - m_Name: 
+      m_Id: ad1a4056-0ade-4b87-b00d-b39a0b489128
+      m_Path: <Keyboard>/r
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Restart
+      m_Flags: 0
+    m_Flags: 0
+  _togglePassthrough:
+    m_Name: Toggle Passthrough
+    m_Type: 1
+    m_ExpectedControlType: 
+    m_Id: dda6ad9c-bdf3-4d2f-aaba-68790d9a048b
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings:
+    - m_Name: 
+      m_Id: 413af01d-81aa-47c0-8398-7c49f4fe4414
+      m_Path: <XRController>{RightHand}/secondaryButton
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Toggle Passthrough
+      m_Flags: 0
+    - m_Name: 
+      m_Id: ba11c67d-f94d-4231-baa3-5d9fbf75ac9d
+      m_Path: <Keyboard>/p
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Toggle Passthrough
+      m_Flags: 0
+    m_Flags: 0
+  _easier:
+    m_Name: Easier
+    m_Type: 1
+    m_ExpectedControlType: 
+    m_Id: 82da8c9b-fba7-4e7e-8d77-d5e06296d54c
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings:
+    - m_Name: 
+      m_Id: 11d38e38-bbf2-4753-bb70-e604587b6966
+      m_Path: <XRController>{LeftHand}/primaryButton
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Easier
+      m_Flags: 0
+    - m_Name: 
+      m_Id: a04d5bef-e325-4162-b94b-c457484bc906
+      m_Path: <Keyboard>/minus
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Easier
+      m_Flags: 0
+    m_Flags: 0
+  _harder:
+    m_Name: Harder
+    m_Type: 1
+    m_ExpectedControlType: 
+    m_Id: 03cb101f-dc17-4967-914a-a41602a768d8
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings:
+    - m_Name: 
+      m_Id: dc53997a-f2ba-419e-a4b0-138411849f23
+      m_Path: <XRController>{LeftHand}/secondaryButton
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Harder
+      m_Flags: 0
+    - m_Name: 
+      m_Id: b438e8ca-7583-483d-b95b-0510c39b492b
+      m_Path: <Keyboard>/equals
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Harder
+      m_Flags: 0
+    m_Flags: 0
 --- !u!1 &1646322107
 GameObject:
   m_ObjectHideFlags: 0
@@ -1168,6 +1299,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4508662438020714718, guid: 87568cd902b604952ba60d400ab25696, type: 3}
+      propertyPath: _physics
+      value: 
+      objectReference: {fileID: 11400000, guid: 2fe9a7370ad8242f082325dbaed1c259, type: 2}
+    - target: {fileID: 4508662438020714718, guid: 87568cd902b604952ba60d400ab25696, type: 3}
+      propertyPath: _audio._component
+      value: 
+      objectReference: {fileID: 137411147}
+    - target: {fileID: 4508662438020714718, guid: 87568cd902b604952ba60d400ab25696, type: 3}
+      propertyPath: _ignoredRoots.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4508662438020714718, guid: 87568cd902b604952ba60d400ab25696, type: 3}
+      propertyPath: '_ignoredRoots.Array.data[0]'
+      value: 
+      objectReference: {fileID: 866840683}
     - target: {fileID: 6510955905934134871, guid: 87568cd902b604952ba60d400ab25696, type: 3}
       propertyPath: m_Name
       value: Game Assets
@@ -1190,9 +1337,15 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2711252418371576773, guid: 87568cd902b604952ba60d400ab25696, type: 3}
       insertIndex: -1
       addedObject: {fileID: 197713198}
+    - targetCorrespondingSourceObject: {fileID: 3262049283212326037, guid: 87568cd902b604952ba60d400ab25696, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 137411147}
     - targetCorrespondingSourceObject: {fileID: 1142862832914581290, guid: 87568cd902b604952ba60d400ab25696, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1237526939}
+    - targetCorrespondingSourceObject: {fileID: 1142862832914581290, guid: 87568cd902b604952ba60d400ab25696, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 184904929}
     - targetCorrespondingSourceObject: {fileID: 2223115173137003014, guid: 87568cd902b604952ba60d400ab25696, type: 3}
       insertIndex: -1
       addedObject: {fileID: 893482383}
@@ -1217,7 +1370,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4508662438020714718, guid: 87568cd902b604952ba60d400ab25696, type: 3}
   m_PrefabInstance: {fileID: 4865993576303460583}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 866840684}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c5d224c9bed4e4d8681e3bb0dd4fb310, type: 3}

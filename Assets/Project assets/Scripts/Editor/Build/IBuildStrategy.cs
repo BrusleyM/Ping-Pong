@@ -1,6 +1,9 @@
-﻿using System;
-public interface IBuildStrategy
-{
-    void Build(string buildNumber);
-}
+using System;
 
+namespace PingPong.EditorTools.Build
+{
+    public interface IBuildStrategy
+    {
+        void Build(string buildNumber);
+    }
+}
