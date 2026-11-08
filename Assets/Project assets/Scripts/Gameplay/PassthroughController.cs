@@ -40,15 +40,22 @@ namespace PingPong.Gameplay
         public void Set(bool on)
         {
             IsOn = on;
-            if (OVRManager.instance != null) OVRManager.instance.isInsightPassthroughEnabled = on;
-            if (_layer != null) _layer.enabled = on;
+            // Insight passthrough stays enabled on the OVRManager; the layer is shown or hidden,
+            // which switches instantly without restarting the passthrough camera feed.
+            if (_layer != null) _layer.hidden = !on;
             for (int i = 0; i < _cameras.Length; i++)
             {
                 _cameras[i].clearFlags = on ? CameraClearFlags.SolidColor : _flags[i];
                 _cameras[i].backgroundColor = on ? Color.clear : _colors[i];
             }
             RenderSettings.skybox = on ? null : _skybox;
-            foreach (var go in _hideInPassthrough) if (go != null) go.SetActive(!on);
+            // Hide only the visuals: floor colliders keep working so dead balls are still detected.
+            foreach (var go in _hideInPassthrough)
+            {
+                if (go == null) continue;
+                foreach (var r in go.GetComponentsInChildren<Renderer>(true)) r.enabled = !on;
+                foreach (var l in go.GetComponentsInChildren<Light>(true)) l.enabled = !on;
+            }
         }
     }
 }
