@@ -10,7 +10,8 @@ namespace PingPong.Gameplay
     /// <summary>
     /// Starts and switches game modes. Until the menu exists, controller shortcuts:
     /// A = restart, B = passthrough on/off, X/Y = AI easier/harder.
-    /// Restart and difficulty only work between points, so a thumb on A/X/Y mid-rally does nothing.
+    /// Restart only works once the game is over; difficulty changes apply between points and keep the score,
+    /// so a thumb resting on A/X/Y can't wipe a match.
     /// In the editor: R restart, P passthrough, 1/2/3 difficulty.
     /// </summary>
     public class GameModeController : MonoBehaviour
@@ -41,23 +42,25 @@ namespace PingPong.Gameplay
             if (Mode == GameMode.Solo) StartSolo(_ai != null ? _ai.Level : 1);
         }
 
+        /// <summary>Changes the AI level for the next point; the score is kept.</summary>
         public void ChangeDifficulty(int delta)
         {
             if (_ai == null) return;
-            StartSolo(Mathf.Clamp(_ai.Level + delta, 0, _ai.LevelCount - 1));
+            _ai.Level = Mathf.Clamp(_ai.Level + delta, 0, _ai.LevelCount - 1);
         }
 
         public void TogglePassthrough() { if (_passthrough != null) _passthrough.Toggle(); }
 
-        bool BetweenPoints => _match.State is MatchState.GameOver or MatchState.WaitingForServe or MatchState.FreePlay;
+        bool GameOver => _match.State is MatchState.GameOver or MatchState.FreePlay;
+        bool BetweenPoints => GameOver || _match.State == MatchState.WaitingForServe;
 
         void Update()
         {
             if (OVRInput.GetDown(OVRInput.Button.Two)) TogglePassthrough();
-            if (!BetweenPoints) return;
-            if (OVRInput.GetDown(OVRInput.Button.One)) Restart();
-            if (OVRInput.GetDown(OVRInput.Button.Three)) ChangeDifficulty(-1);
-            if (OVRInput.GetDown(OVRInput.Button.Four)) ChangeDifficulty(1);
+            if (GameOver && OVRInput.GetDown(OVRInput.Button.One)) Restart();
+            if (BetweenPoints && OVRInput.GetDown(OVRInput.Button.Three)) ChangeDifficulty(-1);
+            if (BetweenPoints && OVRInput.GetDown(OVRInput.Button.Four)) ChangeDifficulty(1);
+            // Editor keys are deliberate, so they aren't gated.
 #if ENABLE_INPUT_SYSTEM
             var k = Keyboard.current;
             if (k == null) return;
