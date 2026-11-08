@@ -16,8 +16,18 @@ public class BuildScript
         var keystoreManager = new MyKeystoreManager(); // CI secrets, or the key set in Player Settings
         var androidBuilder = new AndroidBuildStrategy("Builds/Android", keystoreManager, versionManager);
 
-        // Perform actual build
-        androidBuilder.Build(buildNumber);
+        // In CI (batch mode) any failure must end Unity with a non-zero exit code, so the job fails here
+        // instead of later with "no APK found".
+        try
+        {
+            androidBuilder.Build(buildNumber);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("[Build] " + e.Message);
+            if (Application.isBatchMode) EditorApplication.Exit(1);
+            throw;
+        }
     }
     private static string GetArg(string[] args, string name)
     {

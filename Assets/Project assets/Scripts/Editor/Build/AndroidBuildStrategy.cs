@@ -26,10 +26,7 @@ public class AndroidBuildStrategy : IBuildStrategy
                         .ToArray();
 
         if (scenes.Length == 0)
-        {
-            Debug.LogError("No scenes are enabled in Build Settings.");
-            return;
-        }
+            throw new BuildFailedException("No scenes are enabled in Build Settings.");
 
         // Ensure output folder exists
         if (!Directory.Exists(_outputFolder))
@@ -55,9 +52,8 @@ public class AndroidBuildStrategy : IBuildStrategy
 
         var report = BuildPipeline.BuildPlayer(buildPlayerOptions);
 
-        if (report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded)
-            Debug.Log($"Android build complete: {apkPath}");
-        else
-            Debug.LogError("Build failed. Check console for details.");
+        if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+            throw new BuildFailedException($"Android build {report.summary.result} with {report.summary.totalErrors} error(s); see the log above.");
+        Debug.Log($"Android build complete: {apkPath}");
     }
 }
