@@ -86,3 +86,17 @@ crashlytics-build.properties
 
 # Ignore HDR environment files
 *.hdr
+# Secrets: never commit (CI uses GitHub secrets)
+.env
+password.txt
+*.keystore
+*.jks
+
+# Stray build output
+*.log
+TempAssembly.dll
+.DS_Store
+
+# Meta Immersive Debugger DevAgent: holds an access token and LAN address
+Assets/Resources/DevAgentSettings.asset
+Assets/Resources/DevAgentSettings.asset.meta

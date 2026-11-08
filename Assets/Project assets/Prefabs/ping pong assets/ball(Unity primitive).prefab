@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 4078066097759116002}
   - component: {fileID: 914499096231732209}
   - component: {fileID: 5454916987824879687}
-  - component: {fileID: 5877478297549721591}
   - component: {fileID: 5486565972145284219}
   - component: {fileID: 452275168130358761}
   m_Layer: 0
@@ -64,6 +63,11 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -85,9 +89,11 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &914499096231732209
 SphereCollider:
@@ -117,10 +123,10 @@ Rigidbody:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6913287927650320432}
-  serializedVersion: 4
+  serializedVersion: 5
   m_Mass: 0.0000001
-  m_Drag: 0.09
-  m_AngularDrag: 0.05
+  m_LinearDamping: 0.09
+  m_AngularDamping: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -137,23 +143,6 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 1
---- !u!114 &5877478297549721591
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6913287927650320432}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 727db2f8882334192a841c87c112abd3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ballSize: 0.04
-  bounciness: 0.9
-  drag: 0.09
-  angularDrag: 0.05
-  massMultiplier: 0.0027
 --- !u!114 &5486565972145284219
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -168,6 +157,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _source: {fileID: 452275168130358761}
   _sfx: {fileID: 8300000, guid: c68f605b3a40145fb873f4210b4ecc23, type: 3}
+  _paddleSfx: {fileID: 0}
+  _maxSpeed: 25
 --- !u!82 &452275168130358761
 AudioSource:
   m_ObjectHideFlags: 0
@@ -179,6 +170,7 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
   m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
@@ -320,6 +312,7 @@ MonoBehaviour:
   _rigidbody: {fileID: 5454916987824879687}
   _kinematicWhileSelected: 1
   _throwWhenUnselected: 1
+  _forceKinematicDisabled: 0
 --- !u!114 &8918050316500604554
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -338,7 +331,6 @@ MonoBehaviour:
   _data: {fileID: 0}
   _pointableElement: {fileID: 1614142661654335013}
   _rigidbody: {fileID: 5454916987824879687}
-  _physicsGrabbable: {fileID: 0}
   _resetGrabOnGrabsUpdated: 1
   _scoringModifier:
     _positionRotationWeight: 0.5
@@ -383,4 +375,3 @@ MonoBehaviour:
   _useClosestPointAsGrabSource: 0
   _releaseDistance: 0
   _resetGrabOnGrabsUpdated: 1
-  _physicsGrabbable: {fileID: 0}
