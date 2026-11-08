@@ -1,23 +1,23 @@
-name: PR Declined Cleanup
+name: PR Build Cleanup
 
+# Delete a PR's APK artifact once the PR is closed (merged or not).
 on:
   pull_request:
     types: [closed]
-    branches:
-      - main
-      - develop
+    branches: [main, develop]
+
+permissions:
+  actions: write
 
 jobs:
   cleanup:
-    if: github.event.pull_request.merged == false
     runs-on: ubuntu-latest
     steps:
-      - name: Remove PR-specific build folder
+      # Artifacts belong to the build run, so delete them through the API by name.
+      - name: Delete PR build artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NAME: Unity-Build-PR-${{ github.event.pull_request.number }}
         run: |
-          PR_NUM=${{ github.event.pull_request.number }}
-          rm -rf Builds/Android/PR-${PR_NUM}
-
-      - name: Delete PR Build Artifact
-        uses: c-hive/delete-artifact@v2
-        with:
-          name: Unity-Build-PR-${{ github.event.pull_request.number }}
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${NAME}" --jq '.artifacts[].id' |
+            while read -r id; do gh api -X DELETE "repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}"; echo "Deleted ${id}"; done

@@ -1,18 +1,21 @@
 name: Unity VR Android Build and Upload
 
+# develop push: build APK, upload to Meta ALPHA, tag vX-alpha.
+# main push:    promote the ALPHA build to BETA, tag vX-beta (no rebuild).
+# PR:           build APK to check it compiles and signs; PRs into develop also commit the version bump.
+
 on:
   push:
-    branches:
-      - main
-      - develop
+    branches: [main, develop]
+    paths-ignore: ['**.md', '.github/workflows/PR_Declined_Cleanup.yml']
   pull_request:
-    branches:
-      - main
-      - develop
+    branches: [main, develop]
+    paths-ignore: ['**.md']
 
 concurrency:
-  group: unity-android-build-${{ github.ref }}
-  cancel-in-progress: true
+  group: unity-android-${{ github.ref }}
+  # Cancel superseded PR builds, but never interrupt an upload/promotion.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: write
@@ -20,65 +23,51 @@ permissions:
 jobs:
   build:
     name: Build Unity Android
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
+    timeout-minutes: 120
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           lfs: true
-
-      - name: Cache Git LFS
-        uses: actions/cache@v4
-        with:
-          path: .git/lfs/objects
-          key: ${{ runner.os }}-lfs-${{ hashFiles('**/Assets/**') }}
-
-      - name: Cache Unity Library
-        uses: actions/cache@v4
-        with:
-          path: Library
-          key: Library-Android-${{ hashFiles('Assets/**', 'ProjectSettings/**') }}
-          restore-keys: |
-            Library-Android-
-
-      - name: Cache Gradle packages and build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            ~/.android/build-cache
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle-wrapper.properties', '**/build.gradle') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Ensure build folder
-        run: mkdir -p Builds/Android/
+          # PRs build the branch itself so the version bump can be committed back to it.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Apply CI manifests
         run: |
           cp Packages/manifest.ci.json Packages/manifest.json
           cp Packages/packages-lock.ci.json Packages/packages-lock.json
 
-      - name: Set ENV variables
+      # Key on the Unity version + packages; restore the newest Library otherwise.
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-Android-${{ hashFiles('ProjectSettings/ProjectVersion.txt', 'Packages/packages-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            Library-Android-${{ hashFiles('ProjectSettings/ProjectVersion.txt', 'Packages/packages-lock.json') }}-
+            Library-Android-
+
+      - name: Set build parameters
         run: |
-         if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-          echo "BranchName=${GITHUB_HEAD_REF##*/}" >> $GITHUB_ENV
-          echo "IsPR=true" >> $GITHUB_ENV
-         else
-          echo "BranchName=${GITHUB_REF##*/}" >> $GITHUB_ENV
-          echo "IsPR=false" >> $GITHUB_ENV
-         fi
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            echo "BranchName=${GITHUB_HEAD_REF##*/}" >> "$GITHUB_ENV"
+            echo "IsPR=true" >> "$GITHUB_ENV"
+          else
+            echo "BranchName=${GITHUB_REF##*/}" >> "$GITHUB_ENV"
+            echo "IsPR=false" >> "$GITHUB_ENV"
+          fi
 
       - name: Free disk space
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
           tool-cache: true
-          android: true
+          android: true   # the Unity image brings its own Android SDK
           dotnet: true
           haskell: true
-          large-packages: true
+          large-packages: false   # slowest step; the others free enough space
           docker-images: true
 
       - name: Build Unity Project
@@ -87,7 +76,6 @@ jobs:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          CI: true
         with:
           targetPlatform: Android
           buildMethod: BuildScript.Execute
@@ -102,34 +90,38 @@ jobs:
             BranchName=${{ env.BranchName }}
             IsPR=${{ env.IsPR }}
 
-      - name: Upload Unity Build Artifact
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Unity-Build
-          path: Builds/Android/
-          retention-days: 30
+          name: Unity-Build${{ github.event_name == 'pull_request' && format('-PR-{0}', github.event.pull_request.number) || '' }}
+          path: Builds/Android/*.apk
+          retention-days: ${{ github.event_name == 'pull_request' && 7 || 30 }}
+          if-no-files-found: error
 
-      - name: Commit ProjectSettings.asset
-        if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+      # GITHUB_TOKEN pushes don't trigger another workflow run, which avoids build loops.
+      - name: Commit version bump to the PR branch
+        if: github.event_name == 'pull_request' && github.base_ref == 'develop' && github.event.pull_request.head.repo.full_name == github.repository
         env:
-          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+          HEAD_REF: ${{ github.head_ref }}
         run: |
+          sudo chown -R "$(id -u):$(id -g)" ProjectSettings
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
           git add ProjectSettings/ProjectSettings.asset
-          git commit -m "Update ProjectSettings.asset from CI version bump" || echo "No changes to commit"
-          git push origin HEAD:${{ github.head_ref }}
+          git commit -m "Update ProjectSettings.asset from CI version bump" || { echo "No changes"; exit 0; }
+          git push origin "HEAD:${HEAD_REF}"
 
-  upload-meta:
-    if: github.event_name == 'push'
+  release:
+    name: Upload / promote on Meta
+    if: github.event_name == 'push' && always() && (needs.build.result == 'success' || needs.build.result == 'skipped')
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Unity Build Artifact
+      - name: Download APK
         if: github.ref == 'refs/heads/develop'
         uses: actions/download-artifact@v4
         with:
@@ -139,7 +131,7 @@ jobs:
       - name: Setup ovr-platform-util
         uses: RageAgainstThePixel/setup-ovr-platform-util@v1
 
-      - name: Upload Meta Quest Build to ALPHA
+      - name: Upload to ALPHA
         if: github.ref == 'refs/heads/develop'
         uses: RageAgainstThePixel/upload-meta-quest-build@v2
         with:
@@ -149,9 +141,9 @@ jobs:
           releaseChannel: 'ALPHA'
           ageGroup: 'MIXED_AGES'
           draft: false
-          releaseNotes: 'Automated CI upload after PR merge'
+          releaseNotes: 'CI build of develop @ ${{ github.sha }}'
 
-      - name: Promote ALPHA build to BETA
+      - name: Promote ALPHA to BETA
         if: github.ref == 'refs/heads/main'
         run: |
           ovr-platform-util set-release-channel-build \
@@ -161,19 +153,17 @@ jobs:
             --source-channel ALPHA \
             --destination-channel BETA
 
-      - name: Create Git Tag
-        env:
-          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+      - name: Tag release
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
-          git fetch --tags
+          git fetch --tags --quiet
           VERSION=$(grep 'bundleVersion:' ProjectSettings/ProjectSettings.asset | awk '{print $2}')
-          if [ "${GITHUB_REF##*/}" = "main" ]; then
-            TAG="v${VERSION}-beta"
+          SUFFIX=$([ "${GITHUB_REF##*/}" = "main" ] && echo beta || echo alpha)
+          TAG="v${VERSION}-${SUFFIX}"
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "Tag $TAG already exists; skipping."
           else
-            TAG="v${VERSION}-alpha"
+            git tag -a "$TAG" -m "Automated CI tag for $TAG"
+            git push origin "$TAG"
           fi
-          git tag -a "$TAG" -m "Automated CI tag for $TAG"
-          git push origin "$TAG"
