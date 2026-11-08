@@ -17,7 +17,7 @@ public class AndroidBuildStrategy : IBuildStrategy
         _myVersionManager = myVersionManager;
     }
 
-    public void Build(string branch,bool isPR)
+    public void Build(string buildNumber)
     {
         // Get enabled scenes
         var scenes = EditorBuildSettings.scenes
@@ -38,8 +38,7 @@ public class AndroidBuildStrategy : IBuildStrategy
         // Check signing first so a failed build doesn't bump the version.
         if (!_keystoreManager.ApplyKeystore())
             throw new BuildFailedException("Android signing key is not set up; see the error above.");
-        if(isPR)
-            _myVersionManager.PerformVersionBump(branch);
+        _myVersionManager.ApplyBuildNumber(buildNumber);
 
         // Generate APK name
         string apkName = $"{PlayerSettings.productName}_{PlayerSettings.bundleVersion}_{PlayerSettings.Android.bundleVersionCode}.apk";

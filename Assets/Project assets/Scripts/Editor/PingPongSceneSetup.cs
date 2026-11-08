@@ -18,6 +18,8 @@ namespace PingPong.EditorTools
         [MenuItem("Ping Pong/Set Up Game Scene")]
         public static void Run()
         {
+            // Opening GameScene replaces the open scene: let the user save (or cancel) first.
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
             var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             var log = new System.Text.StringBuilder("Ping Pong setup:\n");
 

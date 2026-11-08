@@ -96,3 +96,7 @@ password.txt
 *.log
 TempAssembly.dll
 .DS_Store
+
+# Meta Immersive Debugger DevAgent: holds an access token and LAN address
+Assets/Resources/DevAgentSettings.asset
+Assets/Resources/DevAgentSettings.asset.meta

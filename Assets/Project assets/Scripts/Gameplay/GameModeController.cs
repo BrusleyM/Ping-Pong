@@ -10,6 +10,7 @@ namespace PingPong.Gameplay
     /// <summary>
     /// Starts and switches game modes. Until the menu exists, controller shortcuts:
     /// A = restart, B = passthrough on/off, X/Y = AI easier/harder.
+    /// Restart and difficulty only work between points, so a thumb on A/X/Y mid-rally does nothing.
     /// In the editor: R restart, P passthrough, 1/2/3 difficulty.
     /// </summary>
     public class GameModeController : MonoBehaviour
@@ -30,7 +31,7 @@ namespace PingPong.Gameplay
         public void StartSolo(int level)
         {
             Mode = GameMode.Solo;
-            if (_ai != null) { _ai.Level = level; _ai.gameObject.SetActive(true); }
+            if (_ai != null) { _ai.Level = level; _ai.enabled = true; } // the AI shares the Match object: toggle the component, not the GameObject
             _match.IsAuthority = true;
             _match.StartMatch(0);
         }
@@ -48,10 +49,13 @@ namespace PingPong.Gameplay
 
         public void TogglePassthrough() { if (_passthrough != null) _passthrough.Toggle(); }
 
+        bool BetweenPoints => _match.State is MatchState.GameOver or MatchState.WaitingForServe or MatchState.FreePlay;
+
         void Update()
         {
-            if (OVRInput.GetDown(OVRInput.Button.One)) Restart();
             if (OVRInput.GetDown(OVRInput.Button.Two)) TogglePassthrough();
+            if (!BetweenPoints) return;
+            if (OVRInput.GetDown(OVRInput.Button.One)) Restart();
             if (OVRInput.GetDown(OVRInput.Button.Three)) ChangeDifficulty(-1);
             if (OVRInput.GetDown(OVRInput.Button.Four)) ChangeDifficulty(1);
 #if ENABLE_INPUT_SYSTEM

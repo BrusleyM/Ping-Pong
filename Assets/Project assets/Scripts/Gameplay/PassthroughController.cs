@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace PingPong.Gameplay
@@ -20,6 +21,10 @@ namespace PingPong.Gameplay
         CameraClearFlags[] _flags;
         Color[] _colors;
         Material _skybox;
+        // Visuals under the hide roots that were enabled at start; only these are hidden and restored,
+        // so objects disabled on purpose in the scene stay off.
+        readonly List<Renderer> _renderers = new List<Renderer>();
+        readonly List<Light> _lights = new List<Light>();
 
         void Awake()
         {
@@ -31,6 +36,12 @@ namespace PingPong.Gameplay
                 _colors[i] = _cameras[i].backgroundColor;
             }
             _skybox = RenderSettings.skybox;
+            foreach (var go in _hideInPassthrough)
+            {
+                if (go == null) continue;
+                foreach (var r in go.GetComponentsInChildren<Renderer>(true)) if (r.enabled) _renderers.Add(r);
+                foreach (var l in go.GetComponentsInChildren<Light>(true)) if (l.enabled) _lights.Add(l);
+            }
         }
 
         void Start() => Set(_startEnabled);
@@ -50,12 +61,8 @@ namespace PingPong.Gameplay
             }
             RenderSettings.skybox = on ? null : _skybox;
             // Hide only the visuals: floor colliders keep working so dead balls are still detected.
-            foreach (var go in _hideInPassthrough)
-            {
-                if (go == null) continue;
-                foreach (var r in go.GetComponentsInChildren<Renderer>(true)) r.enabled = !on;
-                foreach (var l in go.GetComponentsInChildren<Light>(true)) l.enabled = !on;
-            }
+            foreach (var r in _renderers) if (r != null) r.enabled = !on;
+            foreach (var l in _lights) if (l != null) l.enabled = !on;
         }
     }
 }

@@ -1,29 +1,22 @@
-﻿using System;
-using UnityEditor;
+﻿using UnityEditor;
+using UnityEngine;
+
+/// <summary>
+/// Sets the Android version code for a CI build without committing anything:
+/// versionCode = the code saved in ProjectSettings + the CI run number, so it always goes up.
+/// The version name (bundleVersion, e.g. 1.1.19) is changed by hand when you want a new release number.
+/// </summary>
 public class MyVersionManager
 {
-    public void PerformVersionBump(string branch)
+    public void ApplyBuildNumber(string buildNumber)
     {
-
-        string[] version = PlayerSettings.bundleVersion.Split('.');
-        int major = int.Parse(version[0]);
-        int minor = int.Parse(version[1]);
-        int patch = int.Parse(version[2]);
-
-        if (branch == "develop")
+        if (!int.TryParse(buildNumber, out int run) || run <= 0)
         {
-            minor++; patch = 0;
+            Debug.Log($"[Build] No CI build number; keeping versionCode {PlayerSettings.Android.bundleVersionCode}.");
+            return;
         }
-        else if (branch == "main")
-        {
-            major++; minor = 0; patch = 0;
-        }
-        else
-        {
-            patch++;
-        }
-        PlayerSettings.Android.bundleVersionCode++;
-        PlayerSettings.bundleVersion = $"{major}.{minor}.{patch}";
+        int code = PlayerSettings.Android.bundleVersionCode + run;
+        PlayerSettings.Android.bundleVersionCode = code;
+        Debug.Log($"[Build] Version {PlayerSettings.bundleVersion} ({code}).");
     }
 }
-

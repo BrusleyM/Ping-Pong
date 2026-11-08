@@ -64,11 +64,18 @@ namespace PingPong.GameObjects
             {
                 OtherContact?.Invoke(BallContact.Net);
             }
-            else
+            else if (IsDeadBallSurface(collision.collider))
             {
                 OtherContact?.Invoke(BallContact.Floor);
             }
         }
+
+        /// <summary>
+        /// Only static room geometry (floor, walls, furniture) ends a rally. Anything with a rigidbody
+        /// (paddles, hands, grabbables) or belonging to the player rig is ignored.
+        /// </summary>
+        static bool IsDeadBallSurface(Collider c) =>
+            c.attachedRigidbody == null && c.GetComponentInParent<OVRCameraRig>() == null;
 
         /// <summary>Freeze the ball in place (serve position).</summary>
         public void Hold(Vector3 position)

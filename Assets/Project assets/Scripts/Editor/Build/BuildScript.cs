@@ -9,8 +9,7 @@ public class BuildScript
     {
         // Parse custom parameters from CI
         string[] args = System.Environment.GetCommandLineArgs();
-        string branch = GetArg(args, "BranchName");
-        bool isPR = GetArg(args, "IsPR") == "true";
+        string buildNumber = GetArg(args, "BuildNumber");
 
         var versionManager = new MyVersionManager();
 
@@ -18,7 +17,7 @@ public class BuildScript
         var androidBuilder = new AndroidBuildStrategy("Builds/Android", keystoreManager, versionManager);
 
         // Perform actual build
-        androidBuilder.Build(branch, isPR);
+        androidBuilder.Build(buildNumber);
     }
     private static string GetArg(string[] args, string name)
     {

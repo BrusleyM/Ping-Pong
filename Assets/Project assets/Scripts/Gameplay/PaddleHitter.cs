@@ -41,6 +41,14 @@ namespace PingPong.Gameplay
         float _lastHit = -10f;
         readonly BallFlight.Bounce[] _bounce = new BallFlight.Bounce[1];
 
+        // Blade pose sampled once per rendered frame, after the grab has moved it. The paddle moves at the
+        // headset's frame rate, not at the 90 Hz physics rate, so velocity is taken over real frame time
+        // (otherwise a frame with two physics steps reads one too-fast and one zero-speed step).
+        Vector3 _vPos0, _vPos1;
+        Quaternion _vRot0, _vRot1;
+        float _vT0, _vT1;
+        int _vSamples;
+
         Transform Blade => _blade != null ? _blade : transform;
 
         void Start()
@@ -53,7 +61,31 @@ namespace PingPong.Gameplay
                 if (ballCol != null) Physics.IgnoreCollision(c, ballCol, true);
         }
 
-        void OnEnable() => _hasPrev = false;
+        void OnEnable() { _hasPrev = false; _vSamples = 0; }
+
+        void LateUpdate()
+        {
+            Transform b = Blade;
+            float t = Time.time;
+            if (_vSamples > 0 && t <= _vT1) return;
+            _vPos0 = _vPos1; _vRot0 = _vRot1; _vT0 = _vT1;
+            _vPos1 = b.position; _vRot1 = b.rotation; _vT1 = t;
+            if (_vSamples < 2) _vSamples++;
+        }
+
+        /// <summary>Velocity of a world point on the blade, from the last two rendered frames.</summary>
+        bool FrameVelocity(Vector3 worldPoint, out Vector3 velocity)
+        {
+            velocity = Vector3.zero;
+            float dt = _vT1 - _vT0;
+            if (_vSamples < 2 || dt <= 1e-4f) return false;
+            Vector3 linear = (_vPos1 - _vPos0) / dt;
+            (_vRot1 * Quaternion.Inverse(_vRot0)).ToAngleAxis(out float angle, out Vector3 axis);
+            if (angle > 180f) angle -= 360f;
+            Vector3 angular = float.IsFinite(axis.x) ? axis * (angle * Mathf.Deg2Rad / dt) : Vector3.zero;
+            velocity = linear + Vector3.Cross(angular, worldPoint - _vPos1);
+            return true;
+        }
 
         void FixedUpdate()
         {
@@ -91,8 +123,8 @@ namespace PingPong.Gameplay
             float side = Mathf.Abs(d0) > 1e-5f ? Mathf.Sign(d0) : Mathf.Sign(d1);
             Vector3 normal = (rot * n) * side;
             Vector3 contactLocal = inPlane;
-            float dt = Time.fixedDeltaTime;
-            Vector3 paddleVel = ((rot * contactLocal + pos) - (_prevRot * contactLocal + _prevPos)) / dt;
+            if (!FrameVelocity(rot * contactLocal + pos, out Vector3 paddleVel))
+                paddleVel = ((rot * contactLocal + pos) - (_prevRot * contactLocal + _prevPos)) / Time.fixedDeltaTime;
 
             Vector3 ballVel = _ball.Body.isKinematic ? Vector3.zero : _ball.Body.linearVelocity;
             Vector3 rel = ballVel - paddleVel;

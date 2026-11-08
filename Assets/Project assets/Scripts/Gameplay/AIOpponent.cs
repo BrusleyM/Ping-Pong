@@ -107,7 +107,10 @@ namespace PingPong.Gameplay
             _plannedForHit = Mathf.RoundToInt(_match.LastHitTime * 1000f);
             var body = _match.Ball.Body;
             int n = BallFlight.Simulate(Table, body.position, body.linearVelocity, 3f, _bounces, out bool net);
-            if (net || n == 0) return;
+            // Predicted to touch the net: retry next frame with the real post-net velocity, so a ball that
+            // clips the net cord and still drops on our side gets played.
+            if (net) { _plannedForHit = int.MinValue; return; }
+            if (n == 0) return;
             // Find the first bounce on our side; a ball that never lands on our side is out, let it go.
             int idx = -1;
             for (int i = 0; i < n; i++) if (_bounces[i].Side == _playerIndex) { idx = i; break; }
