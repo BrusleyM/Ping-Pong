@@ -271,7 +271,7 @@ PlayerSettings:
   AndroidAllowedArchitectures: -1
   AndroidSplashScreenScale: 0
   androidSplashScreen: {fileID: 0}
-  AndroidKeystoreName: '{inproject}: .keystore.keystore'
+  AndroidKeystoreName: '{dedicated}: Keys/pingpong-release.keystore'
   AndroidKeyaliasName: ping pong
   AndroidEnableArmv9SecurityFeatures: 0
   AndroidEnableArm64MTE: 0

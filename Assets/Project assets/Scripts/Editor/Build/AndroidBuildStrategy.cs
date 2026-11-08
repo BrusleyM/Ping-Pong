@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEditor;
+using UnityEditor.Build;
 using System.Linq;
 using System.IO;
 
@@ -34,10 +35,11 @@ public class AndroidBuildStrategy : IBuildStrategy
         if (!Directory.Exists(_outputFolder))
             Directory.CreateDirectory(_outputFolder);
 
-        // Apply versioning and keystore
+        // Check signing first so a failed build doesn't bump the version.
+        if (!_keystoreManager.ApplyKeystore())
+            throw new BuildFailedException("Android signing key is not set up; see the error above.");
         if(isPR)
             _myVersionManager.PerformVersionBump(branch);
-        _keystoreManager.ApplyKeystore();
 
         // Generate APK name
         string apkName = $"{PlayerSettings.productName}_{PlayerSettings.bundleVersion}_{PlayerSettings.Android.bundleVersionCode}.apk";
