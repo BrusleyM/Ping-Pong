@@ -1,5 +1,5 @@
 # Use Unity editor image
-FROM unityci/editor:ubuntu-2022.3.51f1-android-3
+FROM unityci/editor:ubuntu-6000.3.9f1-android-3
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \

@@ -9,7 +9,7 @@ PROJECT_PATH="$(cd "$(dirname "$0")" && pwd)"
 echo "Project path: $PROJECT_PATH"
 
 # Unity binary (can be overridden by setting UNITY_BIN env variable)
-: "${UNITY_BIN:=/Applications/Unity/Hub/Editor/2022.3.51f1/Unity.app/Contents/MacOS/Unity}"
+: "${UNITY_BIN:=/Applications/Unity/Hub/Editor/6000.3.9f1/Unity.app/Contents/MacOS/Unity}"
 echo "Using Unity binary: $UNITY_BIN"
 
 # Set CI environment variables if not already set

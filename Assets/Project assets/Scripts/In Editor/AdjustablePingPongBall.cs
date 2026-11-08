@@ -47,17 +47,17 @@ public class AdjustablePingPongBall : MonoBehaviour
         float volume = (4f / 3f) * Mathf.PI * Mathf.Pow(ballSize / 2f, 3f);
         rb.mass = volume * massMultiplier;
 
-        rb.drag = drag;
-        rb.angularDrag = angularDrag;
+        rb.linearDamping = drag;
+        rb.angularDamping = angularDrag;
 
-        PhysicMaterial physicMaterial = sphereCollider.sharedMaterial;
+        PhysicsMaterial physicMaterial = sphereCollider.sharedMaterial;
         if (physicMaterial == null)
         {
-            physicMaterial = new PhysicMaterial();
+            physicMaterial = new PhysicsMaterial();
             sphereCollider.sharedMaterial = physicMaterial;
         }
         physicMaterial.bounciness = bounciness;
-        physicMaterial.bounceCombine = PhysicMaterialCombine.Maximum; // Ensure maximum bounce effect
+        physicMaterial.bounceCombine = PhysicsMaterialCombine.Maximum; // Ensure maximum bounce effect
     }
 }
 #endif
