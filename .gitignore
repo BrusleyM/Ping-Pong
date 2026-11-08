@@ -86,3 +86,13 @@ crashlytics-build.properties
 
 # Ignore HDR environment files
 *.hdr
+# Secrets: never commit (CI uses GitHub secrets)
+.env
+password.txt
+*.keystore
+*.jks
+
+# Stray build output
+*.log
+TempAssembly.dll
+.DS_Store

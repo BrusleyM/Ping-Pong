@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 4078066097759116002}
   - component: {fileID: 914499096231732209}
   - component: {fileID: 5454916987824879687}
-  - component: {fileID: 5877478297549721591}
   - component: {fileID: 5486565972145284219}
   - component: {fileID: 452275168130358761}
   m_Layer: 0
@@ -144,23 +143,6 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 1
---- !u!114 &5877478297549721591
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6913287927650320432}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 727db2f8882334192a841c87c112abd3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ballSize: 0.04
-  bounciness: 0.9
-  drag: 0.09
-  angularDrag: 0.05
-  massMultiplier: 0.0027
 --- !u!114 &5486565972145284219
 MonoBehaviour:
   m_ObjectHideFlags: 0

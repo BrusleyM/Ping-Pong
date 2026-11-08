@@ -14,18 +14,26 @@ public class BuildScript
 
         var versionManager = new MyVersionManager();
 
-        // Initialize keystore and builder
+        // Keystore passwords come from the environment (GitHub secrets in CI); never hard-code them.
         var keystoreManager = new MyKeystoreManager(
             ".keystore.keystore",
-            "***REMOVED***",
+            RequireEnv("ANDROID_KEYSTORE_PASS"),
             "ping pong",
-            "***REMOVED***"
+            RequireEnv("ANDROID_KEYALIAS_PASS")
         );
         var androidBuilder = new AndroidBuildStrategy("Builds/Android", keystoreManager, versionManager);
 
         // Perform actual build
         androidBuilder.Build(branch, isPR);
     }
+    private static string RequireEnv(string name)
+    {
+        string value = System.Environment.GetEnvironmentVariable(name);
+        if (string.IsNullOrEmpty(value))
+            throw new System.InvalidOperationException($"Environment variable {name} is not set.");
+        return value;
+    }
+
     private static string GetArg(string[] args, string name)
     {
         foreach (string arg in args)

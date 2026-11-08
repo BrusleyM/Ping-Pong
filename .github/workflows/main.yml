@@ -93,6 +93,11 @@ jobs:
           buildMethod: BuildScript.Execute
           buildsPath: Builds/Android
           allowDirtyBuild: true
+          androidKeystoreName: .keystore.keystore
+          androidKeystoreBase64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          androidKeystorePass: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          androidKeyaliasName: ping pong
+          androidKeyaliasPass: ${{ secrets.ANDROID_KEYALIAS_PASS }}
           customParameters: |
             BranchName=${{ env.BranchName }}
             IsPR=${{ env.IsPR }}
