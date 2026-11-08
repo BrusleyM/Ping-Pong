@@ -167,7 +167,7 @@ jobs:
           path: Builds/Android/
 
       - name: Setup ovr-platform-util
-        uses: RageAgainstThePixel/setup-ovr-platform-util@v1
+        uses: RageAgainstThePixel/setup-ovr-platform-util@v2
 
       - name: Upload to ALPHA
         if: github.ref == 'refs/heads/develop'
