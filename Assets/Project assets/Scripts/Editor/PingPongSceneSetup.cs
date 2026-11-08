@@ -123,7 +123,7 @@ namespace PingPong.EditorTools
             Set(sb, "_modes", modes);
 
             // Physics at headset rate.
-            Time.fixedDeltaTime = 1f / 90f;
+            SetFixedTimestep(1f / 90f);
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
@@ -134,7 +134,8 @@ namespace PingPong.EditorTools
         {
             Vector3 s = b.bounds.size;
             float l = Mathf.Max(s.x, s.z), w = Mathf.Min(s.x, s.z);
-            return l > 2f && l < 3.2f && w > 1.2f && w < 1.9f && s.y < 0.15f && b.bounds.max.y > 0.5f && b.bounds.max.y < 1.1f;
+            // Size only: the floor height differs per scene, so absolute height isn't reliable.
+            return l > 2f && l < 3.2f && w > 1.2f && w < 1.9f && s.y < 0.15f;
         }
 
         /// <summary>Blade frame from the rubber (or largest) mesh: forward = face normal.</summary>
@@ -223,6 +224,14 @@ namespace PingPong.EditorTools
             p.arraySize = values.Length;
             for (int i = 0; i < values.Length; i++) p.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
             so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        /// <summary>Time.fixedDeltaTime alone isn't saved; write it to ProjectSettings/TimeManager.asset.</summary>
+        static void SetFixedTimestep(float dt)
+        {
+            Time.fixedDeltaTime = dt;
+            EditorUtility.SetDirty(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TimeManager.asset")[0]);
+            AssetDatabase.SaveAssets();
         }
 
         static string Path(Transform t) => t.parent == null ? t.name : Path(t.parent) + "/" + t.name;
