@@ -119,12 +119,21 @@ namespace PingPong.EditorTools
             log.AppendLine($"Net: {Path(net)}");
         }
 
-        /// <summary>Measures the blade from the rubber (or largest) mesh: Blade forward = face normal.</summary>
+        /// <summary>
+        /// Measures the blade once, from the rubber (or largest) mesh: Blade forward = face normal. After that the
+        /// serialized values are kept, so renaming or swapping meshes can't silently change them; clear the
+        /// model's Blade to measure again.
+        /// </summary>
         static void SetUpPaddleModel(GameObject root, System.Text.StringBuilder log)
         {
             var model = GetOrAdd<PaddleModel>(root);
-            var existing = root.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "Blade");
+            if (GetRef(model, "_blade") != null)
+            {
+                log.AppendLine($"Paddle model: blade kept (radius {model.BladeRadius:F3} m)");
+                return;
+            }
             var filters = root.GetComponentsInChildren<MeshFilter>(true).Where(f => f.sharedMesh != null).ToArray();
+            if (filters.Length == 0) { Debug.LogError("Ping Pong setup: the PaddleModel prefab has no mesh to measure."); return; }
             MeshFilter mf = filters.FirstOrDefault(f => f.name.ToLower().Contains("rubber"))
                             ?? filters.OrderByDescending(f => f.sharedMesh.bounds.size.sqrMagnitude).First();
             Bounds b = mf.sharedMesh.bounds;
@@ -137,7 +146,7 @@ namespace PingPong.EditorTools
             float radius = Mathf.Clamp(Mathf.Min(a, c) * 0.5f, 0.05f, 0.11f);
             float halfThick = Mathf.Clamp(world[thin] * 0.5f, 0.004f, 0.02f);
 
-            Transform blade = existing != null ? existing : new GameObject("Blade").transform;
+            var blade = new GameObject("Blade").transform;
             blade.SetParent(mf.transform, false);
             blade.localPosition = b.center;
             blade.localRotation = Quaternion.LookRotation(normal, upAxis);
@@ -244,7 +253,9 @@ namespace PingPong.EditorTools
             SetArray(pt, "_cameras", cam != null ? new Object[] { cam } : new Object[0]);
             var hide = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
                 .Where(t => t.name.StartsWith("experimental_neon_room") || t.name == "Floor" || t.name == "Visuals")
-                .Where(t => !table.transform.IsChildOf(t)).Select(t => (Object)t.gameObject).ToArray();
+                .Where(t => !table.transform.IsChildOf(t))
+                .OrderBy(HierarchyOrder, System.StringComparer.Ordinal) // stable: re-runs don't reorder the list
+                .Select(t => (Object)t.gameObject).ToArray();
             SetArray(pt, "_hideInPassthrough", hide);
             log.AppendLine($"Passthrough: layer on {rig.name}, hides {hide.Length} object(s)" + (mgr == null ? " (no OVRManager found!)" : ""));
             return pt;
@@ -375,6 +386,10 @@ namespace PingPong.EditorTools
             EditorUtility.SetDirty(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TimeManager.asset")[0]);
             AssetDatabase.SaveAssets();
         }
+
+        /// <summary>Sort key in hierarchy order (sibling indices from the scene root down).</summary>
+        static string HierarchyOrder(Transform t) =>
+            (t.parent == null ? "" : HierarchyOrder(t.parent) + "/") + t.GetSiblingIndex().ToString("D5");
 
         static string Path(Transform t) => t.parent == null ? t.name : Path(t.parent) + "/" + t.name;
     }
