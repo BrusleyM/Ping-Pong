@@ -14,9 +14,9 @@ namespace PingPong.EditorTools
     /// </summary>
     public static class PingPongSceneSetup
     {
-        const string ScenePath = "Assets/Project assets/Scenes/GameScene.unity";
+        const string ScenePath = "Assets/_Project/Scenes/GameScene.unity";
 
-        const string ProfileFolder = "Assets/Project assets/Settings/Gameplay";
+        const string ProfileFolder = "Assets/_Project/Settings/Gameplay";
         const string BallHitClipGuid = "c68f605b3a40145fb873f4210b4ecc23"; // the ball's existing hit sound
 
         [MenuItem("Ping Pong/Set Up Game Scene")]

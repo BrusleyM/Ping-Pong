@@ -335,7 +335,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1700357176494617827}
   m_Layer: 0
-  m_Name: Multiplayer setup
+  m_Name: MultiplayerSetup
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
