@@ -42,6 +42,7 @@ namespace PingPong.Gameplay
         float _serveTimer;
         float _swing;
         Quaternion _restRotation;
+        Vector3 _swingAxis;
 
         AIDifficulty Difficulty => _profile.Level(Level);
         AIBehaviour Behaviour => _profile.Behaviour;
@@ -65,7 +66,12 @@ namespace PingPong.Gameplay
 
         void Start()
         {
-            _restRotation = Quaternion.LookRotation(-Table.Forward * _player.Sign(), Vector3.up);
+            // Blade face towards the opponent, blade above the handle, whatever the model's own axes.
+            Vector3 towardOpponent = -Table.Forward * _player.Sign();
+            _restRotation = _paddle.TryGetComponent(out PaddleModel model)
+                ? model.RootRotationFor(towardOpponent, Vector3.up)
+                : Quaternion.LookRotation(towardOpponent, Vector3.up);
+            _swingAxis = Vector3.Cross(Vector3.up, towardOpponent);
             _paddle.SetPositionAndRotation(RestPosition(), _restRotation);
             _target = RestPosition();
         }
@@ -99,7 +105,7 @@ namespace PingPong.Gameplay
 
             _paddle.position = Vector3.MoveTowards(_paddle.position, _target, Difficulty.MoveSpeed * Time.deltaTime);
             _swing = Mathf.MoveTowards(_swing, 0f, Time.deltaTime * Behaviour.Swing.y);
-            _paddle.rotation = _restRotation * Quaternion.Euler(-Behaviour.Swing.x * _swing, 0f, 0f);
+            _paddle.rotation = Quaternion.AngleAxis(-Behaviour.Swing.x * _swing, _swingAxis) * _restRotation;
         }
 
         void FixedUpdate()
