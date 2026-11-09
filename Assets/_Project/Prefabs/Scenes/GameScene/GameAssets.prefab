@@ -45,7 +45,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2221742546534990805, guid: eb9beca3c527143cab67903e11d2505c, type: 3}
       propertyPath: m_Name
-      value: Player rig
+      value: PlayerRig
       objectReference: {fileID: 0}
     - target: {fileID: 4936855548094455163, guid: eb9beca3c527143cab67903e11d2505c, type: 3}
       propertyPath: m_LocalPosition.x
@@ -107,7 +107,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1189161419170995858, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
       propertyPath: m_Name
-      value: Ping_Pong_Paddle
+      value: Paddle
       objectReference: {fileID: 0}
     - target: {fileID: 8127554131745934498, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
       propertyPath: m_LocalPosition.x
@@ -235,7 +235,7 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: 2fe9a7370ad8242f082325dbaed1c259, type: 2}
     - target: {fileID: 6913287927650320432, guid: ce7950d73a3ed4a69a57453e70a4c679, type: 3}
       propertyPath: m_Name
-      value: ball(Unity primitive)
+      value: Ball
       objectReference: {fileID: 0}
     - target: {fileID: 7114961370042365732, guid: ce7950d73a3ed4a69a57453e70a4c679, type: 3}
       propertyPath: m_LocalPosition.x

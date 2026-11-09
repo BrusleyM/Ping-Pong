@@ -86,6 +86,8 @@ crashlytics-build.properties
 
 # Ignore HDR environment files
 *.hdr
+# Tracked on purpose: the skybox HDRI.
+!Assets/_Project/Materials/Skybox/*.hdr
 # Secrets: never commit (CI uses GitHub secrets)
 .env
 password.txt

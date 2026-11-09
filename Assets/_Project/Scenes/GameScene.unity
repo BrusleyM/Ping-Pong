@@ -1317,7 +1317,7 @@ PrefabInstance:
       objectReference: {fileID: 866840683}
     - target: {fileID: 6510955905934134871, guid: 87568cd902b604952ba60d400ab25696, type: 3}
       propertyPath: m_Name
-      value: Game Assets
+      value: GameAssets
       objectReference: {fileID: 0}
     - target: {fileID: 8402042739207367241, guid: 87568cd902b604952ba60d400ab25696, type: 3}
       propertyPath: isInsightPassthroughEnabled

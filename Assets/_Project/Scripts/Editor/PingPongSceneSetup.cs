@@ -17,6 +17,7 @@ namespace PingPong.EditorTools
         const string ScenePath = "Assets/_Project/Scenes/GameScene.unity";
 
         const string ProfileFolder = "Assets/_Project/Settings/Gameplay";
+        const string PaddlePrefabPath = "Assets/_Project/Prefabs/Equipment/Paddle.prefab";
         const string BallHitClipGuid = "c68f605b3a40145fb873f4210b4ecc23"; // the ball's existing hit sound
 
         [MenuItem("Ping Pong/Set Up Game Scene")]
@@ -92,8 +93,13 @@ namespace PingPong.EditorTools
             Set(matchCtl, "_profile", matchRules);
 
             // Player paddle, with haptics on the controller that holds it.
-            var paddle = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
-                .FirstOrDefault(t => t.name.StartsWith("Ping_Pong_Paddle") && t.parent != match && !t.IsChildOf(match));
+            // Found by component or prefab, never by name, so renames can't break the setup.
+            var paddlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PaddlePrefabPath);
+            var paddle = Object.FindObjectsByType<PaddleHitter>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                    .Select(h => h.transform).FirstOrDefault(t => !t.IsChildOf(match))
+                ?? Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                    .FirstOrDefault(t => !t.IsChildOf(match) && PrefabUtility.IsAnyPrefabInstanceRoot(t.gameObject)
+                        && PrefabUtility.GetCorrespondingObjectFromOriginalSource(t.gameObject) == paddlePrefab);
             if (paddle == null) { Debug.LogError("Ping Pong setup: player paddle not found."); return; }
             var blade = MakeBlade(paddle, out float radius, out float halfThick);
             var hitter = GetOrAdd<PaddleHitter>(paddle.gameObject);
