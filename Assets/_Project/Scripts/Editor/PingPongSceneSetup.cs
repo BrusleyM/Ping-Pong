@@ -7,6 +7,7 @@ using PingPong.Gameplay;
 using PingPong.Platform.Meta;
 using PingPong.Presentation;
 using TMPro;
+using static PingPong.EditorTools.SetupHelpers;
 
 namespace PingPong.EditorTools
 {
@@ -45,6 +46,7 @@ namespace PingPong.EditorTools
             EditPrefab(PaddleModelPrefabPath, root => SetUpPaddleModel(root, log));
             EditPrefab(PaddlePrefabPath, root => SetUpPlayerPaddle(root, paddleFeel));
             EditPrefab(MatchPrefabPath, root => SetUpMatch(root, matchRules, ballPhysics, aiProfile));
+            ModeMenuBuilder.Build();
 
             // 2. Scene.
             var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
@@ -83,6 +85,15 @@ namespace PingPong.EditorTools
             var modes = match.GetComponent<GameModeController>();
             SetSeam(modes, "_commands", commands);
             SetSeam(modes, "_passthrough", passthrough);
+
+            // The mode menu opens in front of the head; Meta rays point at it through the event system.
+            var menu = Instance(ModeMenuBuilder.PrefabPath).GetComponent<ModeMenuPresenter>();
+            Set(menu, "_modes", modes);
+            Set(menu, "_head", rig.centerEyeAnchor);
+            var events = GetOrCreate("EventSystem");
+            GetOrAdd<UnityEngine.EventSystems.EventSystem>(events);
+            GetOrAdd<Oculus.Interaction.PointableCanvasModule>(events);
+            log.AppendLine($"Mode menu: {Path(menu.transform)} (left menu button / Escape)");
 
             // Physics at headset rate (a project setting: logged when changed).
             if (!Mathf.Approximately(Time.fixedDeltaTime, 1f / 90f))
@@ -261,21 +272,6 @@ namespace PingPong.EditorTools
             return pt;
         }
 
-        /// <summary>Loads a prefab's contents, lets 'edit' change them, and saves the prefab.</summary>
-        static void EditPrefab(string path, System.Action<GameObject> edit)
-        {
-            var root = PrefabUtility.LoadPrefabContents(path);
-            try
-            {
-                edit(root);
-                PrefabUtility.SaveAsPrefabAsset(root, path);
-            }
-            finally
-            {
-                PrefabUtility.UnloadPrefabContents(root);
-            }
-        }
-
         /// <summary>The scene's instance of a prefab (found by asset, never by name), placed if missing.</summary>
         static GameObject Instance(string prefabPath)
         {
@@ -299,84 +295,12 @@ namespace PingPong.EditorTools
             return asset;
         }
 
-        static void EnsureFolder(string folder)
-        {
-            if (AssetDatabase.IsValidFolder(folder)) return;
-            string parent = System.IO.Path.GetDirectoryName(folder).Replace('\\', '/');
-            EnsureFolder(parent);
-            AssetDatabase.CreateFolder(parent, System.IO.Path.GetFileName(folder));
-        }
-
         static bool IsTableTop(BoxCollider b)
         {
             Vector3 s = b.bounds.size;
             float l = Mathf.Max(s.x, s.z), w = Mathf.Min(s.x, s.z);
             // Size only: the floor height differs per scene, so absolute height isn't reliable.
             return l > 2f && l < 3.2f && w > 1.2f && w < 1.9f && s.y < 0.15f;
-        }
-
-        static GameObject GetOrCreate(string name, Transform parent = null)
-        {
-            Transform found = parent != null ? parent.Find(name) : null;
-            if (found == null && parent == null)
-                found = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
-                    .FirstOrDefault(t => t.parent == null && t.name == name);
-            if (found != null) return found.gameObject;
-            var go = new GameObject(name);
-            if (parent != null) go.transform.SetParent(parent, false);
-            return go;
-        }
-
-        static T GetOrAdd<T>(GameObject go) where T : Component =>
-            go.TryGetComponent(out T c) ? c : go.AddComponent<T>();
-
-        static void Set(Object target, string prop, Object value)
-        {
-            var so = new SerializedObject(target);
-            so.FindProperty(prop).objectReferenceValue = value;
-            so.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        static void SetBool(Object target, string prop, bool value)
-        {
-            var so = new SerializedObject(target);
-            so.FindProperty(prop).boolValue = value;
-            so.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        static void SetEnum(Object target, string prop, int value)
-        {
-            var so = new SerializedObject(target);
-            so.FindProperty(prop).intValue = value;
-            so.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        /// <summary>Assigns a Seam&lt;T&gt; field (its serialized component reference).</summary>
-        static void SetSeam(Object target, string prop, Component implementation) => Set(target, prop + "._component", implementation);
-
-        static Object GetRef(Object target, string prop) => new SerializedObject(target).FindProperty(prop).objectReferenceValue;
-
-        static void SetF(Object target, string prop, float value)
-        {
-            var so = new SerializedObject(target);
-            so.FindProperty(prop).floatValue = value;
-            so.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        static void SetV(Object target, string prop, Vector3 value)
-        {
-            var so = new SerializedObject(target);
-            so.FindProperty(prop).vector3Value = value;
-            so.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        static void SetArray(Object target, string prop, Object[] values)
-        {
-            var so = new SerializedObject(target);
-            var p = so.FindProperty(prop);
-            p.arraySize = values.Length;
-            for (int i = 0; i < values.Length; i++) p.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
-            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         /// <summary>Time.fixedDeltaTime alone isn't saved; write it to ProjectSettings/TimeManager.asset.</summary>

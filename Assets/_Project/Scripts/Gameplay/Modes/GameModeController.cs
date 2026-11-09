@@ -9,7 +9,8 @@ namespace PingPong.Gameplay
     /// <summary>
     /// Starts and switches game modes, and maps player commands to them. Restart only works once the
     /// game is over; difficulty changes apply between points and keep the score, so a thumb resting on a
-    /// button can't wipe a match. Passthrough can be toggled at any time.
+    /// button can't wipe a match. Passthrough can be toggled at any time. The menu button only
+    /// asks for the menu (<see cref="MenuRequested"/>); presentation decides how to show it.
     /// </summary>
     public sealed class GameModeController : MonoBehaviour
     {
@@ -23,9 +24,15 @@ namespace PingPong.Gameplay
         public GameMode Mode { get; private set; } = GameMode.Solo;
         public Side LocalPlayer => _localPlayer;
         public AIOpponent AI => _ai;
+        public bool PassthroughOn => _passthrough.Value != null && _passthrough.Value.IsOn;
+        /// <summary>Online play needs the Fusion network layer, which isn't in the build yet.</summary>
+        public bool OnlineAvailable => false;
 
         /// <summary>Raised when the mode or AI level changes.</summary>
         public event Action Changed;
+
+        /// <summary>Raised when the player presses the menu button.</summary>
+        public event Action MenuRequested;
 
         bool CanRestart => _match.Phase is MatchPhase.GameOver or MatchPhase.FreePlay;
         bool BetweenPoints => CanRestart || _match.Phase == MatchPhase.WaitingForServe;
@@ -64,7 +71,13 @@ namespace PingPong.Gameplay
             if (_ai != null) _ai.Level += delta;
         }
 
-        public void TogglePassthrough() => _passthrough.Value?.Toggle();
+        public void TogglePassthrough()
+        {
+            IPassthrough passthrough = _passthrough.Value;
+            if (passthrough == null) return;
+            passthrough.Toggle();
+            Changed?.Invoke();
+        }
 
         void OnLevelChanged(int level) => Changed?.Invoke();
 
@@ -72,6 +85,7 @@ namespace PingPong.Gameplay
         {
             IPlayerCommands c = _commands.Value;
             if (c == null) return;
+            if (c.MenuPressed) MenuRequested?.Invoke();
             if (c.TogglePassthroughPressed) TogglePassthrough();
             if (CanRestart && c.RestartPressed) Restart();
             if (BetweenPoints && c.EasierPressed) ChangeDifficulty(-1);
