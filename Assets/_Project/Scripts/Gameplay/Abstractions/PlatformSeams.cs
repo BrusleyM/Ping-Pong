@@ -13,6 +13,7 @@ namespace PingPong.Gameplay
         bool TogglePassthroughPressed { get; }
         bool EasierPressed { get; }
         bool HarderPressed { get; }
+        bool MenuPressed { get; }
     }
 
     /// <summary>Vibration on one controller.</summary>

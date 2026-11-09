@@ -4,7 +4,8 @@
     "references": [
         "PingPong.Core",
         "PingPong.Gameplay",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

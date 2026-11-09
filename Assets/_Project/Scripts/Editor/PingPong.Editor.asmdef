@@ -8,7 +8,9 @@
         "PingPong.Presentation",
         "Unity.TextMeshPro",
         "Oculus.VR",
-        "Oculus.VR.Editor"
+        "Oculus.VR.Editor",
+        "UnityEngine.UI",
+        "Oculus.Interaction"
     ],
     "includePlatforms": [
         "Editor"

@@ -24,6 +24,7 @@ namespace PingPong.Gameplay
         public int Level { get => _level; set => SetLevel(value); }
         public string LevelName => Difficulty.Name;
         public int LevelCount => _profile.LevelCount;
+        public string NameOf(int level) => _profile.Level(level).Name;
 
         /// <summary>Raised when the difficulty level changes.</summary>
         public event Action<int> LevelChanged;
@@ -137,9 +138,10 @@ namespace PingPong.Gameplay
             for (int i = 0; i < n; i++) if (_bounces[i].Side == _player) { idx = i; break; }
             if (idx < 0) return;
 
-            // Continue from the bounce until the ball is at a comfortable hitting point.
+            // Continue from the bounce until the ball is at a comfortable hitting point. The bounce's own
+            // velocity includes any earlier bounce (a serve lands on the server's side first).
             Vector3 p = _bounces[idx].Position;
-            Vector3 v = Model.BounceOffTable(Model.VelocityAfter(body.position, body.linearVelocity, _bounces[idx].Time));
+            Vector3 v = _bounces[idx].Velocity;
             float t = _bounces[idx].Time;
             float endZ = table.HalfLength + PastEndMargin;
             for (int i = 0; i < MaxHitSearchSteps; i++)

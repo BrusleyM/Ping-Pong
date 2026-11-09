@@ -53,7 +53,10 @@ PrefabInstance:
       value: Table_Tennis
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 9213267068713328518, guid: 9798a45f74cce4851967e455c612acf0, type: 3}
+    - {fileID: -4370351980777920622, guid: 9798a45f74cce4851967e455c612acf0, type: 3}
+    - {fileID: 7146370885854678048, guid: 9798a45f74cce4851967e455c612acf0, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: -4129609002446584640, guid: 9798a45f74cce4851967e455c612acf0, type: 3}
