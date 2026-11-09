@@ -5,18 +5,23 @@ using UnityEngine;
 using PingPong.Core;
 using PingPong.Gameplay;
 using PingPong.Platform.Meta;
+using PingPong.Presentation;
+using TMPro;
 
 namespace PingPong.EditorTools
 {
     /// <summary>
-    /// Ping Pong > Set Up Game Scene: wires the gameplay into GameScene. Safe to run again;
-    /// it reuses what already exists.
+    /// Ping Pong > Set Up Game Scene. Safe to run again; it reuses what already exists.
+    /// Prefabs first: everything a prefab owns is wired inside that prefab (so every copy gets it).
+    /// Then the scene, which is the composition root: it places the prefabs and links them to each other
+    /// and to the platform (rig, passthrough, input). Only those cross-links are scene overrides.
     /// </summary>
     public static class PingPongSceneSetup
     {
         const string ScenePath = "Assets/_Project/Scenes/GameScene.unity";
-
         const string ProfileFolder = "Assets/_Project/Settings/Gameplay";
+        const string EnvironmentPrefabPath = "Assets/_Project/Prefabs/Scenes/GameScene/Environment.prefab";
+        const string PaddleModelPrefabPath = "Assets/_Project/Prefabs/Equipment/PaddleModel.prefab";
         const string PaddlePrefabPath = "Assets/_Project/Prefabs/Equipment/Paddle.prefab";
         const string MatchPrefabPath = "Assets/_Project/Prefabs/Match.prefab";
         const string BallHitClipGuid = "c68f605b3a40145fb873f4210b4ecc23"; // the ball's existing hit sound
@@ -26,7 +31,6 @@ namespace PingPong.EditorTools
         {
             // Opening GameScene replaces the open scene: let the user save (or cancel) first.
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
-            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             var log = new System.Text.StringBuilder("Ping Pong setup:\n");
 
             // Tuning profiles (created once, then edited as assets).
@@ -36,102 +40,191 @@ namespace PingPong.EditorTools
             var aiProfile = GetOrCreateProfile<AIProfile>("AIOpponent");
             log.AppendLine($"Profiles: {ProfileFolder}");
 
-            // Table: the flat box collider of table size.
-            BoxCollider top = Object.FindObjectsByType<BoxCollider>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+            // 1. Prefabs.
+            EditPrefab(EnvironmentPrefabPath, root => SetUpTable(root, log));
+            EditPrefab(PaddleModelPrefabPath, root => SetUpPaddleModel(root, log));
+            EditPrefab(PaddlePrefabPath, root => SetUpPlayerPaddle(root, paddleFeel));
+            EditPrefab(MatchPrefabPath, root => SetUpMatch(root, matchRules, ballPhysics, aiProfile));
+
+            // 2. Scene.
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var table = Object.FindAnyObjectByType<PingPongTable>(FindObjectsInactive.Include);
+            if (table == null) { Debug.LogError("Ping Pong setup: no table in the scene (place the Environment prefab)."); return; }
+            var match = Instance(MatchPrefabPath);
+            var paddle = Instance(PaddlePrefabPath);
+            var rig = Object.FindAnyObjectByType<OVRCameraRig>(FindObjectsInactive.Include);
+            if (rig == null) { Debug.LogError("Ping Pong setup: OVRCameraRig not found."); return; }
+
+            // The local player is the Near side: flip the table frame if the rig stands at the other end.
+            table.Rebuild();
+            if (table.Frame.SideOf(rig.transform.position) != Side.Near)
+            {
+                SetBool(table, "_flipSides", !new SerializedObject(table).FindProperty("_flipSides").boolValue);
+                table.Rebuild();
+            }
+            TableFrame frame = table.Frame;
+            log.AppendLine($"Table: {Path(table.transform)}  {frame.HalfLength * 2:F2} x {frame.HalfWidth * 2:F2} m");
+
+            // The ball plays on this table, and the rig (hands, body) never ends a rally.
+            var ball = match.GetComponentInChildren<PingPongBall>(true);
+            Set(ball, "_table", table);
+            SetArray(ball, "_ignoredRoots", new Object[] { rig.transform });
+
+            // The player's paddle strikes this match's ball.
+            var hitter = paddle.GetComponent<PaddleHitter>();
+            Set(hitter, "_match", match.GetComponent<MatchController>());
+            Set(hitter, "_ball", ball);
+            log.AppendLine($"Player paddle: {Path(paddle.transform)} (haptics: right controller)");
+
+            // Platform services live outside the Match prefab, which stays free of Meta code.
+            var platform = GetOrCreate("Platform");
+            var passthrough = SetUpPassthrough(platform, rig, table, log);
+            var commands = GetOrAdd<InputSystemPlayerCommands>(platform);
+            var modes = match.GetComponent<GameModeController>();
+            SetSeam(modes, "_commands", commands);
+            SetSeam(modes, "_passthrough", passthrough);
+
+            // Physics at headset rate (a project setting: logged when changed).
+            if (!Mathf.Approximately(Time.fixedDeltaTime, 1f / 90f))
+            {
+                SetFixedTimestep(1f / 90f);
+                log.AppendLine("Project setting: fixed timestep set to 1/90 s.");
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log(log.ToString());
+        }
+
+        /// <summary>The table and its net (the model has no net collider), inside the Environment prefab.</summary>
+        static void SetUpTable(GameObject root, System.Text.StringBuilder log)
+        {
+            BoxCollider top = root.GetComponentsInChildren<BoxCollider>(true)
                 .Where(IsTableTop).OrderByDescending(b => b.bounds.size.x * b.bounds.size.z).FirstOrDefault();
-            if (top == null) { Debug.LogError("Ping Pong setup: table top collider not found."); return; }
+            if (top == null) { Debug.LogError("Ping Pong setup: table top collider not found in the Environment prefab."); return; }
             var table = GetOrAdd<PingPongTable>(top.gameObject);
             Set(table, "_top", top);
             table.Rebuild();
             TableFrame frame = table.Frame;
-            log.AppendLine($"Table: {Path(top.transform)}  {frame.HalfLength * 2:F2} x {frame.HalfWidth * 2:F2} m");
 
-            var match = GetOrCreate("Match").transform;
-
-            // Net collider (the model has none).
-            var net = GetOrCreate("Net", match);
-            net.transform.SetPositionAndRotation(frame.SurfaceCenter + Vector3.up * (frame.NetHeight * 0.5f),
-                Quaternion.LookRotation(frame.Forward, Vector3.up));
-            var netCol = GetOrAdd<BoxCollider>(net);
-            netCol.size = new Vector3(frame.HalfWidth * 2f + 0.3f, frame.NetHeight, 0.015f);
+            // The net sits with the table, as a sibling of the top collider.
+            Transform parent = top.transform.parent != null ? top.transform.parent : top.transform;
+            var net = GetOrCreate("Net", parent).transform;
+            net.SetPositionAndRotation(frame.SurfaceCenter + Vector3.up * (frame.NetHeight * 0.5f), Quaternion.LookRotation(frame.Forward, Vector3.up));
+            Vector3 worldSize = new Vector3(frame.HalfWidth * 2f + 0.3f, frame.NetHeight, 0.015f);
+            Vector3 s = net.lossyScale;
+            var netCol = GetOrAdd<BoxCollider>(net.gameObject);
+            netCol.size = new Vector3(worldSize.x / s.x, worldSize.y / s.y, worldSize.z / s.z);
             Set(table, "_net", netCol);
+            log.AppendLine($"Net: {Path(net)}");
+        }
 
-            // The local player is the Near side: flip the table frame if the rig stands at the other end.
-            var rig = Object.FindAnyObjectByType<OVRCameraRig>(FindObjectsInactive.Include);
-            if (rig == null) { Debug.LogError("Ping Pong setup: OVRCameraRig not found."); return; }
-            if (frame.SideOf(rig.transform.position) != Side.Near)
+        /// <summary>
+        /// Measures the blade once, from the rubber (or largest) mesh: Blade forward = face normal. After that the
+        /// serialized values are kept, so renaming or swapping meshes can't silently change them; clear the
+        /// model's Blade to measure again.
+        /// </summary>
+        static void SetUpPaddleModel(GameObject root, System.Text.StringBuilder log)
+        {
+            var model = GetOrAdd<PaddleModel>(root);
+            if (GetRef(model, "_blade") != null)
             {
-                var so = new SerializedObject(table);
-                so.FindProperty("_flipSides").boolValue = !so.FindProperty("_flipSides").boolValue;
-                so.ApplyModifiedPropertiesWithoutUndo();
-                table.Rebuild();
-                frame = table.Frame;
+                log.AppendLine($"Paddle model: blade kept (radius {model.BladeRadius:F3} m)");
+                return;
             }
+            var filters = root.GetComponentsInChildren<MeshFilter>(true).Where(f => f.sharedMesh != null).ToArray();
+            if (filters.Length == 0) { Debug.LogError("Ping Pong setup: the PaddleModel prefab has no mesh to measure."); return; }
+            MeshFilter mf = filters.FirstOrDefault(f => f.name.ToLower().Contains("rubber"))
+                            ?? filters.OrderByDescending(f => f.sharedMesh.bounds.size.sqrMagnitude).First();
+            Bounds b = mf.sharedMesh.bounds;
+            Vector3 ls = mf.transform.lossyScale;
+            Vector3 world = new Vector3(b.size.x * Mathf.Abs(ls.x), b.size.y * Mathf.Abs(ls.y), b.size.z * Mathf.Abs(ls.z));
+            int thin = world.x <= world.y && world.x <= world.z ? 0 : world.y <= world.z ? 1 : 2;
+            Vector3 normal = thin == 0 ? Vector3.right : thin == 1 ? Vector3.up : Vector3.forward;
+            Vector3 upAxis = thin == 1 ? Vector3.forward : Vector3.up;
+            float a = world[(thin + 1) % 3], c = world[(thin + 2) % 3];
+            float radius = Mathf.Clamp(Mathf.Min(a, c) * 0.5f, 0.05f, 0.11f);
+            float halfThick = Mathf.Clamp(world[thin] * 0.5f, 0.004f, 0.02f);
 
-            // Ball: physics profile, impact audio, and the rig never ends a rally.
-            var ball = Object.FindAnyObjectByType<PingPongBall>(FindObjectsInactive.Include);
-            if (ball == null) { Debug.LogError("Ping Pong setup: ball not found."); return; }
+            var blade = new GameObject("Blade").transform;
+            blade.SetParent(mf.transform, false);
+            blade.localPosition = b.center;
+            blade.localRotation = Quaternion.LookRotation(normal, upAxis);
+            blade.localScale = new Vector3(1f / Mathf.Abs(ls.x), 1f / Mathf.Abs(ls.y), 1f / Mathf.Abs(ls.z));
+
+            Set(model, "_blade", blade);
+            SetV(model, "_faceNormalLocal", Vector3.forward);
+            SetF(model, "_bladeRadius", radius);
+            SetF(model, "_bladeHalfThickness", halfThick);
+            log.AppendLine($"Paddle model: blade radius {radius:F3} m, half-thickness {halfThick:F3} m");
+        }
+
+        /// <summary>The player's paddle (PaddleModel variant with grabbing): hit detection and controller haptics.</summary>
+        static void SetUpPlayerPaddle(GameObject root, PaddleFeelProfile feel)
+        {
+            var hitter = GetOrAdd<PaddleHitter>(root);
+            SetEnum(hitter, "_player", (int)Side.Near);
+            Set(hitter, "_feel", feel);
+            Set(hitter, "_model", root.GetComponent<PaddleModel>());
+            var controller = GetOrAdd<OvrControllerHaptics>(root);
+            var haptics = GetOrAdd<PaddleHaptics>(root);
+            Set(haptics, "_hitter", hitter);
+            SetSeam(haptics, "_haptics", controller);
+        }
+
+        /// <summary>Rules, ball, AI opponent and its paddle, modes and scoreboard: everything inside Match.prefab.</summary>
+        static void SetUpMatch(GameObject root, MatchRulesProfile rules, BallPhysicsProfile physics, AIProfile aiProfile)
+        {
+            var legacyNet = root.transform.Find("Net"); // the net now lives with the table
+            if (legacyNet != null) Object.DestroyImmediate(legacyNet.gameObject);
+
+            var ball = root.GetComponentInChildren<PingPongBall>(true);
+            Set(ball, "_physics", physics);
             var src = GetOrAdd<AudioSource>(ball.gameObject);
-            src.playOnAwake = false; src.spatialBlend = 1f;
-            var impactAudio = GetOrAdd<AudioSourceImpactAudio>(ball.gameObject);
+            src.playOnAwake = false;
+            src.spatialBlend = 1f;
+            var impactAudio = GetOrAdd<BallImpactAudio>(ball.gameObject);
+            Set(impactAudio, "_ball", ball);
             var hitClip = AssetDatabase.LoadAssetAtPath<AudioClip>(AssetDatabase.GUIDToAssetPath(BallHitClipGuid));
             if (hitClip != null && GetRef(impactAudio, "_table") == null) Set(impactAudio, "_table", hitClip);
-            Set(ball, "_physics", ballPhysics);
-            Set(ball, "_table", table);
-            if (!ball.transform.IsChildOf(match)) ball.transform.SetParent(match, true); // the ball is part of the Match prefab
-            // Also on the ball prefab, so every copy of it has physics (not just this scene's override).
-            var ballPrefab = PrefabUtility.GetCorrespondingObjectFromSource(ball);
-            if (ballPrefab != null && GetRef(ballPrefab, "_physics") == null)
-            {
-                Set(ballPrefab, "_physics", ballPhysics);
-                PrefabUtility.SavePrefabAsset(ballPrefab.transform.root.gameObject);
-            }
-            SetSeam(ball, "_audio", impactAudio);
-            SetArray(ball, "_ignoredRoots", new Object[] { rig.transform });
 
-            // Match rules.
-            var matchCtl = GetOrAdd<MatchController>(match.gameObject);
+            var matchCtl = GetOrAdd<MatchController>(root);
             Set(matchCtl, "_ball", ball);
-            Set(matchCtl, "_profile", matchRules);
+            Set(matchCtl, "_profile", rules);
 
-            // Player paddle, with haptics on the controller that holds it.
-            // Found by component or prefab, never by name, so renames can't break the setup.
-            var paddlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PaddlePrefabPath);
-            var paddle = Object.FindObjectsByType<PaddleHitter>(FindObjectsInactive.Include, FindObjectsSortMode.None)
-                    .Select(h => h.transform).FirstOrDefault(t => !t.IsChildOf(match))
-                ?? Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
-                    .FirstOrDefault(t => !t.IsChildOf(match) && PrefabUtility.IsAnyPrefabInstanceRoot(t.gameObject)
-                        && PrefabUtility.GetCorrespondingObjectFromOriginalSource(t.gameObject) == paddlePrefab);
-            if (paddle == null) { Debug.LogError("Ping Pong setup: player paddle not found."); return; }
-            var blade = MakeBlade(paddle, out float radius, out float halfThick);
-            var hitter = GetOrAdd<PaddleHitter>(paddle.gameObject);
-            var haptics = GetOrAdd<OvrControllerHaptics>(paddle.gameObject);
-            SetEnum(hitter, "_player", (int)Side.Near);
-            Set(hitter, "_match", matchCtl);
-            Set(hitter, "_ball", ball);
-            Set(hitter, "_feel", paddleFeel);
-            SetSeam(hitter, "_haptics", haptics);
-            Set(hitter, "_blade", blade);
-            SetV(hitter, "_faceNormalLocal", Vector3.forward);
-            SetF(hitter, "_bladeRadius", radius);
-            SetF(hitter, "_bladeHalfThickness", halfThick);
-            log.AppendLine($"Player paddle: {Path(paddle)}  blade radius {radius:F3} m (haptics: right controller)");
-
-            // AI paddle: a visual copy with no grab or physics.
-            var aiPaddle = match.Find("AI Paddle");
+            // The AI's paddle: the shared PaddleModel, without grabbing or physics.
+            var aiPaddle = root.GetComponentsInChildren<PaddleModel>(true).FirstOrDefault();
             if (aiPaddle == null)
             {
-                aiPaddle = Object.Instantiate(paddle.gameObject, match).transform;
-                aiPaddle.name = "AI Paddle";
-                StripToVisual(aiPaddle.gameObject);
+                var model = AssetDatabase.LoadAssetAtPath<GameObject>(PaddleModelPrefabPath);
+                aiPaddle = ((GameObject)PrefabUtility.InstantiatePrefab(model, root.transform)).GetComponent<PaddleModel>();
+                aiPaddle.name = "AIPaddle";
             }
-            var ai = GetOrAdd<AIOpponent>(match.gameObject);
+            var ai = GetOrAdd<AIOpponent>(root);
             Set(ai, "_match", matchCtl);
-            Set(ai, "_paddle", aiPaddle);
+            Set(ai, "_paddle", aiPaddle.transform);
             SetEnum(ai, "_player", (int)Side.Far);
             Set(ai, "_profile", aiProfile);
 
-            // Passthrough (Meta).
+            var modes = GetOrAdd<GameModeController>(root);
+            Set(modes, "_match", matchCtl);
+            Set(modes, "_ai", ai);
+
+            var board = GetOrCreate("Scoreboard", root.transform);
+            var presenter = GetOrAdd<ScoreboardPresenter>(board);
+            var tmp = GetOrAdd<TextMeshPro>(GetOrCreate("ScoreText", board.transform));
+            tmp.fontSize = 0.8f; // ~8 cm digits
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.textWrappingMode = TextWrappingModes.NoWrap;
+            tmp.rectTransform.sizeDelta = new Vector2(1.6f, 0.5f);
+            Set(presenter, "_text", tmp);
+            Set(presenter, "_match", matchCtl);
+            Set(presenter, "_modes", modes);
+        }
+
+        /// <summary>Meta passthrough on the Platform object: the layer on the rig, the room hidden while it's on.</summary>
+        static MetaPassthrough SetUpPassthrough(GameObject platform, OVRCameraRig rig, PingPongTable table, System.Text.StringBuilder log)
+        {
             OVRProjectConfig cfg = OVRProjectConfig.CachedProjectConfig;
             if (cfg.insightPassthroughSupport != OVRProjectConfig.FeatureSupport.Supported)
             {
@@ -148,50 +241,50 @@ namespace PingPong.EditorTools
                 log.AppendLine("OVRManager: Insight Passthrough enabled.");
             }
             var layer = GetOrAdd<OVRPassthroughLayer>(rig.gameObject);
+#pragma warning disable CS0618 // overlayType is deprecated with flexible layering; Underlay is still the setting we need
             layer.overlayType = OVROverlay.OverlayType.Underlay;
+#pragma warning restore CS0618
             layer.hidden = true;
             EditorUtility.SetDirty(layer);
-            // Platform services live outside the Match prefab, which stays free of Meta code.
-            var platform = GetOrCreate("Platform").transform;
-            var pt = GetOrAdd<MetaPassthrough>(platform.gameObject);
+
+            var pt = GetOrAdd<MetaPassthrough>(platform);
             Set(pt, "_layer", layer);
             var cam = rig.centerEyeAnchor != null ? rig.centerEyeAnchor.GetComponent<Camera>() : null;
             SetArray(pt, "_cameras", cam != null ? new Object[] { cam } : new Object[0]);
             var hide = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
                 .Where(t => t.name.StartsWith("experimental_neon_room") || t.name == "Floor" || t.name == "Visuals")
-                .Where(t => !top.transform.IsChildOf(t)).Select(t => (Object)t.gameObject).ToArray();
+                .Where(t => !table.transform.IsChildOf(t))
+                .OrderBy(HierarchyOrder, System.StringComparer.Ordinal) // stable: re-runs don't reorder the list
+                .Select(t => (Object)t.gameObject).ToArray();
             SetArray(pt, "_hideInPassthrough", hide);
             log.AppendLine($"Passthrough: layer on {rig.name}, hides {hide.Length} object(s)" + (mgr == null ? " (no OVRManager found!)" : ""));
+            return pt;
+        }
 
-            // Commands, modes and scoreboard.
-            var commands = GetOrAdd<InputSystemPlayerCommands>(platform.gameObject);
-            var modes = GetOrAdd<GameModeController>(match.gameObject);
-            Set(modes, "_match", matchCtl);
-            Set(modes, "_ai", ai);
-            SetSeam(modes, "_commands", commands);
-            SetSeam(modes, "_passthrough", pt);
-            var board = GetOrCreate("Scoreboard", match);
-            var sb = GetOrAdd<Scoreboard>(board);
-            Set(sb, "_match", matchCtl);
-            Set(sb, "_modes", modes);
-
-            // Physics at headset rate (a project setting: logged when changed).
-            if (!Mathf.Approximately(Time.fixedDeltaTime, 1f / 90f))
+        /// <summary>Loads a prefab's contents, lets 'edit' change them, and saves the prefab.</summary>
+        static void EditPrefab(string path, System.Action<GameObject> edit)
+        {
+            var root = PrefabUtility.LoadPrefabContents(path);
+            try
             {
-                SetFixedTimestep(1f / 90f);
-                log.AppendLine("Project setting: fixed timestep set to 1/90 s.");
+                edit(root);
+                PrefabUtility.SaveAsPrefabAsset(root, path);
             }
-
-            // The Match (rules, ball, AI, net, scoreboard) is one prefab; the scene wires it to the table and platform.
-            if (!PrefabUtility.IsAnyPrefabInstanceRoot(match.gameObject))
+            finally
             {
-                PrefabUtility.SaveAsPrefabAssetAndConnect(match.gameObject, MatchPrefabPath, InteractionMode.AutomatedAction);
-                log.AppendLine($"Match prefab: {MatchPrefabPath}");
+                PrefabUtility.UnloadPrefabContents(root);
             }
+        }
 
-            EditorSceneManager.MarkSceneDirty(scene);
-            EditorSceneManager.SaveScene(scene);
-            Debug.Log(log.ToString());
+        /// <summary>The scene's instance of a prefab (found by asset, never by name), placed if missing.</summary>
+        static GameObject Instance(string prefabPath)
+        {
+            var existing = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .Select(t => t.gameObject)
+                .FirstOrDefault(g => PrefabUtility.IsOutermostPrefabInstanceRoot(g)
+                    && PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(g) == prefabPath);
+            if (existing != null) return existing;
+            return (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath));
         }
 
         static T GetOrCreateProfile<T>(string fileName) where T : ScriptableObject
@@ -222,42 +315,6 @@ namespace PingPong.EditorTools
             return l > 2f && l < 3.2f && w > 1.2f && w < 1.9f && s.y < 0.15f;
         }
 
-        /// <summary>Blade frame from the rubber (or largest) mesh: forward = face normal.</summary>
-        static Transform MakeBlade(Transform paddle, out float radius, out float halfThick)
-        {
-            var existing = paddle.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "Blade");
-            var filters = paddle.GetComponentsInChildren<MeshFilter>(true).Where(f => f.sharedMesh != null).ToArray();
-            MeshFilter mf = filters.FirstOrDefault(f => f.name.ToLower().Contains("rubber"))
-                            ?? filters.OrderByDescending(f => f.sharedMesh.bounds.size.sqrMagnitude).First();
-            Bounds b = mf.sharedMesh.bounds;
-            Vector3 ls = mf.transform.lossyScale;
-            Vector3 world = new Vector3(b.size.x * Mathf.Abs(ls.x), b.size.y * Mathf.Abs(ls.y), b.size.z * Mathf.Abs(ls.z));
-            int thin = world.x <= world.y && world.x <= world.z ? 0 : world.y <= world.z ? 1 : 2;
-            Vector3 normal = thin == 0 ? Vector3.right : thin == 1 ? Vector3.up : Vector3.forward;
-            Vector3 upAxis = thin == 1 ? Vector3.forward : Vector3.up;
-            float a = world[(thin + 1) % 3], c = world[(thin + 2) % 3];
-            radius = Mathf.Clamp(Mathf.Min(a, c) * 0.5f, 0.05f, 0.11f);
-            halfThick = Mathf.Clamp(world[thin] * 0.5f, 0.004f, 0.02f);
-
-            Transform blade = existing != null ? existing : new GameObject("Blade").transform;
-            blade.SetParent(mf.transform, false);
-            blade.localPosition = b.center;
-            blade.localRotation = Quaternion.LookRotation(normal, upAxis);
-            blade.localScale = new Vector3(1f / Mathf.Abs(ls.x), 1f / Mathf.Abs(ls.y), 1f / Mathf.Abs(ls.z));
-            return blade;
-        }
-
-        static void StripToVisual(GameObject go)
-        {
-            foreach (Transform child in go.GetComponentsInChildren<Transform>(true).ToArray())
-                if (child != null && child != go.transform && child.name.StartsWith("ISDK_")) Object.DestroyImmediate(child.gameObject);
-            for (int pass = 0; pass < 5; pass++)
-                foreach (var mb in go.GetComponentsInChildren<MonoBehaviour>(true)) Object.DestroyImmediate(mb);
-            foreach (var j in go.GetComponentsInChildren<Joint>(true)) Object.DestroyImmediate(j);
-            foreach (var col in go.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(col);
-            foreach (var rb in go.GetComponentsInChildren<Rigidbody>(true)) Object.DestroyImmediate(rb);
-        }
-
         static GameObject GetOrCreate(string name, Transform parent = null)
         {
             Transform found = parent != null ? parent.Find(name) : null;
@@ -277,6 +334,13 @@ namespace PingPong.EditorTools
         {
             var so = new SerializedObject(target);
             so.FindProperty(prop).objectReferenceValue = value;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        static void SetBool(Object target, string prop, bool value)
+        {
+            var so = new SerializedObject(target);
+            so.FindProperty(prop).boolValue = value;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
@@ -322,6 +386,10 @@ namespace PingPong.EditorTools
             EditorUtility.SetDirty(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TimeManager.asset")[0]);
             AssetDatabase.SaveAssets();
         }
+
+        /// <summary>Sort key in hierarchy order (sibling indices from the scene root down).</summary>
+        static string HierarchyOrder(Transform t) =>
+            (t.parent == null ? "" : HierarchyOrder(t.parent) + "/") + t.GetSiblingIndex().ToString("D5");
 
         static string Path(Transform t) => t.parent == null ? t.name : Path(t.parent) + "/" + t.name;
     }
