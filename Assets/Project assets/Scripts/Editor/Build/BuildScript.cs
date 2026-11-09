@@ -3,10 +3,10 @@ using UnityEngine;
 
 namespace PingPong.EditorTools.Build
 {
-    // High-level entry point (DIP + SRP)
-    public class BuildScript
+    /// <summary>Build entry point for the menu and CI (game-ci buildMethod).</summary>
+    public static class BuildScript
     {
-        [MenuItem("Build/Build Android APK (SOLID)")]
+        [MenuItem("Build/Build Android APK")]
         public static void Execute()
         {
             // Parse custom parameters from CI
@@ -14,10 +14,10 @@ namespace PingPong.EditorTools.Build
             string buildNumber = GetArg(args, "BuildNumber");
             string versionName = GetArg(args, "VersionName");
 
-            var versionManager = new MyVersionManager();
+            var versioning = new BuildVersioning();
 
-            var keystoreManager = new MyKeystoreManager(); // CI secrets, or the key set in Player Settings
-            var androidBuilder = new AndroidBuildStrategy("Builds/Android", keystoreManager, versionManager);
+            var signing = new AndroidSigning(); // CI secrets, or the key set in Player Settings
+            var androidBuilder = new AndroidBuildStrategy("Builds/Android", signing, versioning);
 
             // In CI (batch mode) any failure must end Unity with a non-zero exit code, so the job fails here
             // instead of later with "no APK found".
