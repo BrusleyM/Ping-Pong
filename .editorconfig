@@ -1,7 +1,8 @@
 # Code style for the project's own C# (Assets/_Project/Scripts). IDEs and `dotnet format` read this.
 root = true
 
-[*]
+# Code and text only: Unity YAML (.unity, .prefab, .asset, .meta) keeps its own formatting.
+[*.{cs,sh,yml,yaml,json,asmdef,md,txt}]
 charset = utf-8
 end_of_line = lf
 insert_final_newline = true
