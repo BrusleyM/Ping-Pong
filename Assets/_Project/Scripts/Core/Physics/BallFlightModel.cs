@@ -23,6 +23,8 @@ namespace PingPong.Core
         /// <summary>Seconds after the start of the prediction.</summary>
         public float Time;
         public Side Side;
+        /// <summary>Velocity just after the bounce, with every earlier bounce applied.</summary>
+        public Vector3 Velocity;
     }
 
     /// <summary>
@@ -62,13 +64,6 @@ namespace PingPong.Core
             return new Vector3(v.x * _s.TableFriction, -v.y * _s.TableRestitution, v.z * _s.TableFriction);
         }
 
-        /// <summary>Advances the state by 'time' seconds of free flight (no bounces).</summary>
-        public Vector3 VelocityAfter(Vector3 position, Vector3 velocity, float time)
-        {
-            for (float t = 0f; t < time - 1e-4f; t += _s.SimStep) Step(ref position, ref velocity, _s.SimStep);
-            return velocity;
-        }
-
         /// <summary>
         /// Simulates the ball forward, recording up to bounces.Length table bounces.
         /// Returns the number of bounces; hitNet is set if the ball meets the net (simulation stops there).
@@ -97,8 +92,8 @@ namespace PingPong.Core
                 if (l.y <= _s.Radius && vel.y < 0f)
                 {
                     if (Mathf.Abs(l.x) > table.HalfWidth || Mathf.Abs(l.z) > table.HalfLength) return count;
-                    bounces[count++] = new BallBounce { Position = pos, Time = t, Side = l.z < 0f ? Side.Near : Side.Far };
                     vel = BounceOffTable(vel);
+                    bounces[count++] = new BallBounce { Position = pos, Time = t, Side = l.z < 0f ? Side.Near : Side.Far, Velocity = vel };
                     l.y = _s.Radius;
                     pos = table.ToWorld(l);
                 }
