@@ -60,6 +60,26 @@ namespace PingPong.Tests
         }
 
         [Test]
+        public void Simulate_BounceVelocity_ContinuesTheSameFlight()
+        {
+            // A serve bounces twice; resuming from the second bounce's state must follow the real ball,
+            // not a flight that skipped the first bounce (the AI plans its return from this state).
+            MatchPacing pacing = MatchPacing.Default;
+            Vector3 from = _table.ToWorld(new Vector3(0f, pacing.ServeHeight, -_table.HalfLength - pacing.ServeBehind));
+            _model.SolveLaunch(_table, from, _table.PointOnSide(Side.Near, 0f, 0.4f * _table.HalfLength), 3.2f, out Vector3 v);
+            var three = new BallBounce[3];
+            int n = _model.Simulate(_table, from, v, 3f, three, out bool net);
+            Assume.That(net, Is.False);
+            Assume.That(n, Is.EqualTo(3), "the serve bounces on both sides and again on the receiver's side");
+
+            var resumed = new BallBounce[1];
+            _model.Simulate(_table, three[0].Position, three[0].Velocity, 3f, resumed, out _);
+            // Within one simulation step; skipping the first bounce would put it metres away.
+            Assert.That(Vector3.Distance(resumed[0].Position, three[1].Position), Is.LessThan(0.03f));
+            Assert.That(three[1].Velocity.y, Is.GreaterThan(0f), "leaves the table upwards");
+        }
+
+        [Test]
         public void Simulate_ReportsBouncesOnTheCorrectSides()
         {
             // A short serve from the game's real serve position: own side first, then the receiver's side.
