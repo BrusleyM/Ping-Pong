@@ -11,7 +11,7 @@ namespace PingPong.EditorTools.Build
     ///     ANDROID_KEYSTORE_PATH, or .keystore.keystore, which game-ci writes from ANDROID_KEYSTORE_BASE64.
     /// Local: the keystore and passwords entered in Player Settings > Publishing Settings are used as-is.
     /// </summary>
-    public class MyKeystoreManager
+    public sealed class AndroidSigning
     {
         const string DefaultKeystore = ".keystore.keystore";
         const string DefaultAlias = "ping pong";

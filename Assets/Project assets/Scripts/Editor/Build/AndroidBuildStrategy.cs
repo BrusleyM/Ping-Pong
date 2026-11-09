@@ -6,17 +6,17 @@ using System.IO;
 
 namespace PingPong.EditorTools.Build
 {
-    public class AndroidBuildStrategy : IBuildStrategy
+    public sealed class AndroidBuildStrategy : IBuildStrategy
     {
         private readonly string _outputFolder;
-        private readonly MyKeystoreManager _keystoreManager;
-        private readonly MyVersionManager _myVersionManager;
+        private readonly AndroidSigning _signing;
+        private readonly BuildVersioning _versioning;
 
-        public AndroidBuildStrategy(string outputFolder, MyKeystoreManager keystoreManager,MyVersionManager myVersionManager)
+        public AndroidBuildStrategy(string outputFolder, AndroidSigning signing, BuildVersioning versioning)
         {
             _outputFolder = outputFolder;
-            _keystoreManager = keystoreManager;
-            _myVersionManager = myVersionManager;
+            _signing = signing;
+            _versioning = versioning;
         }
 
         public void Build(string versionName, string buildNumber)
@@ -35,9 +35,9 @@ namespace PingPong.EditorTools.Build
                 Directory.CreateDirectory(_outputFolder);
 
             // Check signing first so a failed build doesn't bump the version.
-            if (!_keystoreManager.ApplyKeystore())
+            if (!_signing.ApplyKeystore())
                 throw new BuildFailedException("Android signing key is not set up; see the error above.");
-            _myVersionManager.Apply(versionName, buildNumber);
+            _versioning.Apply(versionName, buildNumber);
 
             // Generate APK name
             string apkName = $"{PlayerSettings.productName}_{PlayerSettings.bundleVersion}_{PlayerSettings.Android.bundleVersionCode}.apk";

@@ -1,0 +1,64 @@
+# Code style for the project's own C# (Assets/Project assets/Scripts). IDEs and `dotnet format` read this.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{yml,yaml,json,asmdef,sh,md}]
+indent_style = space
+indent_size = 2
+
+[*.cs]
+indent_style = space
+indent_size = 4
+
+# Layout
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_prefer_braces = when_multiline:suggestion
+dotnet_sort_system_directives_first = true
+
+# Language
+csharp_style_namespace_declarations = block_scoped:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+dotnet_style_qualification_for_field = false:suggestion
+dotnet_style_qualification_for_property = false:suggestion
+dotnet_style_qualification_for_method = false:suggestion
+dotnet_style_readonly_field = true:suggestion
+dotnet_style_require_accessibility_modifiers = omit_if_default:suggestion
+
+# Naming: PascalCase types, members and constants; _camelCase private fields; IPascalCase interfaces.
+dotnet_naming_symbols.types.applicable_kinds = class, struct, enum, delegate
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_symbols.public_members.applicable_kinds = property, method, event
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.required_modifiers = const
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.pascal.capitalization = pascal_case
+dotnet_naming_style.i_pascal.capitalization = pascal_case
+dotnet_naming_style.i_pascal.required_prefix = I
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+dotnet_naming_style.underscore_camel.required_prefix = _
+
+dotnet_naming_rule.interfaces.symbols = interfaces
+dotnet_naming_rule.interfaces.style = i_pascal
+dotnet_naming_rule.interfaces.severity = suggestion
+dotnet_naming_rule.types.symbols = types
+dotnet_naming_rule.types.style = pascal
+dotnet_naming_rule.types.severity = suggestion
+dotnet_naming_rule.members.symbols = public_members
+dotnet_naming_rule.members.style = pascal
+dotnet_naming_rule.members.severity = suggestion
+dotnet_naming_rule.constants.symbols = constants
+dotnet_naming_rule.constants.style = pascal
+dotnet_naming_rule.constants.severity = suggestion
+dotnet_naming_rule.private_fields.symbols = private_fields
+dotnet_naming_rule.private_fields.style = underscore_camel
+dotnet_naming_rule.private_fields.severity = suggestion

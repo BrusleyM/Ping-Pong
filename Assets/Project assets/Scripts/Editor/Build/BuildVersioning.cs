@@ -9,7 +9,7 @@ namespace PingPong.EditorTools.Build
     /// version code = the code saved in ProjectSettings + the CI run number, so it always goes up.
     /// Local builds keep whatever Player Settings holds.
     /// </summary>
-    public class MyVersionManager
+    public sealed class BuildVersioning
     {
         public void Apply(string versionName, string buildNumber)
         {
