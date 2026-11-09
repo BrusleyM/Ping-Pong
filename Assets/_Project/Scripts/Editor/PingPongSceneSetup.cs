@@ -82,6 +82,12 @@ namespace PingPong.EditorTools
             var commands = GetOrAdd<InputSystemPlayerCommands>(platform);
             var modes = match.GetComponent<GameModeController>();
             SetSeam(modes, "_commands", commands);
+
+            // The paddle is grabbed with either controller.
+            var grip = paddle.GetComponent<PaddleGrip>();
+            SetSeam(grip, "_commands", commands);
+            Set(grip, "_leftHand", rig.leftControllerAnchor);
+            Set(grip, "_rightHand", rig.rightControllerAnchor);
             SetSeam(modes, "_passthrough", passthrough);
 
             // Physics at headset rate (a project setting: logged when changed).
@@ -192,7 +198,17 @@ namespace PingPong.EditorTools
             SetEnum(hitter, "_player", (int)Side.Near);
             Set(hitter, "_feel", feel);
             Set(hitter, "_model", root.GetComponent<PaddleModel>());
+            // Toggle grab with a snapped grip replaces Meta's free grab (which held the paddle at any angle
+            // and dropped it when the grip was released).
+            var isdkGrab = root.transform.Find("ISDK_HandGrabInteraction");
+            if (isdkGrab != null) Object.DestroyImmediate(isdkGrab.gameObject);
+            var grabbable = root.GetComponent("Grabbable");
+            if (grabbable != null) Object.DestroyImmediate(grabbable);
+            var grip = GetOrAdd<PaddleGrip>(root);
+            Set(grip, "_model", root.GetComponent<PaddleModel>());
+
             var controller = GetOrAdd<OvrControllerHaptics>(root);
+            Set(controller, "_grip", grip);
             var haptics = GetOrAdd<PaddleHaptics>(root);
             Set(haptics, "_hitter", hitter);
             SetSeam(haptics, "_haptics", controller);

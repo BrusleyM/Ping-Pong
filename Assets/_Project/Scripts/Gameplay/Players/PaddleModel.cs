@@ -27,6 +27,17 @@ namespace PingPong.Gameplay
         public float BladeHalfThickness => _bladeHalfThickness;
 
         /// <summary>
+        /// World pose for this paddle's root that puts the blade centre at 'bladeCentre', facing 'faceNormal',
+        /// with the blade above the handle along 'up'.
+        /// </summary>
+        public Pose RootPoseFor(Vector3 bladeCentre, Vector3 faceNormal, Vector3 up)
+        {
+            Quaternion rotation = RootRotationFor(faceNormal, up);
+            Vector3 bladeOffset = Quaternion.Inverse(transform.rotation) * (Blade.position - transform.position);
+            return new Pose(bladeCentre - rotation * bladeOffset, rotation);
+        }
+
+        /// <summary>
         /// World rotation for this paddle's root that turns the blade face towards 'faceNormal' with the
         /// blade above the handle along 'up' (projected into the blade's plane). Works for any model axes.
         /// </summary>
