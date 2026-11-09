@@ -225,6 +225,48 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f28a60560e671434f8e34a57ded624de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.InputSystemPlayerCommands
+  _grabLeft:
+    m_Name: Grab Left
+    m_Type: 1
+    m_ExpectedControlType: 
+    m_Id: 7dae0b46-b99b-4674-be0e-507be4dc5335
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings:
+    - m_Name: 
+      m_Id: c1c05381-9713-40c9-ba25-90533165ebd4
+      m_Path: <XRController>{LeftHand}/gripPressed
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Grab Left
+      m_Flags: 0
+    m_Flags: 0
+  _grabRight:
+    m_Name: Grab Right
+    m_Type: 1
+    m_ExpectedControlType: 
+    m_Id: 1d3b9224-f058-44b7-a2d1-3d960da61674
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings:
+    - m_Name: 
+      m_Id: 5d56cd46-eb22-4805-b0cf-cf8357a049c2
+      m_Path: <XRController>{RightHand}/gripPressed
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Grab Right
+      m_Flags: 0
+    - m_Name: 
+      m_Id: 11f594f4-791a-4618-8eb1-76bd2183d596
+      m_Path: <Keyboard>/g
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Grab Right
+      m_Flags: 0
+    m_Flags: 0
   _restart:
     m_Name: Restart
     m_Type: 1
@@ -537,6 +579,16 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 893482383}
   m_SourcePrefab: {fileID: 100100000, guid: eb9beca3c527143cab67903e11d2505c, type: 3}
+--- !u!4 &4866239504134779189 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8855363054840074596, guid: eb9beca3c527143cab67903e11d2505c, type: 3}
+  m_PrefabInstance: {fileID: 4866239504134779188}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4866239504134779190 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4086585977034719383, guid: eb9beca3c527143cab67903e11d2505c, type: 3}
+  m_PrefabInstance: {fileID: 4866239504134779188}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &5071649891295234947
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -621,10 +673,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 1189161419170995858, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
-      propertyPath: m_Name
-      value: Paddle
-      objectReference: {fileID: 0}
     - target: {fileID: 4243428944041099987, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
       propertyPath: _ball
       value: 
@@ -633,46 +681,18 @@ PrefabInstance:
       propertyPath: _match
       value: 
       objectReference: {fileID: 1567005534}
-    - target: {fileID: 8127554131745934498, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -0.132
-      objectReference: {fileID: 0}
-    - target: {fileID: 8127554131745934498, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0.75357944
-      objectReference: {fileID: 0}
-    - target: {fileID: 8127554131745934498, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -0.432
-      objectReference: {fileID: 0}
-    - target: {fileID: 8127554131745934498, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8127554131745934498, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8127554131745934498, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8127554131745934498, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8127554131745934498, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8127554131745934498, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8127554131745934498, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
+    - target: {fileID: 4759419765657888614, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
+      propertyPath: _leftHand
+      value: 
+      objectReference: {fileID: 4866239504134779190}
+    - target: {fileID: 4759419765657888614, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
+      propertyPath: _rightHand
+      value: 
+      objectReference: {fileID: 4866239504134779189}
+    - target: {fileID: 4759419765657888614, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
+      propertyPath: _commands._component
+      value: 
+      objectReference: {fileID: 912907507}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
