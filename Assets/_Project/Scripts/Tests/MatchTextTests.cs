@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using PingPong.Core;
+using PingPong.Gameplay;
 using PingPong.Presentation;
 
 namespace PingPong.Tests
@@ -37,6 +38,23 @@ namespace PingPong.Tests
         {
             foreach (PointReason r in System.Enum.GetValues(typeof(PointReason)))
                 if (r != PointReason.None) Assert.That(MatchText.Describe(r), Is.Not.Empty, r.ToString());
+        }
+
+        [Test]
+        public void OpponentName_IsTheAIWithItsLevelInSoloPlay()
+        {
+            Assert.That(MatchText.OpponentName(GameMode.Solo, "Hard"), Is.EqualTo("AI (Hard)"));
+            Assert.That(MatchText.OpponentName(GameMode.Online, "Hard"), Is.EqualTo("Opponent"));
+            Assert.That(MatchText.OpponentName(GameMode.Solo, null), Is.EqualTo("Opponent"), "solo without an AI");
+        }
+
+        [Test]
+        public void Detail_ShowsMessageOverStatus_AndBothAtGameOver()
+        {
+            Assert.That(MatchText.Detail(MatchPhase.WaitingForServe, "", "Your serve"), Is.EqualTo("Your serve"));
+            Assert.That(MatchText.Detail(MatchPhase.PointOver, "You score - out", "Your serve"), Is.EqualTo("You score - out"));
+            Assert.That(MatchText.Detail(MatchPhase.GameOver, "You win!", "Press A to play again"), Is.EqualTo("You win!\nPress A to play again"));
+            Assert.That(MatchText.Detail(MatchPhase.GameOver, "", "Press A to play again"), Is.EqualTo("Press A to play again"), "no blank first line");
         }
 
         [Test]

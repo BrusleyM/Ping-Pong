@@ -1,4 +1,5 @@
 using PingPong.Core;
+using PingPong.Gameplay;
 
 namespace PingPong.Presentation
 {
@@ -11,6 +12,20 @@ namespace PingPong.Presentation
         public const string LocalName = "You";
 
         public static string Score(int local, int opponent) => $"{local}  -  {opponent}";
+
+        /// <summary>What to call the other side: the AI and its level in solo play, otherwise "Opponent".</summary>
+        public static string OpponentName(GameMode mode, string aiLevelName) =>
+            mode == GameMode.Solo && !string.IsNullOrEmpty(aiLevelName) ? $"AI ({aiLevelName})" : "Opponent";
+
+        /// <summary>
+        /// The second board line: a point message replaces the status for a moment; at game over the
+        /// result stays and the status (how to play again) goes under it.
+        /// </summary>
+        public static string Detail(MatchPhase phase, string message, string status)
+        {
+            if (phase == MatchPhase.GameOver) return message.Length > 0 ? $"{message}\n{status}" : status;
+            return message.Length > 0 ? message : status;
+        }
 
         /// <param name="opponentName">What to call the other side, e.g. "AI (Medium)" or "Opponent".</param>
         public static string Name(Side side, Side local, string opponentName) => side == local ? LocalName : opponentName;
