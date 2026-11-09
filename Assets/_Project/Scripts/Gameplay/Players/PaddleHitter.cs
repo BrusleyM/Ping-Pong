@@ -17,13 +17,8 @@ namespace PingPong.Gameplay
         [SerializeField] MatchController _match;
         [SerializeField] PingPongBall _ball;
         [SerializeField] PaddleFeelProfile _feel;
-        [Tooltip("Centre of the blade. Defaults to this transform.")]
-        [SerializeField] Transform _blade;
-        [Tooltip("Blade face normal in the blade transform's local space.")]
-        [SerializeField] Vector3 _faceNormalLocal = Vector3.forward;
-        [Tooltip("Blade radius and half-thickness, metres. Measured from the mesh by the scene setup.")]
-        [SerializeField] float _bladeRadius = 0.08f;
-        [SerializeField] float _bladeHalfThickness = 0.006f;
+        [Tooltip("The paddle's geometry (blade position and size).")]
+        [SerializeField] PaddleModel _model;
 
         public Side Player { get => _player; set => _player = value; }
         /// <summary>Set false for a remote player's paddle: only the owner detects its hits.</summary>
@@ -50,13 +45,14 @@ namespace PingPong.Gameplay
         float _vT0, _vT1;
         int _vSamples;
 
-        Transform Blade => _blade != null ? _blade : transform;
+        Transform Blade => _model.Blade;
         /// <summary>The tuning this paddle plays with (feedback reads its haptic settings).</summary>
         public PaddleFeel Feel => _feel.Feel;
 
         void OnValidate()
         {
             Validation.Require(_feel, "a Paddle Feel Profile", this);
+            Validation.Require(_model, "the Paddle Model", this);
         }
 
         void Start()
@@ -95,11 +91,11 @@ namespace PingPong.Gameplay
         void TryHit(Vector3 pos, Quaternion rot, Vector3 ballPos)
         {
             float ballRadius = _ball.Model.Radius;
-            Vector3 n = _faceNormalLocal.normalized;
+            Vector3 n = _model.FaceNormalLocal;
             Vector3 l0 = Quaternion.Inverse(_prevRot) * (_prevBall - _prevPos);
             Vector3 l1 = Quaternion.Inverse(rot) * (ballPos - pos);
             float d0 = Vector3.Dot(l0, n), d1 = Vector3.Dot(l1, n);
-            float reach = ballRadius + _bladeHalfThickness;
+            float reach = ballRadius + _model.BladeHalfThickness;
 
             float t;
             if (Mathf.Abs(d1) <= reach) t = 1f;                            // overlapping now
@@ -108,7 +104,7 @@ namespace PingPong.Gameplay
 
             Vector3 lc = Vector3.Lerp(l0, l1, t);
             Vector3 inPlane = lc - Vector3.Dot(lc, n) * n;
-            if (inPlane.magnitude > _bladeRadius + ballRadius) return;
+            if (inPlane.magnitude > _model.BladeRadius + ballRadius) return;
 
             float side = Mathf.Abs(d0) > 1e-5f ? Mathf.Sign(d0) : Mathf.Sign(d1);
             Vector3 normal = (rot * n) * side;
