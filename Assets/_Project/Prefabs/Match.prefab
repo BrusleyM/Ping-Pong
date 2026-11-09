@@ -296,7 +296,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PingPong.Gameplay.AIOpponent
   _match: {fileID: 6639592493644929245}
-  _paddle: {fileID: 3193529982039327906}
+  _model: {fileID: 7233591547529036458}
   _player: 1
   _profile: {fileID: 11400000, guid: a041f1d0f25a14858b51c811488da174, type: 2}
 --- !u!114 &3632498679609705581
@@ -498,3 +498,14 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6942145108544240809, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}
   m_PrefabInstance: {fileID: 5478284425005185035}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7233591547529036458 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2910494720939637409, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}
+  m_PrefabInstance: {fileID: 5478284425005185035}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c0283f1868744dbf83e0f4edbf8d2de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.PaddleModel

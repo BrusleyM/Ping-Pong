@@ -228,7 +228,7 @@ namespace PingPong.EditorTools
             }
             var ai = GetOrAdd<AIOpponent>(root);
             Set(ai, "_match", matchCtl);
-            Set(ai, "_paddle", aiPaddle.transform);
+            Set(ai, "_model", aiPaddle);
             SetEnum(ai, "_player", (int)Side.Far);
             Set(ai, "_profile", aiProfile);
 

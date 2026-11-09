@@ -14,7 +14,8 @@ namespace PingPong.Gameplay
     public sealed class AIOpponent : MonoBehaviour
     {
         [SerializeField] MatchController _match;
-        [SerializeField] Transform _paddle;
+        [Tooltip("The AI's paddle; its model says which way the blade faces.")]
+        [SerializeField] PaddleModel _model;
         [FormerlySerializedAs("_playerIndex")]
         [SerializeField] Side _player = Side.Far;
         [SerializeField] AIProfile _profile;
@@ -44,6 +45,7 @@ namespace PingPong.Gameplay
         Quaternion _restRotation;
         Vector3 _swingAxis;
 
+        Transform Paddle => _model.transform;
         AIDifficulty Difficulty => _profile.Level(Level);
         AIBehaviour Behaviour => _profile.Behaviour;
         TableFrame Table => _match.Table.Frame;
@@ -54,7 +56,11 @@ namespace PingPong.Gameplay
             if (_level < 0) _level = _profile.DefaultLevel;
         }
 
-        void OnValidate() => Validation.Require(_profile, "an AI Profile", this);
+        void OnValidate()
+        {
+            Validation.Require(_profile, "an AI Profile", this);
+            Validation.Require(_model, "the AI's Paddle Model", this);
+        }
 
         void SetLevel(int value)
         {
@@ -68,11 +74,9 @@ namespace PingPong.Gameplay
         {
             // Blade face towards the opponent, blade above the handle, whatever the model's own axes.
             Vector3 towardOpponent = -Table.Forward * _player.Sign();
-            _restRotation = _paddle.TryGetComponent(out PaddleModel model)
-                ? model.RootRotationFor(towardOpponent, Vector3.up)
-                : Quaternion.LookRotation(towardOpponent, Vector3.up);
+            _restRotation = _model.RootRotationFor(towardOpponent, Vector3.up);
             _swingAxis = Vector3.Cross(Vector3.up, towardOpponent);
-            _paddle.SetPositionAndRotation(RestPosition(), _restRotation);
+            Paddle.SetPositionAndRotation(RestPosition(), _restRotation);
             _target = RestPosition();
         }
 
@@ -103,9 +107,9 @@ namespace PingPong.Gameplay
                     break;
             }
 
-            _paddle.position = Vector3.MoveTowards(_paddle.position, _target, Difficulty.MoveSpeed * Time.deltaTime);
+            Paddle.position = Vector3.MoveTowards(Paddle.position, _target, Difficulty.MoveSpeed * Time.deltaTime);
             _swing = Mathf.MoveTowards(_swing, 0f, Time.deltaTime * Behaviour.Swing.y);
-            _paddle.rotation = Quaternion.AngleAxis(-Behaviour.Swing.x * _swing, _swingAxis) * _restRotation;
+            Paddle.rotation = Quaternion.AngleAxis(-Behaviour.Swing.x * _swing, _swingAxis) * _restRotation;
         }
 
         void FixedUpdate()
@@ -114,7 +118,7 @@ namespace PingPong.Gameplay
             _strikeTime = -1f;
             if (_match.Phase != MatchPhase.Rally || !_match.CanHit(_player)) return;
             Vector3 ballPos = _match.Ball.Body.position;
-            if (_willMiss || Vector3.Distance(_paddle.position, ballPos) > Behaviour.Reach) return; // too slow: point lost
+            if (_willMiss || Vector3.Distance(Paddle.position, ballPos) > Behaviour.Reach) return; // too slow: point lost
             Strike(ballPos);
         }
 
