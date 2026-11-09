@@ -5,6 +5,21 @@ using UnityEngine.Serialization;
 
 namespace PingPong.Gameplay
 {
+    /// <summary>A paddle hit, for feedback. Velocity is the ball's outgoing velocity, m/s.</summary>
+    public readonly struct PaddleHit
+    {
+        public readonly Side Player;
+        public readonly Vector3 Position;
+        public readonly Vector3 Velocity;
+
+        public PaddleHit(Side player, Vector3 position, Vector3 velocity)
+        {
+            Player = player;
+            Position = position;
+            Velocity = velocity;
+        }
+    }
+
     /// <summary>
     /// Detects paddle-ball contact with a swept test between physics steps (fast swings can't tunnel)
     /// and computes the return from the paddle's real motion. Unity's own paddle-ball collisions are
@@ -24,8 +39,8 @@ namespace PingPong.Gameplay
         /// <summary>Set false for a remote player's paddle: only the owner detects its hits.</summary>
         public bool DetectHits { get; set; } = true;
 
-        /// <summary>Raised after a hit. Arguments: hit position, outgoing velocity.</summary>
-        public event Action<Vector3, Vector3> Hit;
+        /// <summary>Raised after this paddle hits the ball.</summary>
+        public event Action<PaddleHit> Hit;
 
         const float ContactClearance = 0.004f; // the ball leaves just off the rubber
         const float MinFrameTime = 1e-4f;
@@ -46,8 +61,7 @@ namespace PingPong.Gameplay
         int _vSamples;
 
         Transform Blade => _model.Blade;
-        /// <summary>The tuning this paddle plays with (feedback reads its haptic settings).</summary>
-        public PaddleFeel Feel => _feel.Feel;
+        PaddleFeel Feel => _feel.Feel;
 
         void OnValidate()
         {
@@ -127,7 +141,7 @@ namespace PingPong.Gameplay
 
             _lastHit = Time.time;
             _match.Strike(_player, hitPos, outVel);
-            Hit?.Invoke(hitPos, outVel);
+            Hit?.Invoke(new PaddleHit(_player, hitPos, outVel));
         }
 
         /// <summary>Velocity of a world point on the blade, from the last two rendered frames.</summary>

@@ -27,9 +27,9 @@ namespace PingPong.Presentation
 
         Side Local => _modes != null ? _modes.LocalPlayer : Side.Near;
 
-        string OpponentName => _modes != null && _modes.Mode == GameMode.Solo && _modes.AI != null
-            ? $"AI ({_modes.AI.LevelName})"
-            : "Opponent";
+        string OpponentName => _modes != null
+            ? MatchText.OpponentName(_modes.Mode, _modes.AI != null ? _modes.AI.LevelName : null)
+            : MatchText.OpponentName(GameMode.Online, null);
 
         void OnValidate()
         {
@@ -80,8 +80,7 @@ namespace PingPong.Presentation
         void Refresh()
         {
             string status = MatchText.Status(_match.Phase, _match.Server, Local, OpponentName);
-            string line2 = _match.Phase == MatchPhase.GameOver ? $"{_message}\n{status}"
-                : _message.Length > 0 ? _message : status;
+            string line2 = MatchText.Detail(_match.Phase, _message, status);
             int percent = Mathf.RoundToInt(_statusScale * 100f);
             _text.text = $"{MatchText.Score(_match.Score(Local), _match.Score(Local.Opponent()))}\n<size={percent}%>{line2}</size>";
         }

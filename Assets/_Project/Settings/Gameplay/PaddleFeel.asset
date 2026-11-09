@@ -18,8 +18,6 @@ MonoBehaviour:
     AimAssist: 0.35
     MaxSpeed: 20
     Cooldown: 0.12
-    HapticFullSpeed: 12
-    HapticDuration: 0.04
     AssistMargins:
       Edge: 0.1
       FromNet: 0.3
