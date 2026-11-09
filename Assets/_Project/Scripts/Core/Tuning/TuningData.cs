@@ -36,8 +36,6 @@ namespace PingPong.Core
         [Tooltip("0 = pure physics, 1 = always lands on the opponent's half.")] public float AimAssist;
         [Tooltip("Hard cap on return speed, m/s.")] public float MaxSpeed;
         [Tooltip("Minimum time between two hits, seconds.")] public float Cooldown;
-        [Tooltip("Return speed that gives a full-strength haptic pulse, m/s.")] public float HapticFullSpeed;
-        [Tooltip("Haptic pulse length, seconds.")] public float HapticDuration;
         [Tooltip("Aim assist keeps its landing spot inside these margins.")] public LandingMargins AssistMargins;
         [Tooltip("Horizontal speed range the aim assist may use, m/s.")] public Vector2 AssistSpeed;
         [Tooltip("How the aim assist retries a shot that would hit the net.")] public NetClearRetry AssistNetRetry;
@@ -49,8 +47,6 @@ namespace PingPong.Core
             AimAssist = 0.35f,
             MaxSpeed = 20f,
             Cooldown = 0.12f,
-            HapticFullSpeed = 12f,
-            HapticDuration = 0.04f,
             AssistMargins = new LandingMargins(edge: 0.1f, fromNet: 0.3f, fromEnd: 0.12f),
             AssistSpeed = new Vector2(3f, 12f),
             AssistNetRetry = new NetClearRetry(attempts: 2, speedFalloff: 0.8f),

@@ -102,3 +102,7 @@ TempAssembly.dll
 # Meta Immersive Debugger DevAgent: holds an access token and LAN address
 Assets/Resources/DevAgentSettings.asset
 Assets/Resources/DevAgentSettings.asset.meta
+
+# Written by the Meta XR SDK when entering play mode
+RuntimeActionBindings.json
+Assets/StreamingAssets/RuntimeActionBindings.json*
