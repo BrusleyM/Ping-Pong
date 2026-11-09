@@ -1,4 +1,4 @@
-# Code style for the project's own C# (Assets/Project assets/Scripts). IDEs and `dotnet format` read this.
+# Code style for the project's own C# (Assets/_Project/Scripts). IDEs and `dotnet format` read this.
 root = true
 
 # Code and text only: Unity YAML (.unity, .prefab, .asset, .meta) keeps its own formatting.

@@ -86,6 +86,8 @@ crashlytics-build.properties
 
 # Ignore HDR environment files
 *.hdr
+# Tracked on purpose: the skybox HDRI.
+!Assets/_Project/Materials/Skybox/*.hdr
 # Secrets: never commit (CI uses GitHub secrets)
 .env
 password.txt
@@ -100,3 +102,7 @@ TempAssembly.dll
 # Meta Immersive Debugger DevAgent: holds an access token and LAN address
 Assets/Resources/DevAgentSettings.asset
 Assets/Resources/DevAgentSettings.asset.meta
+
+# Written by the Meta XR SDK when entering play mode
+RuntimeActionBindings.json
+Assets/StreamingAssets/RuntimeActionBindings.json*
