@@ -47,5 +47,20 @@ namespace PingPong.Tests
             Vector3 upInPlane = Vector3.ProjectOnPlane(upWorld, faceWorld).normalized;
             Assert.That(Vector3.Dot(upInPlane, wantedUp), Is.GreaterThan(0.99f), "blade above the handle");
         }
+
+        [Test]
+        public void RootPoseFor_PutsTheBladeCentreAndFaceWhereAsked()
+        {
+            var model = Build(Quaternion.Euler(281.85f, 4.63f, 137.43f), Vector3.forward, new Vector3(-0.57f, 0.82f, 0f));
+            model.transform.SetPositionAndRotation(new Vector3(3f, 1f, -2f), Quaternion.Euler(10f, 50f, -20f));
+            Vector3 centre = new Vector3(0.4f, 1.2f, -1.6f);
+            Vector3 face = new Vector3(0.3f, 0.1f, 1f).normalized;
+
+            Pose pose = model.RootPoseFor(centre, face, Vector3.up);
+            model.transform.SetPositionAndRotation(pose.position, pose.rotation);
+
+            Assert.That(Vector3.Distance(model.Blade.position, centre), Is.LessThan(0.001f), "blade centre where asked");
+            Assert.That(Vector3.Angle(model.Blade.TransformDirection(model.FaceNormalLocal), face), Is.LessThan(0.5f));
+        }
     }
 }
