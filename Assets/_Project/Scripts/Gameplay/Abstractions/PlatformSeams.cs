@@ -26,15 +26,6 @@ namespace PingPong.Gameplay
         void Set(bool on);
     }
 
-    public enum ImpactKind { Table, Paddle, Net, Other }
-
-    /// <summary>Plays impact sounds.</summary>
-    public interface IImpactAudio
-    {
-        /// <param name="speed">Impact speed, m/s; implementations scale volume by it.</param>
-        void Play(ImpactKind kind, Vector3 position, float speed);
-    }
-
     /// <summary>Decides which collisions end a rally (floor, walls) and which are ignored (hands, paddles).</summary>
     public interface IBallContactFilter
     {

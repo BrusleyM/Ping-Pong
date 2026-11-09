@@ -5,6 +5,8 @@ using UnityEngine;
 using PingPong.Core;
 using PingPong.Gameplay;
 using PingPong.Platform.Meta;
+using PingPong.Presentation;
+using TMPro;
 
 namespace PingPong.EditorTools
 {
@@ -73,7 +75,8 @@ namespace PingPong.EditorTools
             if (ball == null) { Debug.LogError("Ping Pong setup: ball not found."); return; }
             var src = GetOrAdd<AudioSource>(ball.gameObject);
             src.playOnAwake = false; src.spatialBlend = 1f;
-            var impactAudio = GetOrAdd<AudioSourceImpactAudio>(ball.gameObject);
+            var impactAudio = GetOrAdd<BallImpactAudio>(ball.gameObject);
+            Set(impactAudio, "_ball", ball);
             var hitClip = AssetDatabase.LoadAssetAtPath<AudioClip>(AssetDatabase.GUIDToAssetPath(BallHitClipGuid));
             if (hitClip != null && GetRef(impactAudio, "_table") == null) Set(impactAudio, "_table", hitClip);
             Set(ball, "_physics", ballPhysics);
@@ -86,7 +89,6 @@ namespace PingPong.EditorTools
                 Set(ballPrefab, "_physics", ballPhysics);
                 PrefabUtility.SavePrefabAsset(ballPrefab.transform.root.gameObject);
             }
-            SetSeam(ball, "_audio", impactAudio);
             SetArray(ball, "_ignoredRoots", new Object[] { rig.transform });
 
             // Match rules.
@@ -110,7 +112,9 @@ namespace PingPong.EditorTools
             Set(hitter, "_match", matchCtl);
             Set(hitter, "_ball", ball);
             Set(hitter, "_feel", paddleFeel);
-            SetSeam(hitter, "_haptics", haptics);
+            var paddleHaptics = GetOrAdd<PaddleHaptics>(paddle.gameObject);
+            Set(paddleHaptics, "_hitter", hitter);
+            SetSeam(paddleHaptics, "_haptics", haptics);
             Set(hitter, "_blade", blade);
             SetV(hitter, "_faceNormalLocal", Vector3.forward);
             SetF(hitter, "_bladeRadius", radius);
@@ -171,7 +175,14 @@ namespace PingPong.EditorTools
             SetSeam(modes, "_commands", commands);
             SetSeam(modes, "_passthrough", pt);
             var board = GetOrCreate("Scoreboard", match);
-            var sb = GetOrAdd<Scoreboard>(board);
+            var sb = GetOrAdd<ScoreboardPresenter>(board);
+            var scoreText = GetOrCreate("ScoreText", board.transform);
+            var tmp = GetOrAdd<TextMeshPro>(scoreText);
+            tmp.fontSize = 0.8f; // ~8 cm digits
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.textWrappingMode = TextWrappingModes.NoWrap;
+            tmp.rectTransform.sizeDelta = new Vector2(1.6f, 0.5f);
+            Set(sb, "_text", tmp);
             Set(sb, "_match", matchCtl);
             Set(sb, "_modes", modes);
 

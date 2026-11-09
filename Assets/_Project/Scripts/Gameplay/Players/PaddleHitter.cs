@@ -17,8 +17,6 @@ namespace PingPong.Gameplay
         [SerializeField] MatchController _match;
         [SerializeField] PingPongBall _ball;
         [SerializeField] PaddleFeelProfile _feel;
-        [Tooltip("Vibrates the controller holding this paddle on each hit (optional).")]
-        [SerializeField] Seam<IHaptics> _haptics;
         [Tooltip("Centre of the blade. Defaults to this transform.")]
         [SerializeField] Transform _blade;
         [Tooltip("Blade face normal in the blade transform's local space.")]
@@ -53,12 +51,12 @@ namespace PingPong.Gameplay
         int _vSamples;
 
         Transform Blade => _blade != null ? _blade : transform;
-        PaddleFeel Feel => _feel.Feel;
+        /// <summary>The tuning this paddle plays with (feedback reads its haptic settings).</summary>
+        public PaddleFeel Feel => _feel.Feel;
 
         void OnValidate()
         {
             Validation.Require(_feel, "a Paddle Feel Profile", this);
-            Validation.Seam(_haptics, nameof(_haptics), this);
         }
 
         void Start()
@@ -133,7 +131,6 @@ namespace PingPong.Gameplay
 
             _lastHit = Time.time;
             _match.Strike(_player, hitPos, outVel);
-            _haptics.Value?.Pulse(Mathf.Clamp01(outVel.magnitude / feel.HapticFullSpeed), feel.HapticDuration);
             Hit?.Invoke(hitPos, outVel);
         }
 

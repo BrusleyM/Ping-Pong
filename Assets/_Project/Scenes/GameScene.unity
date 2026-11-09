@@ -407,20 +407,20 @@ MonoBehaviour:
   _cameras:
   - {fileID: 4865993576303460604}
   _hideInPassthrough:
-  - {fileID: 4865993576303460596}
-  - {fileID: 4865993576303460594}
-  - {fileID: 4865993576303460603}
-  - {fileID: 4865993576303460593}
-  - {fileID: 4865993576303460600}
-  - {fileID: 4865993576303460592}
-  - {fileID: 4865993576303460602}
   - {fileID: 4865993576303460599}
   - {fileID: 4865993576303460595}
-  - {fileID: 4865993576303460584}
-  - {fileID: 4865993576303460598}
   - {fileID: 4865993576303460591}
   - {fileID: 4865993576303460601}
+  - {fileID: 4865993576303460594}
+  - {fileID: 4865993576303460602}
   - {fileID: 4865993576303460597}
+  - {fileID: 4865993576303460592}
+  - {fileID: 4865993576303460596}
+  - {fileID: 4865993576303460603}
+  - {fileID: 4865993576303460600}
+  - {fileID: 4865993576303460593}
+  - {fileID: 4865993576303460584}
+  - {fileID: 4865993576303460598}
   _startEnabled: 0
 --- !u!4 &912907509
 Transform:
@@ -453,8 +453,6 @@ MonoBehaviour:
   _match: {fileID: 1567005534}
   _ball: {fileID: 4865993576303460587}
   _feel: {fileID: 11400000, guid: d50f75fc0c6114950abea816b0cd87bd, type: 2}
-  _haptics:
-    _component: {fileID: 184904929}
   _blade: {fileID: 164773248}
   _faceNormalLocal: {x: 0, y: 0, z: 1}
   _bladeRadius: 0.095338516
@@ -470,6 +468,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 676037a456a0d4396a1623d710f8f43c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PingPong.Gameplay.MatchController
+--- !u!114 &1994347948
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4865993576303460586}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1566ce4707aa547659024db3dd65918d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PingPong.Presentation::PingPong.Presentation.PaddleHaptics
+  _hitter: {fileID: 1237526939}
+  _haptics:
+    _component: {fileID: 184904929}
 --- !u!1 &4865993576303460584 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3595764529781900457, guid: eb9beca3c527143cab67903e11d2505c, type: 3}
@@ -716,7 +729,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8253767718788515343, guid: 69e6993485cfe4130b58741bf490a81d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: 69e6993485cfe4130b58741bf490a81d, type: 3}
 --- !u!1001 &6691215253263423839
 PrefabInstance:
@@ -783,6 +799,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1189161419170995858, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
       insertIndex: -1
       addedObject: {fileID: 184904929}
+    - targetCorrespondingSourceObject: {fileID: 1189161419170995858, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1994347948}
   m_SourcePrefab: {fileID: 100100000, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
 --- !u!1001 &8000661228984828167
 PrefabInstance:

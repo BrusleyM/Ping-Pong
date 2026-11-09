@@ -1,11 +1,13 @@
+using PingPong.Gameplay;
 using UnityEngine;
 
-namespace PingPong.Gameplay
+namespace PingPong.Presentation
 {
-    /// <summary>Impact sounds through an AudioSource, with per-kind clips, speed-scaled volume and pitch variation.</summary>
+    /// <summary>The ball's impact sounds: per-kind clips, speed-scaled volume and pitch variation.</summary>
     [RequireComponent(typeof(AudioSource))]
-    public sealed class AudioSourceImpactAudio : MonoBehaviour, IImpactAudio
+    public sealed class BallImpactAudio : MonoBehaviour
     {
+        [SerializeField] PingPongBall _ball;
         [SerializeField] AudioClip _table;
         [Tooltip("Falls back to the table clip if empty.")]
         [SerializeField] AudioClip _paddle;
@@ -27,14 +29,18 @@ namespace PingPong.Gameplay
             _source.playOnAwake = false;
         }
 
-        public void Play(ImpactKind kind, Vector3 position, float speed)
+        void OnValidate() => Validation.Require(_ball, "the Ball", this);
+        void OnEnable() => _ball.Impact += Play;
+        void OnDisable() => _ball.Impact -= Play;
+
+        void Play(BallImpact impact)
         {
-            if (speed < _minSpeed) return;
-            AudioClip clip = Clip(kind);
+            if (impact.Speed < _minSpeed) return;
+            AudioClip clip = Clip(impact.Kind);
             if (clip == null) clip = _table; // Unity null check: '??' would miss destroyed/missing assets
             if (clip == null) return;
             _source.pitch = 1f + Random.Range(-_pitchVariation, _pitchVariation);
-            _source.PlayOneShot(clip, Mathf.Clamp01(speed / _fullVolumeSpeed));
+            _source.PlayOneShot(clip, Mathf.Clamp01(impact.Speed / _fullVolumeSpeed));
         }
 
         AudioClip Clip(ImpactKind kind) => kind switch

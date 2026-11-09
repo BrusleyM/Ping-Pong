@@ -6,9 +6,26 @@ namespace PingPong.Gameplay
 {
     public enum BallContact { Net, DeadBall }
 
+    public enum ImpactKind { Table, Paddle, Net, Other }
+
+    /// <summary>Something the ball hit, for feedback (sound, effects). Speed is the impact speed, m/s.</summary>
+    public readonly struct BallImpact
+    {
+        public readonly ImpactKind Kind;
+        public readonly Vector3 Position;
+        public readonly float Speed;
+
+        public BallImpact(ImpactKind kind, Vector3 position, float speed)
+        {
+            Kind = kind;
+            Position = position;
+            Speed = speed;
+        }
+    }
+
     /// <summary>
     /// The live ball. Applies the shared flight model (gravity, drag, table bounce) to a Rigidbody and
-    /// reports what it touches; it knows nothing about rules or players.
+    /// reports what it touches; it knows nothing about rules, players or feedback.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     public sealed class PingPongBall : MonoBehaviour
@@ -16,7 +33,6 @@ namespace PingPong.Gameplay
         [SerializeField] BallPhysicsProfile _physics;
         [Tooltip("The table this ball bounces on.")]
         [SerializeField] PingPongTable _table;
-        [SerializeField] Seam<IImpactAudio> _audio;
         [Tooltip("Colliders under these roots never end a rally (the player rig, hands).")]
         [SerializeField] Transform[] _ignoredRoots = Array.Empty<Transform>();
 
@@ -30,6 +46,8 @@ namespace PingPong.Gameplay
         public event Action<Side> TableBounce;
         /// <summary>The ball touched the net, or something that ends the rally.</summary>
         public event Action<BallContact> OtherContact;
+        /// <summary>Every contact (paddle, table, net, anything else), for sound and effects.</summary>
+        public event Action<BallImpact> Impact;
 
         const float MinSurfaceNormalY = 0.5f; // steeper contacts are the table edge, not the surface
 
@@ -50,7 +68,6 @@ namespace PingPong.Gameplay
         {
             Validation.Require(_physics, "a Ball Physics Profile", this);
             Validation.RequireInScene(_table, "the Table", this);
-            Validation.Seam(_audio, nameof(_audio), this);
         }
 
         void FixedUpdate()
@@ -71,19 +88,19 @@ namespace PingPong.Gameplay
 
             if (other == _table.Top)
             {
-                if (collision.GetContact(0).normal.y < MinSurfaceNormalY) { PlayImpact(ImpactKind.Other, speed); return; }
+                if (collision.GetContact(0).normal.y < MinSurfaceNormalY) { RaiseImpact(ImpactKind.Other, speed); return; }
                 Body.linearVelocity = Model.BounceOffTable(_preVelocity);
-                PlayImpact(ImpactKind.Table, speed);
+                RaiseImpact(ImpactKind.Table, speed);
                 TableBounce?.Invoke(_table.Frame.SideOf(transform.position));
             }
             else if (other == _table.Net)
             {
-                PlayImpact(ImpactKind.Net, speed);
+                RaiseImpact(ImpactKind.Net, speed);
                 OtherContact?.Invoke(BallContact.Net);
             }
             else
             {
-                PlayImpact(ImpactKind.Other, speed);
+                RaiseImpact(ImpactKind.Other, speed);
                 if (ContactFilter.IsDeadBallSurface(other)) OtherContact?.Invoke(BallContact.DeadBall);
             }
         }
@@ -110,10 +127,10 @@ namespace PingPong.Gameplay
             Body.linearVelocity = velocity;
             Body.angularVelocity = Vector3.zero;
             _preVelocity = velocity;
-            if (byPaddle) PlayImpact(ImpactKind.Paddle, velocity.magnitude);
+            if (byPaddle) RaiseImpact(ImpactKind.Paddle, velocity.magnitude);
         }
 
-        void PlayImpact(ImpactKind kind, float speed) => _audio.Value?.Play(kind, transform.position, speed);
+        void RaiseImpact(ImpactKind kind, float speed) => Impact?.Invoke(new BallImpact(kind, transform.position, speed));
     }
 
     /// <summary>Static geometry (no rigidbody) outside the ignored roots ends a rally: floor, walls, furniture.</summary>

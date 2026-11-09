@@ -3,6 +3,7 @@
     "rootNamespace": "PingPong.Tests",
     "references": [
         "PingPong.Core",
+        "PingPong.Presentation",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
