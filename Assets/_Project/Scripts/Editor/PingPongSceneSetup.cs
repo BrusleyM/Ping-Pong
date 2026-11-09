@@ -18,6 +18,7 @@ namespace PingPong.EditorTools
 
         const string ProfileFolder = "Assets/_Project/Settings/Gameplay";
         const string PaddlePrefabPath = "Assets/_Project/Prefabs/Equipment/Paddle.prefab";
+        const string MatchPrefabPath = "Assets/_Project/Prefabs/Match.prefab";
         const string BallHitClipGuid = "c68f605b3a40145fb873f4210b4ecc23"; // the ball's existing hit sound
 
         [MenuItem("Ping Pong/Set Up Game Scene")]
@@ -76,6 +77,8 @@ namespace PingPong.EditorTools
             var hitClip = AssetDatabase.LoadAssetAtPath<AudioClip>(AssetDatabase.GUIDToAssetPath(BallHitClipGuid));
             if (hitClip != null && GetRef(impactAudio, "_table") == null) Set(impactAudio, "_table", hitClip);
             Set(ball, "_physics", ballPhysics);
+            Set(ball, "_table", table);
+            if (!ball.transform.IsChildOf(match)) ball.transform.SetParent(match, true); // the ball is part of the Match prefab
             // Also on the ball prefab, so every copy of it has physics (not just this scene's override).
             var ballPrefab = PrefabUtility.GetCorrespondingObjectFromSource(ball);
             if (ballPrefab != null && GetRef(ballPrefab, "_physics") == null)
@@ -88,7 +91,6 @@ namespace PingPong.EditorTools
 
             // Match rules.
             var matchCtl = GetOrAdd<MatchController>(match.gameObject);
-            Set(matchCtl, "_table", table);
             Set(matchCtl, "_ball", ball);
             Set(matchCtl, "_profile", matchRules);
 
@@ -149,7 +151,9 @@ namespace PingPong.EditorTools
             layer.overlayType = OVROverlay.OverlayType.Underlay;
             layer.hidden = true;
             EditorUtility.SetDirty(layer);
-            var pt = GetOrAdd<MetaPassthrough>(match.gameObject);
+            // Platform services live outside the Match prefab, which stays free of Meta code.
+            var platform = GetOrCreate("Platform").transform;
+            var pt = GetOrAdd<MetaPassthrough>(platform.gameObject);
             Set(pt, "_layer", layer);
             var cam = rig.centerEyeAnchor != null ? rig.centerEyeAnchor.GetComponent<Camera>() : null;
             SetArray(pt, "_cameras", cam != null ? new Object[] { cam } : new Object[0]);
@@ -160,7 +164,7 @@ namespace PingPong.EditorTools
             log.AppendLine($"Passthrough: layer on {rig.name}, hides {hide.Length} object(s)" + (mgr == null ? " (no OVRManager found!)" : ""));
 
             // Commands, modes and scoreboard.
-            var commands = GetOrAdd<InputSystemPlayerCommands>(match.gameObject);
+            var commands = GetOrAdd<InputSystemPlayerCommands>(platform.gameObject);
             var modes = GetOrAdd<GameModeController>(match.gameObject);
             Set(modes, "_match", matchCtl);
             Set(modes, "_ai", ai);
@@ -176,6 +180,13 @@ namespace PingPong.EditorTools
             {
                 SetFixedTimestep(1f / 90f);
                 log.AppendLine("Project setting: fixed timestep set to 1/90 s.");
+            }
+
+            // The Match (rules, ball, AI, net, scoreboard) is one prefab; the scene wires it to the table and platform.
+            if (!PrefabUtility.IsAnyPrefabInstanceRoot(match.gameObject))
+            {
+                PrefabUtility.SaveAsPrefabAssetAndConnect(match.gameObject, MatchPrefabPath, InteractionMode.AutomatedAction);
+                log.AppendLine($"Match prefab: {MatchPrefabPath}");
             }
 
             EditorSceneManager.MarkSceneDirty(scene);

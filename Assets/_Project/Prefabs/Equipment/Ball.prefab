@@ -155,10 +155,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5d224c9bed4e4d8681e3bb0dd4fb310, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _source: {fileID: 452275168130358761}
-  _sfx: {fileID: 8300000, guid: c68f605b3a40145fb873f4210b4ecc23, type: 3}
-  _paddleSfx: {fileID: 0}
-  _maxSpeed: 25
+  _physics: {fileID: 11400000, guid: 2fe9a7370ad8242f082325dbaed1c259, type: 2}
+  _table: {fileID: 0}
+  _audio:
+    _component: {fileID: 0}
+  _ignoredRoots: []
 --- !u!82 &452275168130358761
 AudioSource:
   m_ObjectHideFlags: 0

@@ -12,14 +12,14 @@ namespace PingPong.Gameplay
     /// </summary>
     public sealed class MatchController : MonoBehaviour
     {
-        [SerializeField] PingPongTable _table;
         [SerializeField] PingPongBall _ball;
         [SerializeField] MatchRulesProfile _profile;
 
         MatchRulesEngine _engine;
         Coroutine _pendingServe;
 
-        public PingPongTable Table => _table;
+        /// <summary>The table the ball plays on (the ball owns the reference).</summary>
+        public PingPongTable Table => _ball.Table;
         public PingPongBall Ball => _ball;
         public MatchSnapshot Snapshot => Engine.State;
         public MatchPhase Phase => Engine.State.Phase;
@@ -53,7 +53,6 @@ namespace PingPong.Gameplay
 
         void OnEnable()
         {
-            _ball.Table = _table;
             _ball.TableBounce += OnTableBounce;
             _ball.OtherContact += OnOtherContact;
         }
@@ -65,7 +64,11 @@ namespace PingPong.Gameplay
             CancelPendingServe();
         }
 
-        void OnValidate() => Validation.Require(_profile, "a Match Rules Profile", this);
+        void OnValidate()
+        {
+            Validation.Require(_profile, "a Match Rules Profile", this);
+            Validation.Require(_ball, "the Ball", this);
+        }
 
         public void StartMatch(Side firstServer)
         {
@@ -82,7 +85,7 @@ namespace PingPong.Gameplay
 
         public Vector3 ServePosition(Side side)
         {
-            TableFrame f = _table.Frame;
+            TableFrame f = Table.Frame;
             return f.PointOnSide(side, 0f, f.HalfLength + Pacing.ServeBehind, Pacing.ServeHeight);
         }
 
@@ -98,7 +101,7 @@ namespace PingPong.Gameplay
             LastHitTime = Time.time;
             HitCount++;
             PaddleHit?.Invoke(player);
-            if (IsAuthority) Engine.RegisterHit(player, _table.Frame.IsOverTable(from));
+            if (IsAuthority) Engine.RegisterHit(player, Table.Frame.IsOverTable(from));
         }
 
         /// <summary>Network clients mirror the authority's rules state through this; point and game events fire as on the authority.</summary>
@@ -119,7 +122,7 @@ namespace PingPong.Gameplay
         void Update()
         {
             if (!IsAuthority) return;
-            Vector3 local = _table.Frame.ToLocal(_ball.transform.position);
+            Vector3 local = Table.Frame.ToLocal(_ball.transform.position);
             switch (Phase)
             {
                 case MatchPhase.Rally:

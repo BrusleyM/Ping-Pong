@@ -11,6 +11,15 @@ namespace PingPong.Gameplay
             if (value == null) Debug.LogWarning($"{context.name}: assign {label}.", context);
         }
 
+        /// <summary>
+        /// Like <see cref="Require"/>, for references to objects that live in the scene. Prefab assets can't hold
+        /// those (the scene wires them), so only instances in a scene are checked.
+        /// </summary>
+        public static void RequireInScene(Object value, string label, Component context)
+        {
+            if (context.gameObject.scene.IsValid()) Require(value, label, context);
+        }
+
         /// <summary>Errors if a seam holds a component that doesn't implement its interface.</summary>
         public static void Seam<T>(in Seam<T> seam, string field, Object context) where T : class
         {

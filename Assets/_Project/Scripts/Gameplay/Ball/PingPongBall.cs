@@ -14,12 +14,14 @@ namespace PingPong.Gameplay
     public sealed class PingPongBall : MonoBehaviour
     {
         [SerializeField] BallPhysicsProfile _physics;
+        [Tooltip("The table this ball bounces on.")]
+        [SerializeField] PingPongTable _table;
         [SerializeField] Seam<IImpactAudio> _audio;
         [Tooltip("Colliders under these roots never end a rally (the player rig, hands).")]
         [SerializeField] Transform[] _ignoredRoots = Array.Empty<Transform>();
 
         public Rigidbody Body { get; private set; }
-        public PingPongTable Table { get; set; }
+        public PingPongTable Table => _table;
         public BallFlightModel Model => _physics.Model;
         /// <summary>Which collisions end a rally. Defaults to static geometry outside the ignored roots.</summary>
         public IBallContactFilter ContactFilter { get; set; }
@@ -47,6 +49,7 @@ namespace PingPong.Gameplay
         void OnValidate()
         {
             Validation.Require(_physics, "a Ball Physics Profile", this);
+            Validation.RequireInScene(_table, "the Table", this);
             Validation.Seam(_audio, nameof(_audio), this);
         }
 
@@ -62,18 +65,18 @@ namespace PingPong.Gameplay
 
         void OnCollisionEnter(Collision collision)
         {
-            if (Table == null) return;
+            if (_table == null) return; // not wired (reported in OnValidate)
             Collider other = collision.collider;
             float speed = collision.relativeVelocity.magnitude;
 
-            if (other == Table.Top)
+            if (other == _table.Top)
             {
                 if (collision.GetContact(0).normal.y < MinSurfaceNormalY) { PlayImpact(ImpactKind.Other, speed); return; }
                 Body.linearVelocity = Model.BounceOffTable(_preVelocity);
                 PlayImpact(ImpactKind.Table, speed);
-                TableBounce?.Invoke(Table.Frame.SideOf(transform.position));
+                TableBounce?.Invoke(_table.Frame.SideOf(transform.position));
             }
-            else if (other == Table.Net)
+            else if (other == _table.Net)
             {
                 PlayImpact(ImpactKind.Net, speed);
                 OtherContact?.Invoke(BallContact.Net);
