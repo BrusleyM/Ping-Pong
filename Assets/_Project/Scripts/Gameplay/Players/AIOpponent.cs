@@ -23,6 +23,7 @@ namespace PingPong.Gameplay
         public int Level { get => _level; set => SetLevel(value); }
         public string LevelName => Difficulty.Name;
         public int LevelCount => _profile.LevelCount;
+        public string NameOf(int level) => _profile.Level(level).Name;
 
         /// <summary>Raised when the difficulty level changes.</summary>
         public event Action<int> LevelChanged;

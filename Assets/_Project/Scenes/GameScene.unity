@@ -119,11 +119,139 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &374198655
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 374198658}
+  - component: {fileID: 374198657}
+  - component: {fileID: 374198656}
+  m_Layer: 0
+  m_Name: EventSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &374198656
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374198655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2518c50cb3fc6a6458d4b743c2f69c7d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Oculus.Interaction::Oculus.Interaction.PointableCanvasModule
+  m_SendPointerHoverToParent: 1
+  _useInitialPressPositionForDrag: 1
+  _exclusiveMode: 1
+--- !u!114 &374198657
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374198655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventSystem
+  m_FirstSelected: {fileID: 0}
+  m_sendNavigationEvents: 1
+  m_DragThreshold: 10
+--- !u!4 &374198658
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374198655}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!108 &705507994 stripped
 Light:
   m_CorrespondingSourceObject: {fileID: 8576816786471527862, guid: ecc06eb1ec3f34f15bf1728d375fb353, type: 3}
   m_PrefabInstance: {fileID: 8000661228984828167}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &866772348
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2801669743015467000, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+      propertyPath: _head
+      value: 
+      objectReference: {fileID: 4866239504134779189}
+    - target: {fileID: 2801669743015467000, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+      propertyPath: _modes
+      value: 
+      objectReference: {fileID: 5071649891295234948}
+    - target: {fileID: 9132631703795589359, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9132631703795589359, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9132631703795589359, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9132631703795589359, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9132631703795589359, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9132631703795589359, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9132631703795589359, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9132631703795589359, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9132631703795589359, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9132631703795589359, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9159274924819269275, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+      propertyPath: m_Name
+      value: ModeMenuMeta
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
 --- !u!4 &866840683 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4936855548094455163, guid: eb9beca3c527143cab67903e11d2505c, type: 3}
@@ -323,6 +451,31 @@ MonoBehaviour:
       m_Processors: 
       m_Groups: 
       m_Action: Harder
+      m_Flags: 0
+    m_Flags: 0
+  _menu:
+    m_Name: Menu
+    m_Type: 1
+    m_ExpectedControlType: 
+    m_Id: 44295302-1e9e-4a22-9661-1f435414397b
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings:
+    - m_Name: 
+      m_Id: 4bdf668e-3173-467f-947a-f01d5167e324
+      m_Path: <XRController>{LeftHand}/menuButton
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Menu
+      m_Flags: 0
+    - m_Name: 
+      m_Id: c7b293f6-ecd2-4526-8867-b69894742e4e
+      m_Path: <Keyboard>/escape
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Menu
       m_Flags: 0
     m_Flags: 0
 --- !u!114 &912907508
@@ -537,6 +690,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 893482383}
   m_SourcePrefab: {fileID: 100100000, guid: eb9beca3c527143cab67903e11d2505c, type: 3}
+--- !u!4 &4866239504134779189 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1578165420415906963, guid: eb9beca3c527143cab67903e11d2505c, type: 3}
+  m_PrefabInstance: {fileID: 4866239504134779188}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &5071649891295234947
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -613,6 +771,17 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: 69e6993485cfe4130b58741bf490a81d, type: 3}
+--- !u!114 &5071649891295234948 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3632498679609705581, guid: 69e6993485cfe4130b58741bf490a81d, type: 3}
+  m_PrefabInstance: {fileID: 5071649891295234947}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e0907af968074fa8a0087edb6590560, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PingPong.Gameplay.GameModeController
 --- !u!1001 &6691215253263423839
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -755,3 +924,5 @@ SceneRoots:
   - {fileID: 6691215253263423839}
   - {fileID: 4866239504134779188}
   - {fileID: 912907509}
+  - {fileID: 374198658}
+  - {fileID: 866772348}
