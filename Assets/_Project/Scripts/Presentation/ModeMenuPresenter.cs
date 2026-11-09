@@ -11,13 +11,16 @@ namespace PingPong.Presentation
     /// The mode menu: solo at each AI level, online, passthrough and restart. Opens in front of the
     /// player on the menu button (and at launch), closes once a mode is picked. Builds one difficulty
     /// button per AI level from a template, so the menu follows the AI profile. Wording comes from
-    /// <see cref="MenuText"/>; how the panel is pointed at (rays, poke) is the platform's business.
+    /// <see cref="MenuText"/>, the title is the product name. How the panel is pointed at (rays, poke) is the
+    /// platform's business: a platform prefab variant adds it. The menu only opens between points.
     /// </summary>
     public sealed class ModeMenuPresenter : MonoBehaviour
     {
         [SerializeField] GameModeController _modes;
         [Tooltip("The panel shown and hidden (the world-space canvas).")]
         [SerializeField] GameObject _panel;
+        [Tooltip("Shows the product name (Player Settings).")]
+        [SerializeField] TMP_Text _title;
         [Tooltip("The player's head (centre eye); the menu opens in front of it.")]
         [SerializeField] Transform _head;
         [Tooltip("Inactive template copied once per AI level, under its parent.")]
@@ -45,6 +48,7 @@ namespace PingPong.Presentation
 
         void Awake()
         {
+            if (_title != null) _title.text = Application.productName;
             _levelTemplate.gameObject.SetActive(false);
             int levelCount = _modes.AI != null ? _modes.AI.LevelCount : 0;
             for (int i = 0; i < levelCount; i++)
@@ -82,9 +86,11 @@ namespace PingPong.Presentation
             Open();
         }
 
+        /// <summary>Closes the menu, or opens it between points (never mid-rally, where the AI keeps playing).</summary>
         public void Toggle()
         {
-            if (IsOpen) Close(); else Open();
+            if (IsOpen) Close();
+            else if (_modes.BetweenPoints) Open();
         }
 
         public void Open()

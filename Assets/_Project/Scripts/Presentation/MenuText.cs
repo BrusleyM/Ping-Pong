@@ -3,7 +3,6 @@ namespace PingPong.Presentation
     /// <summary>Every player-facing string on the mode menu, in one place (and testable without a scene).</summary>
     public static class MenuText
     {
-        public const string Title = "Ping Pong Mania";
         public const string Solo = "Solo vs AI";
         public const string Online = "Online";
         public const string OnlineUnavailable = "Online (coming soon)";

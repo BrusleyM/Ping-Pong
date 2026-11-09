@@ -10,13 +10,17 @@ using static PingPong.EditorTools.SetupHelpers;
 namespace PingPong.EditorTools
 {
     /// <summary>
-    /// Builds the ModeMenu prefab: a world-space canvas laid out top to bottom, made pointable by the
-    /// rig's Meta rays (PointableCanvas + RayInteractable on a clipped plane). Idempotent: existing
-    /// children are reused and every value is written the same way each run.
+    /// Builds the mode menu as a base prefab and a platform variant, like PaddleModel and Paddle:
+    /// ModeMenu is the Meta-free UGUI panel (canvas, buttons, presenter); ModeMenuMeta adds pointing
+    /// with the rig's Meta rays (PointableCanvas + RayInteractable on a clipped plane). Another input
+    /// (hands, poke, desktop) is another variant. Idempotent: existing children are reused and every
+    /// value is written the same way each run.
     /// </summary>
     internal static class ModeMenuBuilder
     {
-        internal const string PrefabPath = "Assets/_Project/Prefabs/UI/ModeMenu.prefab";
+        const string BasePath = "Assets/_Project/Prefabs/UI/ModeMenu.prefab";
+        /// <summary>The variant the scene uses.</summary>
+        internal const string PrefabPath = "Assets/_Project/Prefabs/UI/ModeMenuMeta.prefab";
 
         const float PixelsPerMetre = 1000f;            // canvas units are millimetres
         static readonly Vector2 Size = new Vector2(560f, 600f);
@@ -26,14 +30,22 @@ namespace PingPong.EditorTools
 
         internal static void Build()
         {
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) == null)
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(BasePath) == null)
             {
-                EnsureFolder(System.IO.Path.GetDirectoryName(PrefabPath).Replace('\\', '/'));
+                EnsureFolder(System.IO.Path.GetDirectoryName(BasePath).Replace('\\', '/'));
                 var empty = new GameObject("ModeMenu");
-                PrefabUtility.SaveAsPrefabAsset(empty, PrefabPath);
+                PrefabUtility.SaveAsPrefabAsset(empty, BasePath);
                 Object.DestroyImmediate(empty);
             }
-            EditPrefab(PrefabPath, BuildContents);
+            EditPrefab(BasePath, BuildContents);
+
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) == null)
+            {
+                var instance = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(BasePath));
+                PrefabUtility.SaveAsPrefabAsset(instance, PrefabPath); // saving an instance makes a variant
+                Object.DestroyImmediate(instance);
+            }
+            EditPrefab(PrefabPath, AddMetaRayPointing);
         }
 
         static void BuildContents(GameObject root)
@@ -62,7 +74,7 @@ namespace PingPong.EditorTools
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
 
-            Text(canvasGo.transform, "Title", MenuText.Title, 44f, FontStyles.Bold, 60f);
+            var title = Text(canvasGo.transform, "Title", PlayerSettings.productName, 44f, FontStyles.Bold, 60f);
             Text(canvasGo.transform, "SoloLabel", MenuText.Solo, 30f, FontStyles.Normal, 40f);
             var levels = GetOrCreate("Levels", canvasGo.transform);
             var row = GetOrAdd<HorizontalLayoutGroup>(levels);
@@ -79,7 +91,27 @@ namespace PingPong.EditorTools
             var close = ButtonAt(canvasGo.transform, "Close", MenuText.Close);
             Text(canvasGo.transform, "Hint", MenuText.Hint, 22f, FontStyles.Italic, 34f);
 
-            // Meta rays: the panel is a pointable canvas on a plane clipped to the canvas rectangle.
+            // Meta pointing belongs to the variant (the base predates the split and may still carry it).
+            foreach (var c in panel.GetComponents<RayInteractable>()) Object.DestroyImmediate(c);
+            foreach (var c in panel.GetComponents<PointableCanvas>()) Object.DestroyImmediate(c);
+            var oldSurface = panel.transform.Find("Surface");
+            if (oldSurface != null) Object.DestroyImmediate(oldSurface.gameObject);
+
+            var presenter = GetOrAdd<ModeMenuPresenter>(root);
+            Set(presenter, "_panel", panel);
+            Set(presenter, "_title", title);
+            Set(presenter, "_levelTemplate", levelTemplate);
+            Set(presenter, "_online", online);
+            Set(presenter, "_passthrough", passthrough);
+            Set(presenter, "_restart", restart);
+            Set(presenter, "_close", close);
+        }
+
+        /// <summary>Meta rays: the panel becomes a pointable canvas on a plane clipped to the canvas rectangle.</summary>
+        static void AddMetaRayPointing(GameObject root)
+        {
+            var panel = root.transform.Find("Panel").gameObject;
+            var canvas = panel.GetComponentInChildren<Canvas>(true);
             var surfaceGo = GetOrCreate("Surface", panel.transform);
             surfaceGo.transform.localPosition = Vector3.zero;
             surfaceGo.transform.localRotation = Quaternion.identity;
@@ -94,14 +126,6 @@ namespace PingPong.EditorTools
             var ray = GetOrAdd<RayInteractable>(panel);
             Set(ray, "_surface", clipped);
             Set(ray, "_pointableElement", pointable);
-
-            var presenter = GetOrAdd<ModeMenuPresenter>(root);
-            Set(presenter, "_panel", panel);
-            Set(presenter, "_levelTemplate", levelTemplate);
-            Set(presenter, "_online", online);
-            Set(presenter, "_passthrough", passthrough);
-            Set(presenter, "_restart", restart);
-            Set(presenter, "_close", close);
         }
 
         static TextMeshProUGUI Text(Transform parent, string name, string text, float size, FontStyles style, float height)

@@ -35,7 +35,8 @@ namespace PingPong.Gameplay
         public event Action MenuRequested;
 
         bool CanRestart => _match.Phase is MatchPhase.GameOver or MatchPhase.FreePlay;
-        bool BetweenPoints => CanRestart || _match.Phase == MatchPhase.WaitingForServe;
+        /// <summary>No rally in play: waiting for a serve, game over or free play.</summary>
+        public bool BetweenPoints => CanRestart || _match.Phase == MatchPhase.WaitingForServe;
 
         void OnValidate()
         {
