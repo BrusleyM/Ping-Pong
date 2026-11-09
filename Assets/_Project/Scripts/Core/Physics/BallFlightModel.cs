@@ -93,9 +93,10 @@ namespace PingPong.Core
                 {
                     if (Mathf.Abs(l.x) > table.HalfWidth || Mathf.Abs(l.z) > table.HalfLength) return count;
                     vel = BounceOffTable(vel);
-                    bounces[count++] = new BallBounce { Position = pos, Time = t, Side = l.z < 0f ? Side.Near : Side.Far, Velocity = vel };
                     l.y = _s.Radius;
                     pos = table.ToWorld(l);
+                    // Position and Velocity describe the same state, the one the flight continues from.
+                    bounces[count++] = new BallBounce { Position = pos, Time = t, Side = l.z < 0f ? Side.Near : Side.Far, Velocity = vel };
                 }
                 if (l.y < LostDepth) return count;
                 prev = l;
