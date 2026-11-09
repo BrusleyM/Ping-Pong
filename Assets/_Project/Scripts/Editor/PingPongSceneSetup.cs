@@ -198,12 +198,11 @@ namespace PingPong.EditorTools
             SetEnum(hitter, "_player", (int)Side.Near);
             Set(hitter, "_feel", feel);
             Set(hitter, "_model", root.GetComponent<PaddleModel>());
-            // Toggle grab with a snapped grip replaces Meta's free grab (which held the paddle at any angle
-            // and dropped it when the grip was released).
-            var isdkGrab = root.transform.Find("ISDK_HandGrabInteraction");
-            if (isdkGrab != null) Object.DestroyImmediate(isdkGrab.gameObject);
-            var grabbable = root.GetComponent("Grabbable");
-            if (grabbable != null) Object.DestroyImmediate(grabbable);
+            // Controllers: toggle grab with a snapped grip (PaddleGrip). Hand tracking keeps Meta's free grab
+            // (HandGrabInteractable), so only the controller part of Meta's grab (GrabInteractable) goes.
+            foreach (var controllerGrab in root.GetComponentsInChildren<MonoBehaviour>(true)
+                         .Where(c => c != null && c.GetType().Name == "GrabInteractable").ToArray())
+                Object.DestroyImmediate(controllerGrab);
             var grip = GetOrAdd<PaddleGrip>(root);
             Set(grip, "_model", root.GetComponent<PaddleModel>());
 

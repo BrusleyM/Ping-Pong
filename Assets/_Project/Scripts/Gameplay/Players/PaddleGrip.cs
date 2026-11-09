@@ -4,9 +4,10 @@ using UnityEngine;
 namespace PingPong.Gameplay
 {
     /// <summary>
-    /// Toggle grab for the player's paddle: press grab with a hand near the handle and the paddle snaps
-    /// into a handshake grip and stays there without holding the button; press grab on that hand again
-    /// to let go (it drops with the hand's motion). The grip is worked out from the PaddleModel, so it
+    /// Controller grab for the player's paddle (hand tracking keeps Meta's free grab, without a pose):
+    /// press grab with a controller near the handle and the paddle snaps into a handshake grip and stays
+    /// there without holding the button; press grab on that hand again to let go (it drops with the
+    /// hand's motion). The grip is worked out from the PaddleModel, so it
     /// fits any paddle mesh; pitch and blade distance are tunable for feel.
     /// </summary>
     [DefaultExecutionOrder(-100)] // pose the paddle before PaddleHitter samples it in LateUpdate
