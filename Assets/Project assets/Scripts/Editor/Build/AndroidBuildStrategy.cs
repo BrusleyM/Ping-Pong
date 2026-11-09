@@ -19,7 +19,7 @@ namespace PingPong.EditorTools.Build
             _myVersionManager = myVersionManager;
         }
 
-        public void Build(string buildNumber)
+        public void Build(string versionName, string buildNumber)
         {
             // Get enabled scenes
             var scenes = EditorBuildSettings.scenes
@@ -37,7 +37,7 @@ namespace PingPong.EditorTools.Build
             // Check signing first so a failed build doesn't bump the version.
             if (!_keystoreManager.ApplyKeystore())
                 throw new BuildFailedException("Android signing key is not set up; see the error above.");
-            _myVersionManager.ApplyBuildNumber(buildNumber);
+            _myVersionManager.Apply(versionName, buildNumber);
 
             // Generate APK name
             string apkName = $"{PlayerSettings.productName}_{PlayerSettings.bundleVersion}_{PlayerSettings.Android.bundleVersionCode}.apk";

@@ -12,6 +12,7 @@ namespace PingPong.EditorTools.Build
             // Parse custom parameters from CI
             string[] args = System.Environment.GetCommandLineArgs();
             string buildNumber = GetArg(args, "BuildNumber");
+            string versionName = GetArg(args, "VersionName");
 
             var versionManager = new MyVersionManager();
 
@@ -22,7 +23,7 @@ namespace PingPong.EditorTools.Build
             // instead of later with "no APK found".
             try
             {
-                androidBuilder.Build(buildNumber);
+                androidBuilder.Build(versionName, buildNumber);
             }
             catch (System.Exception e)
             {
