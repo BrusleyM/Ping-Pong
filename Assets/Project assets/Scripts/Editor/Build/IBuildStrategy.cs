@@ -4,6 +4,6 @@ namespace PingPong.EditorTools.Build
 {
     public interface IBuildStrategy
     {
-        void Build(string buildNumber);
+        void Build(string versionName, string buildNumber);
     }
 }
