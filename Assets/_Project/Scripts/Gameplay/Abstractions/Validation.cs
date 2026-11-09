@@ -17,7 +17,12 @@ namespace PingPong.Gameplay
         /// </summary>
         public static void RequireInScene(Object value, string label, Component context)
         {
-            if (context.gameObject.scene.IsValid()) Require(value, label, context);
+            var scene = context.gameObject.scene;
+            if (!scene.IsValid()) return; // prefab asset
+#if UNITY_EDITOR
+            if (UnityEditor.SceneManagement.EditorSceneManager.IsPreviewScene(scene)) return; // Prefab Mode
+#endif
+            Require(value, label, context);
         }
 
         /// <summary>Errors if a seam holds a component that doesn't implement its interface.</summary>
