@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 2857126273315129240}
   - component: {fileID: 3324042358072948328}
-  - component: {fileID: 5771015551785441036}
   m_Layer: 0
   m_Name: ISDK_HandGrabInteraction
   m_TagString: Untagged
@@ -73,28 +72,6 @@ MonoBehaviour:
   _movementProvider: {fileID: 0}
   _handAligment: 0
   _handGrabPoses: []
---- !u!114 &5771015551785441036
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1868999723312974654}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5a1bc992571301d4a9602ac95ef4c71a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _interactorFilters: []
-  _maxInteractors: -1
-  _maxSelectingInteractors: -1
-  _data: {fileID: 0}
-  _pointableElement: {fileID: 5407226932338113266}
-  _rigidbody: {fileID: 8798063439272801109}
-  _grabSource: {fileID: 2760665712938557238}
-  _useClosestPointAsGrabSource: 1
-  _releaseDistance: 0
-  _resetGrabOnGrabsUpdated: 1
 --- !u!1001 &5650264034722233283
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -180,6 +157,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8616892775881475973, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8247480424854000632}
+    - targetCorrespondingSourceObject: {fileID: 8616892775881475973, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4759419765657888614}
     - targetCorrespondingSourceObject: {fileID: 7020187288193156180, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2769601768665863888}
@@ -187,11 +167,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1871663641760800465}
   m_SourcePrefab: {fileID: 100100000, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}
---- !u!4 &2760665712938557238 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 7504720888332625141, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}
-  m_PrefabInstance: {fileID: 5650264034722233283}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &3332295413380548458 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6942145108544240809, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}
@@ -355,6 +330,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: PingPong.Platform.Meta::PingPong.Platform.Meta.OvrControllerHaptics
   _controller: 2
+  _grip: {fileID: 4759419765657888614}
   _frequency: 0.5
 --- !u!114 &8247480424854000632
 MonoBehaviour:
@@ -373,6 +349,26 @@ MonoBehaviour:
     _component: {fileID: 6234584778242328493}
   _fullStrengthSpeed: 12
   _pulseSeconds: 0.04
+--- !u!114 &4759419765657888614
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4178389820277734470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 142974389db3d45ec819dad4b26ec006, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.PaddleGrip
+  _model: {fileID: 7353783026042077538}
+  _commands:
+    _component: {fileID: 0}
+  _leftHand: {fileID: 0}
+  _rightHand: {fileID: 0}
+  _reach: 0.2
+  _bladeDistance: 0.13
+  _pitch: 20
 --- !u!114 &7353783026042077538 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2910494720939637409, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}

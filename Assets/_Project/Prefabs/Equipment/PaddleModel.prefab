@@ -595,6 +595,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.PaddleModel
   _blade: {fileID: 7547313987498765768}
   _faceNormalLocal: {x: 0, y: 0, z: 1}
+  _handleToBladeLocal: {x: -0.56650746, y: 0.8240566, z: 0}
   _bladeRadius: 0.095338516
   _bladeHalfThickness: 0.019498881
 --- !u!1 &8617067104063608907

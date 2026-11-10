@@ -2,9 +2,13 @@ using UnityEngine;
 
 namespace PingPong.Gameplay
 {
+    public enum Hand { None, Left, Right }
+
     /// <summary>Player commands, polled once per frame. Implementations map devices to these actions.</summary>
     public interface IPlayerCommands
     {
+        /// <summary>The grab button on that hand went down this frame.</summary>
+        bool GrabPressed(Hand hand);
         bool RestartPressed { get; }
         bool TogglePassthroughPressed { get; }
         bool EasierPressed { get; }

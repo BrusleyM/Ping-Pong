@@ -84,6 +84,12 @@ namespace PingPong.EditorTools
             var commands = GetOrAdd<InputSystemPlayerCommands>(platform);
             var modes = match.GetComponent<GameModeController>();
             SetSeam(modes, "_commands", commands);
+
+            // The paddle is grabbed with either controller.
+            var grip = paddle.GetComponent<PaddleGrip>();
+            SetSeam(grip, "_commands", commands);
+            Set(grip, "_leftHand", rig.leftControllerAnchor);
+            Set(grip, "_rightHand", rig.rightControllerAnchor);
             SetSeam(modes, "_passthrough", passthrough);
 
             // The mode menu opens in front of the head; Meta rays point at it through the event system.
@@ -140,6 +146,7 @@ namespace PingPong.EditorTools
             var model = GetOrAdd<PaddleModel>(root);
             if (GetRef(model, "_blade") != null)
             {
+                MeasureHandle(model, root);
                 log.AppendLine($"Paddle model: blade kept (radius {model.BladeRadius:F3} m)");
                 return;
             }
@@ -167,7 +174,32 @@ namespace PingPong.EditorTools
             SetV(model, "_faceNormalLocal", Vector3.forward);
             SetF(model, "_bladeRadius", radius);
             SetF(model, "_bladeHalfThickness", halfThick);
+            MeasureHandle(model, root);
             log.AppendLine($"Paddle model: blade radius {radius:F3} m, half-thickness {halfThick:F3} m");
+        }
+
+        /// <summary>
+        /// Handle-to-blade direction, once: the mesh point farthest from the blade centre within the blade's
+        /// plane is the handle's end, so the blade lies the opposite way. Lets code hold the paddle upright.
+        /// </summary>
+        static void MeasureHandle(PaddleModel model, GameObject root)
+        {
+            if (new SerializedObject(model).FindProperty("_handleToBladeLocal").vector3Value.sqrMagnitude > 1e-6f) return;
+            Transform blade = model.Blade;
+            Vector3 centre = blade.position, normal = blade.TransformDirection(model.FaceNormalLocal);
+            Vector3 farthest = Vector3.zero;
+            foreach (var f in root.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (f.sharedMesh == null) continue; // the editor can read any mesh
+                foreach (Vector3 v in f.sharedMesh.vertices)
+                {
+                    Vector3 d = f.transform.TransformPoint(v) - centre;
+                    d -= Vector3.Dot(d, normal) * normal;
+                    if (d.sqrMagnitude > farthest.sqrMagnitude) farthest = d;
+                }
+            }
+            if (farthest.sqrMagnitude < 1e-6f) { Debug.LogWarning("Ping Pong setup: couldn't find the paddle's handle; assuming blade-up is +Y."); return; }
+            SetV(model, "_handleToBladeLocal", blade.InverseTransformDirection(-farthest).normalized);
         }
 
         /// <summary>The player's paddle (PaddleModel variant with grabbing): hit detection and controller haptics.</summary>
@@ -177,7 +209,16 @@ namespace PingPong.EditorTools
             SetEnum(hitter, "_player", (int)Side.Near);
             Set(hitter, "_feel", feel);
             Set(hitter, "_model", root.GetComponent<PaddleModel>());
+            // Controllers: toggle grab with a snapped grip (PaddleGrip). Hand tracking keeps Meta's free grab
+            // (HandGrabInteractable), so only the controller part of Meta's grab (GrabInteractable) goes.
+            foreach (var controllerGrab in root.GetComponentsInChildren<MonoBehaviour>(true)
+                         .Where(c => c != null && c.GetType().Name == "GrabInteractable").ToArray())
+                Object.DestroyImmediate(controllerGrab);
+            var grip = GetOrAdd<PaddleGrip>(root);
+            Set(grip, "_model", root.GetComponent<PaddleModel>());
+
             var controller = GetOrAdd<OvrControllerHaptics>(root);
+            Set(controller, "_grip", grip);
             var haptics = GetOrAdd<PaddleHaptics>(root);
             Set(haptics, "_hitter", hitter);
             SetSeam(haptics, "_haptics", controller);
@@ -213,7 +254,7 @@ namespace PingPong.EditorTools
             }
             var ai = GetOrAdd<AIOpponent>(root);
             Set(ai, "_match", matchCtl);
-            Set(ai, "_paddle", aiPaddle.transform);
+            Set(ai, "_model", aiPaddle);
             SetEnum(ai, "_player", (int)Side.Far);
             Set(ai, "_profile", aiProfile);
 

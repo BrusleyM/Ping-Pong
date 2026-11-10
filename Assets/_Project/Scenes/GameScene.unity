@@ -353,6 +353,48 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f28a60560e671434f8e34a57ded624de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.InputSystemPlayerCommands
+  _grabLeft:
+    m_Name: Grab Left
+    m_Type: 1
+    m_ExpectedControlType: 
+    m_Id: e39583b8-b318-4992-bf8a-82fb535c59ee
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings:
+    - m_Name: 
+      m_Id: 2086faab-011a-4ea0-974a-07bf38e7c239
+      m_Path: <XRController>{LeftHand}/gripPressed
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Grab Left
+      m_Flags: 0
+    m_Flags: 0
+  _grabRight:
+    m_Name: Grab Right
+    m_Type: 1
+    m_ExpectedControlType: 
+    m_Id: e6898161-aab9-4b44-936a-cface301eec2
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings:
+    - m_Name: 
+      m_Id: 8686439c-8e4e-4559-90c4-2bd0ec818f3e
+      m_Path: <XRController>{RightHand}/gripPressed
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Grab Right
+      m_Flags: 0
+    - m_Name: 
+      m_Id: 7fa76d1f-18a7-47c6-b348-abe520179581
+      m_Path: <Keyboard>/g
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Grab Right
+      m_Flags: 0
+    m_Flags: 0
   _restart:
     m_Name: Restart
     m_Type: 1
@@ -695,6 +737,16 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1578165420415906963, guid: eb9beca3c527143cab67903e11d2505c, type: 3}
   m_PrefabInstance: {fileID: 4866239504134779188}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &4866239504134779190 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8855363054840074596, guid: eb9beca3c527143cab67903e11d2505c, type: 3}
+  m_PrefabInstance: {fileID: 4866239504134779188}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4866239504134779191 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4086585977034719383, guid: eb9beca3c527143cab67903e11d2505c, type: 3}
+  m_PrefabInstance: {fileID: 4866239504134779188}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &5071649891295234947
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -802,6 +854,18 @@ PrefabInstance:
       propertyPath: _match
       value: 
       objectReference: {fileID: 1567005534}
+    - target: {fileID: 4759419765657888614, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
+      propertyPath: _leftHand
+      value: 
+      objectReference: {fileID: 4866239504134779191}
+    - target: {fileID: 4759419765657888614, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
+      propertyPath: _rightHand
+      value: 
+      objectReference: {fileID: 4866239504134779190}
+    - target: {fileID: 4759419765657888614, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
+      propertyPath: _commands._component
+      value: 
+      objectReference: {fileID: 912907507}
     - target: {fileID: 8127554131745934498, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.132
