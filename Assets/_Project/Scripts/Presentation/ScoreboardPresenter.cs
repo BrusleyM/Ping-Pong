@@ -42,6 +42,7 @@ namespace PingPong.Presentation
             _match.Changed += Refresh;
             _match.PointWon += OnPointWon;
             _match.GameWon += OnGameWon;
+            _match.Let += OnLet;
             if (_modes != null) _modes.Changed += Refresh;
         }
 
@@ -50,6 +51,7 @@ namespace PingPong.Presentation
             _match.Changed -= Refresh;
             _match.PointWon -= OnPointWon;
             _match.GameWon -= OnGameWon;
+            _match.Let -= OnLet;
             if (_modes != null) _modes.Changed -= Refresh;
         }
 
@@ -69,6 +71,8 @@ namespace PingPong.Presentation
         void OnPointWon(Side winner, PointReason reason) => Flash(MatchText.Point(winner, reason, Local, OpponentName), _messageSeconds);
 
         void OnGameWon(Side winner) => Flash(MatchText.Game(winner, Local, OpponentName), float.PositiveInfinity);
+
+        void OnLet() => Flash(MatchText.Let, _messageSeconds);
 
         void Flash(string message, float seconds)
         {
