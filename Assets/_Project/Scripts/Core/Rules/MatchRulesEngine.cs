@@ -3,7 +3,7 @@ using System;
 namespace PingPong.Core
 {
     /// <summary>
-    /// Table tennis rules as a deterministic state machine: serve legality, bounces, volleys,
+    /// Table tennis rules as a deterministic state machine: serve legality and lets, bounces, volleys,
     /// scoring and serve rotation. No engine, time or physics dependencies: callers report what the
     /// ball did and the engine decides. All state lives in <see cref="State"/>, so it can be
     /// snapshotted and restored (networking, replays, tests).
@@ -31,6 +31,13 @@ namespace PingPong.Core
         public event Action<Side, PointReason> PointAwarded;
         /// <summary>Raised after <see cref="PointAwarded"/> when that point won the game.</summary>
         public event Action<Side> GameWon;
+        /// <summary>
+        /// Raised when a serve is a let: it touched the net and then landed legally, or the receiver
+        /// struck it over the table before it bounced (obstruction). No point is
+        /// scored and the same server serves again (it doesn't count towards the serve turn). Also raised
+        /// by <see cref="Restore"/> when the snapshot carries a new let.
+        /// </summary>
+        public event Action Let;
 
         public void StartMatch(Side firstServer)
         {
@@ -55,6 +62,7 @@ namespace PingPong.Core
             _s.LastHitter = Side.None;
             _s.IsServing = false;
             _s.ServeBounces = 0;
+            _s.ServeTouchedNet = false;
             ResetBounces();
             Changed?.Invoke();
         }
@@ -79,6 +87,7 @@ namespace PingPong.Core
                     _s.Phase = MatchPhase.Rally;
                     _s.IsServing = true;
                     _s.ServeBounces = 0;
+                    _s.ServeTouchedNet = false;
                     ResetBounces();
                     _s.LastHitter = player;
                     Changed?.Invoke();
@@ -88,7 +97,9 @@ namespace PingPong.Core
                     if (player == _s.LastHitter) { Award(player.Opponent(), PointReason.DoubleHit); return; }
                     if (_s.Bounces(player) == 0)
                     {
-                        // Struck before the ball bounced on this player's side.
+                        // Struck before the ball bounced on this player's side. A net-touched serve
+                        // obstructed by the receiver over the table is a let (ITTF 2.9.1.1), not a point.
+                        if (overTable && _s.IsServing && _s.ServeTouchedNet) { CallLet(); return; }
                         if (overTable) Award(player.Opponent(), PointReason.Volley);
                         else Award(player, PointReason.Long);
                         return;
@@ -119,6 +130,7 @@ namespace PingPong.Core
                 if (_s.ServeBounces == 2)
                 {
                     if (side == hitter) { Award(other, PointReason.ServeBouncedTwiceOnOwnSide); return; }
+                    if (_s.ServeTouchedNet) { CallLet(); return; }
                     _s.IsServing = false;
                     SetBounces(other, 1);
                 }
@@ -128,6 +140,17 @@ namespace PingPong.Core
             if (side == hitter) { Award(other, PointReason.BouncedOnOwnSide); return; }
             SetBounces(other, _s.Bounces(other) + 1);
             if (_s.Bounces(other) >= 2) Award(hitter, PointReason.DoubleBounce);
+        }
+
+        /// <summary>
+        /// The ball touched the net. During a serve this makes it a let if the serve then lands legally
+        /// (a faulty serve is still a fault); in a rally the ball simply stays in play.
+        /// </summary>
+        public void RegisterNetTouch()
+        {
+            if (_s.Phase != MatchPhase.Rally || !_s.IsServing || _s.ServeTouchedNet) return;
+            _s.ServeTouchedNet = true;
+            Changed?.Invoke();
         }
 
         /// <summary>The ball is out of play: floor, room, out of bounds or rally timeout.</summary>
@@ -153,6 +176,7 @@ namespace PingPong.Core
             _s = snapshot;
             bool newPoint = snapshot.PointsPlayed > previous.PointsPlayed && snapshot.LastPointWinner.IsPlayer();
             if (newPoint) PointAwarded?.Invoke(snapshot.LastPointWinner, snapshot.LastPointReason);
+            if (snapshot.LetsPlayed > previous.LetsPlayed) Let?.Invoke();
             if (snapshot.Phase == MatchPhase.GameOver && previous.Phase != MatchPhase.GameOver && snapshot.Winner.IsPlayer())
                 GameWon?.Invoke(snapshot.Winner);
             Changed?.Invoke();
@@ -182,6 +206,17 @@ namespace PingPong.Core
 
             PointAwarded?.Invoke(winner, reason);
             if (gameWon) GameWon?.Invoke(winner);
+            Changed?.Invoke();
+        }
+
+        void CallLet()
+        {
+            // No score and no serve-turn change: the same server serves again after the pause.
+            _s.LetsPlayed++;
+            _s.IsServing = false;
+            _s.ServeTouchedNet = false;
+            _s.Phase = MatchPhase.PointOver;
+            Let?.Invoke();
             Changed?.Invoke();
         }
 

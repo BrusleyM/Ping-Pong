@@ -20,6 +20,8 @@ namespace PingPong.Core
         /// <summary>Between the serve hit and the serve's second bounce.</summary>
         public bool IsServing;
         public int ServeBounces;
+        /// <summary>The current serve has touched the net (a let if it then lands legally).</summary>
+        public bool ServeTouchedNet;
         public int BouncesNear;
         public int BouncesFar;
         /// <summary>Serves already made by the current server in this turn.</summary>
@@ -28,6 +30,8 @@ namespace PingPong.Core
         public int PointsPlayed;
         public Side LastPointWinner;
         public PointReason LastPointReason;
+        /// <summary>Lets called so far this match; increases by one per let, so peers can detect new lets.</summary>
+        public int LetsPlayed;
 
         public static MatchSnapshot Idle => new MatchSnapshot
         {
@@ -47,14 +51,15 @@ namespace PingPong.Core
             && ScoreNear == o.ScoreNear && ScoreFar == o.ScoreFar && IsServing == o.IsServing
             && ServeBounces == o.ServeBounces && BouncesNear == o.BouncesNear && BouncesFar == o.BouncesFar
             && ServesThisTurn == o.ServesThisTurn && PointsPlayed == o.PointsPlayed
-            && LastPointWinner == o.LastPointWinner && LastPointReason == o.LastPointReason;
+            && LastPointWinner == o.LastPointWinner && LastPointReason == o.LastPointReason
+            && ServeTouchedNet == o.ServeTouchedNet && LetsPlayed == o.LetsPlayed;
 
         public override bool Equals(object obj) => obj is MatchSnapshot o && Equals(o);
 
         public override int GetHashCode() =>
             HashCode.Combine(HashCode.Combine(Phase, Server, LastHitter, Winner, ScoreNear, ScoreFar),
                 HashCode.Combine(IsServing, ServeBounces, BouncesNear, BouncesFar, ServesThisTurn,
-                    HashCode.Combine(PointsPlayed, LastPointWinner, LastPointReason)));
+                    HashCode.Combine(PointsPlayed, LastPointWinner, LastPointReason, ServeTouchedNet, LetsPlayed)));
 
         public override string ToString() => $"{Phase} {ScoreNear}-{ScoreFar} server={Server} last={LastHitter}";
     }

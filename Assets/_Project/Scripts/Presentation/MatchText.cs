@@ -46,6 +46,8 @@ namespace PingPong.Presentation
             return why.Length > 0 ? $"{scores} - {why}" : scores;
         }
 
+        public const string Let = "Let - serve again";
+
         public static string Game(Side winner, Side local, string opponentName) =>
             winner == local ? "You win!" : $"{opponentName} wins!";
 

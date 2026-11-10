@@ -288,5 +288,88 @@ namespace PingPong.Tests
         {
             Assert.Throws<System.ArgumentException>(() => new MatchRulesEngine(new MatchRules()));
         }
+
+        [Test]
+        public void ServeTouchingTheNet_ThenLandingLegally_IsALet()
+        {
+            int lets = 0;
+            _engine.Let += () => lets++;
+            Side server = S.Server;
+            int servesBefore = S.ServesThisTurn;
+
+            _engine.RegisterHit(server, overTable: false);
+            _engine.RegisterTableBounce(server);
+            _engine.RegisterNetTouch();
+            _engine.RegisterTableBounce(server.Opponent());
+
+            Assert.That(lets, Is.EqualTo(1));
+            Assert.That(_points, Is.Empty, "no point for a let");
+            Assert.That(S.Phase, Is.EqualTo(MatchPhase.PointOver));
+            Assert.That(S.LetsPlayed, Is.EqualTo(1));
+
+            _engine.BeginServe();
+            Assert.That(S.Server, Is.EqualTo(server), "the same player serves again");
+            Assert.That(S.ServesThisTurn, Is.EqualTo(servesBefore), "a let doesn't use up a serve");
+            Assert.That(S.ServeTouchedNet, Is.False);
+        }
+
+        [Test]
+        public void ServeTouchingTheNet_VolleyedByTheReceiverOverTheTable_IsALet()
+        {
+            int lets = 0;
+            _engine.Let += () => lets++;
+            Side server = S.Server;
+            _engine.RegisterHit(server, false);
+            _engine.RegisterTableBounce(server);
+            _engine.RegisterNetTouch();
+            _engine.RegisterHit(server.Opponent(), overTable: true);
+
+            Assert.That(lets, Is.EqualTo(1));
+            Assert.That(_points, Is.Empty);
+            Assert.That(S.Phase, Is.EqualTo(MatchPhase.PointOver));
+        }
+
+        [Test]
+        public void ServeTouchingTheNet_ThatFaults_IsStillAFault()
+        {
+            Side server = S.Server;
+            _engine.RegisterHit(server, false);
+            _engine.RegisterTableBounce(server);
+            _engine.RegisterNetTouch();
+            _engine.RegisterTableBounce(server); // fell back onto the server's side
+            Assert.That(LastPoint, Is.EqualTo((server.Opponent(), PointReason.ServeBouncedTwiceOnOwnSide)));
+            Assert.That(S.LetsPlayed, Is.Zero);
+        }
+
+        [Test]
+        public void NetTouch_InARally_StaysInPlay()
+        {
+            LegalServe();
+            Side receiver = S.Server.Opponent();
+            _engine.RegisterHit(receiver, false);
+            _engine.RegisterNetTouch();
+            _engine.RegisterTableBounce(receiver.Opponent());
+            Assert.That(S.Phase, Is.EqualTo(MatchPhase.Rally));
+            Assert.That(S.LetsPlayed, Is.Zero);
+            Assert.That(_points, Is.Empty);
+        }
+
+        [Test]
+        public void Restore_RaisesLetOnAClient()
+        {
+            Side server = S.Server;
+            _engine.RegisterHit(server, false);
+            _engine.RegisterTableBounce(server);
+            _engine.RegisterNetTouch();
+            _engine.RegisterTableBounce(server.Opponent());
+
+            var client = new MatchRulesEngine(MatchRules.Standard);
+            client.StartMatch(Side.Near);
+            int lets = 0;
+            client.Let += () => lets++;
+            client.Restore(S);
+            Assert.That(lets, Is.EqualTo(1));
+            Assert.That(client.State, Is.EqualTo(S));
+        }
     }
 }

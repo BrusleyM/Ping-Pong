@@ -37,6 +37,8 @@ namespace PingPong.Gameplay
         public event Action Changed;
         public event Action<Side, PointReason> PointWon;
         public event Action<Side> GameWon;
+        /// <summary>A serve touched the net and landed legally: replayed, no point.</summary>
+        public event Action Let;
         public event Action<Side> PaddleHit;
 
         MatchRulesEngine Engine => _engine ??= CreateEngine();
@@ -48,6 +50,7 @@ namespace PingPong.Gameplay
             engine.Changed += () => Changed?.Invoke();
             engine.PointAwarded += OnPointAwarded;
             engine.GameWon += w => GameWon?.Invoke(w);
+            engine.Let += OnLet;
             return engine;
         }
 
@@ -114,7 +117,8 @@ namespace PingPong.Gameplay
 
         void OnOtherContact(BallContact contact)
         {
-            if (!IsAuthority || contact == BallContact.Net) return;
+            if (!IsAuthority) return;
+            if (contact == BallContact.Net) { Engine.RegisterNetTouch(); return; }
             if (Phase == MatchPhase.WaitingForServe) PlaceServeBall(); // dropped while serving
             else Engine.RegisterBallDead();
         }
@@ -138,7 +142,18 @@ namespace PingPong.Gameplay
         void OnPointAwarded(Side winner, PointReason reason)
         {
             PointWon?.Invoke(winner, reason);
-            // The engine's state is final here. Only the authority schedules serves; clients follow snapshots.
+            ScheduleNextServe();
+        }
+
+        void OnLet()
+        {
+            Let?.Invoke();
+            ScheduleNextServe();
+        }
+
+        // The engine's state is final here. Only the authority schedules serves; clients follow snapshots.
+        void ScheduleNextServe()
+        {
             if (IsAuthority && Phase == MatchPhase.PointOver) _pendingServe = StartCoroutine(NextServeAfterPause());
         }
 
