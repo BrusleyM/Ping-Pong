@@ -56,6 +56,8 @@ namespace PingPong.EditorTools
             var canvasGo = GetOrCreate("Canvas", panel.transform);
             var canvas = GetOrAdd<Canvas>(canvasGo);
             canvas.renderMode = RenderMode.WorldSpace;
+            // The channels TextMeshPro asks for at runtime; stored up front so scene instances don't override it.
+            canvas.additionalShaderChannels = AdditionalCanvasShaderChannels.TexCoord1 | AdditionalCanvasShaderChannels.Normal | AdditionalCanvasShaderChannels.Tangent;
             GetOrAdd<GraphicRaycaster>(canvasGo);
             var rect = (RectTransform)canvasGo.transform;
             rect.sizeDelta = Size;
@@ -105,6 +107,25 @@ namespace PingPong.EditorTools
             Set(presenter, "_passthrough", passthrough);
             Set(presenter, "_restart", restart);
             Set(presenter, "_close", close);
+
+            StoreAsUnityWould(canvasGo.transform);
+        }
+
+        /// <summary>
+        /// Stores each text's packed colour and style hash to match its colour and style (TextMeshPro only fills
+        /// them at runtime), so scene instances don't record them as overrides.
+        /// </summary>
+        static void StoreAsUnityWould(Transform canvas)
+        {
+            int normalStyle = TMP_Style.NormalStyle.hashCode;
+            foreach (var text in canvas.GetComponentsInChildren<TextMeshProUGUI>(true))
+            {
+                var so = new SerializedObject(text);
+                Color32 c = text.color;
+                so.FindProperty("m_fontColor32.rgba").longValue = c.r | (c.g << 8) | (c.b << 16) | ((long)c.a << 24);
+                so.FindProperty("m_TextStyleHashCode").intValue = normalStyle;
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
         }
 
         /// <summary>Meta rays: the panel becomes a pointable canvas on a plane clipped to the canvas rectangle.</summary>

@@ -96,7 +96,9 @@ namespace PingPong.EditorTools
             var menu = Instance(ModeMenuBuilder.PrefabPath).GetComponent<ModeMenuPresenter>();
             Set(menu, "_modes", modes);
             Set(menu, "_head", rig.centerEyeAnchor);
-            var events = GetOrCreate("EventSystem");
+            // Reuse whichever event system the scene has (Meta's wizards add their own), else make one.
+            var existing = Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>(FindObjectsInactive.Include);
+            var events = existing != null ? existing.gameObject : GetOrCreate("EventSystem");
             GetOrAdd<UnityEngine.EventSystems.EventSystem>(events);
             GetOrAdd<Oculus.Interaction.PointableCanvasModule>(events);
             log.AppendLine($"Mode menu: {Path(menu.transform)} (left menu button / Escape)");
@@ -306,6 +308,7 @@ namespace PingPong.EditorTools
             var hide = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
                 .Where(t => t.name.StartsWith("experimental_neon_room") || t.name == "Floor" || t.name == "Visuals")
                 .Where(t => !table.transform.IsChildOf(t))
+                .Where(t => !t.IsChildOf(rig.transform)) // the rig's own visuals (controllers, rays) stay visible
                 .OrderBy(HierarchyOrder, System.StringComparer.Ordinal) // stable: re-runs don't reorder the list
                 .Select(t => (Object)t.gameObject).ToArray();
             SetArray(pt, "_hideInPassthrough", hide);
