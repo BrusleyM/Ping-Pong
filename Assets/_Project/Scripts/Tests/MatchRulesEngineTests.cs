@@ -314,6 +314,22 @@ namespace PingPong.Tests
         }
 
         [Test]
+        public void ServeTouchingTheNet_VolleyedByTheReceiverOverTheTable_IsALet()
+        {
+            int lets = 0;
+            _engine.Let += () => lets++;
+            Side server = S.Server;
+            _engine.RegisterHit(server, false);
+            _engine.RegisterTableBounce(server);
+            _engine.RegisterNetTouch();
+            _engine.RegisterHit(server.Opponent(), overTable: true);
+
+            Assert.That(lets, Is.EqualTo(1));
+            Assert.That(_points, Is.Empty);
+            Assert.That(S.Phase, Is.EqualTo(MatchPhase.PointOver));
+        }
+
+        [Test]
         public void ServeTouchingTheNet_ThatFaults_IsStillAFault()
         {
             Side server = S.Server;

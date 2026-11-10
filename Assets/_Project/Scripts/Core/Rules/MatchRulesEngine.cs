@@ -32,7 +32,8 @@ namespace PingPong.Core
         /// <summary>Raised after <see cref="PointAwarded"/> when that point won the game.</summary>
         public event Action<Side> GameWon;
         /// <summary>
-        /// Raised when a serve is a let: it touched the net and otherwise landed legally. No point is
+        /// Raised when a serve is a let: it touched the net and then landed legally, or the receiver
+        /// struck it over the table before it bounced (obstruction). No point is
         /// scored and the same server serves again (it doesn't count towards the serve turn). Also raised
         /// by <see cref="Restore"/> when the snapshot carries a new let.
         /// </summary>
@@ -96,7 +97,9 @@ namespace PingPong.Core
                     if (player == _s.LastHitter) { Award(player.Opponent(), PointReason.DoubleHit); return; }
                     if (_s.Bounces(player) == 0)
                     {
-                        // Struck before the ball bounced on this player's side.
+                        // Struck before the ball bounced on this player's side. A net-touched serve
+                        // obstructed by the receiver over the table is a let (ITTF 2.9.1.1), not a point.
+                        if (overTable && _s.IsServing && _s.ServeTouchedNet) { CallLet(); return; }
                         if (overTable) Award(player.Opponent(), PointReason.Volley);
                         else Award(player, PointReason.Long);
                         return;
