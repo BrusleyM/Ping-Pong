@@ -3,27 +3,38 @@ using UnityEngine;
 
 namespace PingPong.EditorTools.Build
 {
-    /// <summary>Build entry point for the menu and CI (game-ci buildMethod).</summary>
+    /// <summary>
+    /// Build entry points, the same for the editor menu and CI (game-ci buildMethod):
+    /// Develop bumps z, Staging bumps y (z = 0), Production bumps x (y = z = 0); all bump the bundle code.
+    /// CI picks the method from a [Develop], [Staging] or [Production] keyword in the pushed commit message
+    /// and commits the bumped ProjectSettings back after a successful upload. PR checks use
+    /// <see cref="CheckBuild"/>, which leaves the version alone.
+    /// </summary>
     public static class BuildScript
     {
-        [MenuItem("Build/Build Android APK")]
-        public static void Execute()
+        const string Menu = "Build/";
+
+        [MenuItem(Menu + "Develop", priority = 1)]
+        public static void BuildDevelop() => Run(ReleaseKind.Develop);
+
+        [MenuItem(Menu + "Staging", priority = 2)]
+        public static void BuildStaging() => Run(ReleaseKind.Staging);
+
+        [MenuItem(Menu + "Production", priority = 3)]
+        public static void BuildProduction() => Run(ReleaseKind.Production);
+
+        [MenuItem(Menu + "Check Build (version unchanged)", priority = 20)]
+        public static void CheckBuild() => Run(null);
+
+        static void Run(ReleaseKind? kind)
         {
-            // Parse custom parameters from CI
-            string[] args = System.Environment.GetCommandLineArgs();
-            string buildNumber = GetArg(args, "BuildNumber");
-            string versionName = GetArg(args, "VersionName");
-
-            var versioning = new BuildVersioning();
-
-            var signing = new AndroidSigning(); // CI secrets, or the key set in Player Settings
-            var androidBuilder = new AndroidBuildStrategy("Builds/Android", signing, versioning);
-
+            int.TryParse(Arg("ReleasedCode"), out int releasedCode); // CI only: the highest code already released
+            var builder = new AndroidBuildStrategy("Builds/Android", new AndroidSigning(), new BuildVersioning(releasedCode));
             // In CI (batch mode) any failure must end Unity with a non-zero exit code, so the job fails here
             // instead of later with "no APK found".
             try
             {
-                androidBuilder.Build(versionName, buildNumber);
+                builder.Build(kind);
             }
             catch (System.Exception e)
             {
@@ -32,15 +43,12 @@ namespace PingPong.EditorTools.Build
                 throw;
             }
         }
-        private static string GetArg(string[] args, string name)
+
+        /// <summary>A game-ci custom parameter (Name=value), or null.</summary>
+        static string Arg(string name)
         {
-            foreach (string arg in args)
-            {
-                if (arg.StartsWith(name + "="))
-                {
-                    return arg.Substring(name.Length + 1);
-                }
-            }
+            foreach (string arg in System.Environment.GetCommandLineArgs())
+                if (arg.StartsWith(name + "=")) return arg.Substring(name.Length + 1);
             return null;
         }
     }

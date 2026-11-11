@@ -19,7 +19,7 @@ namespace PingPong.EditorTools.Build
             _versioning = versioning;
         }
 
-        public void Build(string versionName, string buildNumber)
+        public void Build(ReleaseKind? kind)
         {
             // Get enabled scenes
             var scenes = EditorBuildSettings.scenes
@@ -34,10 +34,10 @@ namespace PingPong.EditorTools.Build
             if (!Directory.Exists(_outputFolder))
                 Directory.CreateDirectory(_outputFolder);
 
-            // Check signing first so a failed build doesn't bump the version.
+            // Check signing first so a missing key doesn't move the version.
             if (!_signing.ApplyKeystore())
                 throw new BuildFailedException("Android signing key is not set up; see the error above.");
-            _versioning.Apply(versionName, buildNumber);
+            ReleaseVersion? previous = kind.HasValue ? _versioning.Bump(kind.Value) : (ReleaseVersion?)null;
 
             // Generate APK name
             string apkName = $"{PlayerSettings.productName}_{PlayerSettings.bundleVersion}_{PlayerSettings.Android.bundleVersionCode}.apk";
@@ -55,7 +55,10 @@ namespace PingPong.EditorTools.Build
             var report = BuildPipeline.BuildPlayer(buildPlayerOptions);
 
             if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+            {
+                if (previous.HasValue) _versioning.Set(previous.Value); // a failed build doesn't use up a version
                 throw new BuildFailedException($"Android build {report.summary.result} with {report.summary.totalErrors} error(s); see the log above.");
+            }
             Debug.Log($"Android build complete: {apkPath}");
         }
     }
