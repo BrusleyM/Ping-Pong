@@ -1,9 +1,8 @@
-using System;
-
 namespace PingPong.EditorTools.Build
 {
     public interface IBuildStrategy
     {
-        void Build(string versionName, string buildNumber);
+        /// <param name="kind">The release to make (moves the version on), or null for a check build that keeps it.</param>
+        void Build(ReleaseKind? kind);
     }
 }

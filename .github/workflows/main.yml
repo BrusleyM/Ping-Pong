@@ -1,14 +1,15 @@
 name: Unity VR Android Build and Upload
 
-# develop push: build APK, upload to Meta ALPHA, tag vX-alpha.
-# main push:    promote the ALPHA build to BETA, tag vX-beta (no rebuild).
-# PR:           build APK to check it compiles and signs.
-# Version name RELEASE.MAIN.DEVELOP from the tags (.github/scripts/version.sh); version code = ProjectSettings code + run number.
-# Tags: vR.M.D-alpha.<run> per upload, v<promoted version>-beta.<run> per promotion.
+# Release build: push a commit (or merge a PR whose title) contains [Develop], [Staging] or [Production].
+#   The matching BuildScript method moves the version in ProjectSettings (x.y.z: Develop bumps z,
+#   Staging bumps y and resets z, Production bumps x and resets y and z; every build bumps the bundle
+#   code), builds, uploads to Meta ALPHA, tags vX.Y.Z, and commits ProjectSettings back to the pushed
+#   branch ([skip ci]). The version is the same file locally and in CI: no second source.
+# main push without a keyword: promote the ALPHA build to BETA, tag vX.Y.Z-beta (no rebuild).
+# PR: check build (compiles, tests, signs) without touching the version.
 
 on:
   push:
-    branches: [main, develop]
     paths-ignore: ['**.md', '.github/workflows/PR_Declined_Cleanup.yml']
   pull_request:
     branches: [main, develop]
@@ -23,30 +24,48 @@ permissions:
   contents: write
 
 jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      kind: ${{ steps.kind.outputs.kind }}
+    steps:
+      - name: Work out what this run does
+        id: kind
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then kind=Check
+          else
+            kind=$(printf '%s' "$MESSAGE" | grep -oiE '\[(develop|staging|production)\]' | head -1 | tr -d '[]' | tr '[:upper:]' '[:lower:]')
+            case "$kind" in
+              develop) kind=Develop ;; staging) kind=Staging ;; production) kind=Production ;;
+              *) if [ "$REF" = "refs/heads/main" ]; then kind=Promote; else kind=None; fi ;;
+            esac
+          fi
+          echo "This run: $kind"
+          echo "kind=$kind" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build Unity Android
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/develop'
+    needs: plan
+    if: needs.plan.outputs.kind != 'None' && needs.plan.outputs.kind != 'Promote'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
       contents: read
       checks: write   # unity-test-runner publishes the test results as a check
     outputs:
-      version: ${{ steps.version.outputs.version }}
+      version: ${{ steps.built.outputs.version }}
+      code: ${{ steps.built.outputs.code }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           lfs: true
-
-      - name: Work out the version name
-        id: version
-        run: |
-          git fetch --tags --quiet
-          version=$(.github/scripts/version.sh next)
-          echo "Version $version"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Apply CI manifests
         run: |
@@ -134,7 +153,8 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: Android
-          buildMethod: PingPong.EditorTools.Build.BuildScript.Execute
+          # Check -> CheckBuild (version untouched); Develop/Staging/Production -> BuildDevelop/...
+          buildMethod: PingPong.EditorTools.Build.BuildScript.${{ needs.plan.outputs.kind == 'Check' && 'CheckBuild' || format('Build{0}', needs.plan.outputs.kind) }}
           buildsPath: Builds/Android
           allowDirtyBuild: true
           androidKeystoreName: .keystore.keystore
@@ -142,8 +162,24 @@ jobs:
           androidKeystorePass: ${{ secrets.ANDROID_KEYSTORE_PASS }}
           androidKeyaliasName: ping pong
           androidKeyaliasPass: ${{ secrets.ANDROID_KEYALIAS_PASS }}
-          # versionCode = ProjectSettings code + run number; version name from the tags (no commit back).
-          customParameters: BuildNumber=${{ github.run_number }} VersionName=${{ steps.version.outputs.version }}
+
+      - name: Read the built version
+        id: built
+        run: |
+          version=$(sed -n 's/^  bundleVersion: //p' ProjectSettings/ProjectSettings.asset)
+          code=$(sed -n 's/^  AndroidBundleVersionCode: //p' ProjectSettings/ProjectSettings.asset)
+          echo "Built $version ($code)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
+      - name: Keep the bumped ProjectSettings
+        if: needs.plan.outputs.kind != 'Check'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProjectSettings
+          path: ProjectSettings/ProjectSettings.asset
+          retention-days: 7
+          if-no-files-found: error
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -161,17 +197,33 @@ jobs:
           key: Library-Android-${{ hashFiles('ProjectSettings/ProjectVersion.txt', 'Packages/packages-lock.json') }}-${{ github.sha }}
 
   release:
-    name: Upload / promote on Meta
-    if: github.event_name == 'push' && always() && (needs.build.result == 'success' || needs.build.result == 'skipped')
-    needs: build
+    name: Upload to Meta ALPHA
+    needs: [plan, build]
+    if: needs.plan.outputs.kind == 'Develop' || needs.plan.outputs.kind == 'Staging' || needs.plan.outputs.kind == 'Production'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+      CODE: ${{ needs.build.outputs.code }}
+      BRANCH: ${{ github.ref_name }}
     steps:
+      # Checked first: without it the version can't be committed back and the next build would reuse this code.
+      - name: Check the push token
+        env:
+          TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Add a RELEASE_PUSH_TOKEN secret (a token from an admin account with contents: write) so CI can commit the version back."
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.RELEASE_PUSH_TOKEN }}
 
       - name: Download APK
-        if: github.ref == 'refs/heads/develop'
         uses: actions/download-artifact@v4
         with:
           name: Unity-Build
@@ -181,7 +233,6 @@ jobs:
         uses: RageAgainstThePixel/setup-ovr-platform-util@v2
 
       - name: Upload to ALPHA
-        if: github.ref == 'refs/heads/develop'
         uses: RageAgainstThePixel/upload-meta-quest-build@v2
         with:
           appId: ${{ secrets.META_APP_ID }}
@@ -190,10 +241,49 @@ jobs:
           releaseChannel: 'ALPHA'
           ageGroup: 'MIXED_AGES'
           draft: false
-          releaseNotes: 'CI build of develop @ ${{ github.sha }}'
+          releaseNotes: '${{ needs.plan.outputs.kind }} build ${{ needs.build.outputs.version }} (${{ needs.build.outputs.code }}) from ${{ github.ref_name }} @ ${{ github.sha }}'
+
+      # Only the two version lines are written, into the branch's current file, so other settings that
+      # changed on the branch meanwhile are kept.
+      - name: Commit the version back
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          for _ in 1 2 3; do
+            git pull --quiet --rebase origin "$BRANCH"
+            sed -i -e "s/^  bundleVersion: .*/  bundleVersion: $VERSION/" \
+                   -e "s/^  AndroidBundleVersionCode: .*/  AndroidBundleVersionCode: $CODE/" ProjectSettings/ProjectSettings.asset
+            git add ProjectSettings/ProjectSettings.asset
+            git diff --cached --quiet && { echo "Version already committed."; break; }
+            git commit --quiet -m "Version $VERSION ($CODE) [skip ci]"
+            git push --quiet origin "HEAD:$BRANCH" && break
+            git reset --quiet --hard "origin/$BRANCH"
+          done
+
+      - name: Tag the release
+        run: |
+          TAG="v$VERSION"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "Tag $TAG already exists; skipping."
+          else
+            git tag -a "$TAG" -m "${{ needs.plan.outputs.kind }} build $VERSION ($CODE)"
+            git push --quiet origin "$TAG"
+          fi
+
+  promote:
+    name: Promote ALPHA to BETA
+    needs: plan
+    if: needs.plan.outputs.kind == 'Promote'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup ovr-platform-util
+        uses: RageAgainstThePixel/setup-ovr-platform-util@v2
 
       - name: Promote ALPHA to BETA
-        if: github.ref == 'refs/heads/main'
         run: |
           ovr-platform-util set-release-channel-build \
             --age-group MIXED_AGES \
@@ -202,21 +292,14 @@ jobs:
             --source-channel ALPHA \
             --destination-channel BETA
 
-      - name: Tag release
-        env:
-          BUILT_VERSION: ${{ needs.build.outputs.version }}
+      - name: Tag the promotion
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch --tags --quiet
-          if [ "${GITHUB_REF##*/}" = "main" ]; then
-            TAG="v$(.github/scripts/version.sh promoted)-beta.${GITHUB_RUN_NUMBER}"
-          else
-            TAG="v${BUILT_VERSION}-alpha.${GITHUB_RUN_NUMBER}"
-          fi
-          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+          TAG="v$(sed -n 's/^  bundleVersion: //p' ProjectSettings/ProjectSettings.asset)-beta.${GITHUB_RUN_NUMBER}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
             echo "Tag $TAG already exists; skipping."
           else
-            git tag -a "$TAG" -m "Automated CI tag for $TAG"
-            git push origin "$TAG"
+            git tag -a "$TAG" -m "Promoted to BETA: $TAG"
+            git push --quiet origin "$TAG"
           fi
