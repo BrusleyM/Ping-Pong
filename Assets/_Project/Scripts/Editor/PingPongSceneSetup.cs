@@ -147,7 +147,8 @@ namespace PingPong.EditorTools
             Vector3 rigForward = Vector3.ProjectOnPlane(rig.transform.forward, Vector3.up).normalized;
             Vector3 tableForward = Vector3.ProjectOnPlane(table.Frame.Forward, Vector3.up).normalized;
             Transform env = environment.transform;
-            env.rotation = Quaternion.FromToRotation(tableForward, rigForward) * env.rotation;
+            // Yaw only: FromToRotation picks an arbitrary axis for opposite vectors and could tip the table.
+            env.rotation = Quaternion.AngleAxis(Vector3.SignedAngle(tableForward, rigForward, Vector3.up), Vector3.up) * env.rotation;
             table.Rebuild();
 
             Vector3 wantedCentre = rig.transform.position + rigForward * (table.Frame.HalfLength + GapToTable)
