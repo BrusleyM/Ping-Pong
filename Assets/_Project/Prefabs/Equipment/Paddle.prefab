@@ -369,6 +369,8 @@ MonoBehaviour:
   _reach: 0.2
   _bladeDistance: 0.13
   _pitch: 20
+  _modes: {fileID: 0}
+  _handOnMatchStart: 2
 --- !u!114 &7353783026042077538 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2910494720939637409, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}

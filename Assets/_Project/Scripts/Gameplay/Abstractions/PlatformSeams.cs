@@ -9,10 +9,6 @@ namespace PingPong.Gameplay
     {
         /// <summary>The grab button on that hand went down this frame.</summary>
         bool GrabPressed(Hand hand);
-        bool RestartPressed { get; }
-        bool TogglePassthroughPressed { get; }
-        bool EasierPressed { get; }
-        bool HarderPressed { get; }
         bool MenuPressed { get; }
     }
 

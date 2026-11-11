@@ -25,6 +25,9 @@ namespace PingPong.Gameplay
         [SerializeField, Min(0f)] float _bladeDistance = 0.13f;
         [Tooltip("Tilts the blade up (+) or down (-) from the controller's pointing direction, degrees.")]
         [SerializeField, Range(-90f, 90f)] float _pitch = 20f;
+        [Tooltip("Optional: when a match starts, the paddle goes into this hand (None to leave it where it is).")]
+        [SerializeField] GameModeController _modes;
+        [SerializeField] Hand _handOnMatchStart = Hand.Right;
 
         Rigidbody _body;
         Vector3 _prevHandPos;
@@ -42,6 +45,16 @@ namespace PingPong.Gameplay
         }
 
         Rigidbody Body => _body != null ? _body : _body = GetComponent<Rigidbody>();
+
+        void OnEnable() { if (_modes != null) _modes.MatchStarted += OnMatchStarted; }
+        void OnDisable() { if (_modes != null) _modes.MatchStarted -= OnMatchStarted; }
+
+        // Starting a match puts the paddle in the player's hand, so nobody has to find it first.
+        void OnMatchStarted()
+        {
+            if (HeldBy != Hand.None || HandTransform(_handOnMatchStart) == null) return;
+            Grab(_handOnMatchStart);
+        }
 
         void Update()
         {

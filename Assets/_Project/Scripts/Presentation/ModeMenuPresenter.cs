@@ -30,7 +30,7 @@ namespace PingPong.Presentation
         [SerializeField] Button _restart;
         [SerializeField] Button _close;
         [Tooltip("Distance from the head to the panel, metres.")]
-        [SerializeField] float _distance = 0.8f;
+        [SerializeField] float _distance = 0.55f; // within arm's reach, so buttons can be poked as well as pointed at
         [Tooltip("How far below eye level the panel's centre sits, metres.")]
         [SerializeField] float _belowEyes = 0.15f;
         [SerializeField] bool _openOnStart = true;
