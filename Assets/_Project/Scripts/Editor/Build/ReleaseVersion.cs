@@ -7,7 +7,8 @@ namespace PingPong.EditorTools.Build
 
     /// <summary>
     /// Version name x.y.z: a Develop build bumps z; Staging bumps y and resets z; Production bumps x and
-    /// resets y and z. Every build also bumps the bundle (version) code by one.
+    /// resets y and z. Every build also moves the bundle (version) code on by one, past the highest code
+    /// already released, so Meta never gets a duplicate (it rejects any code not above all earlier ones).
     /// </summary>
     public readonly struct ReleaseVersion : IEquatable<ReleaseVersion>
     {
@@ -26,13 +27,18 @@ namespace PingPong.EditorTools.Build
             return new ReleaseVersion(Part(0), Part(1), Part(2), code);
         }
 
-        public ReleaseVersion Next(ReleaseKind kind) => kind switch
+        /// <param name="releasedCode">The highest code already released (0 if unknown).</param>
+        public ReleaseVersion Next(ReleaseKind kind, int releasedCode = 0)
         {
-            ReleaseKind.Develop => new ReleaseVersion(Major, Minor, Patch + 1, Code + 1),
-            ReleaseKind.Staging => new ReleaseVersion(Major, Minor + 1, 0, Code + 1),
-            ReleaseKind.Production => new ReleaseVersion(Major + 1, 0, 0, Code + 1),
-            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
-        };
+            int code = Math.Max(Code, releasedCode) + 1;
+            return kind switch
+            {
+                ReleaseKind.Develop => new ReleaseVersion(Major, Minor, Patch + 1, code),
+                ReleaseKind.Staging => new ReleaseVersion(Major, Minor + 1, 0, code),
+                ReleaseKind.Production => new ReleaseVersion(Major + 1, 0, 0, code),
+                _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+            };
+        }
 
         public string Name => $"{Major}.{Minor}.{Patch}";
 

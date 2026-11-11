@@ -25,6 +25,13 @@ namespace PingPong.Tests
             Assert.That(V.Next(ReleaseKind.Production), Is.EqualTo(new ReleaseVersion(2, 0, 0, 209)));
         }
 
+        [Test]
+        public void Code_GoesPastTheHighestReleasedCode()
+        {
+            Assert.That(V.Next(ReleaseKind.Develop, releasedCode: 300).Code, Is.EqualTo(301), "another branch released higher");
+            Assert.That(V.Next(ReleaseKind.Develop, releasedCode: 100).Code, Is.EqualTo(209), "the file is already higher");
+        }
+
         [TestCase("0.0.6", 0, 0, 6)]
         [TestCase("1.4", 1, 4, 0)]
         [TestCase("", 0, 0, 0)]

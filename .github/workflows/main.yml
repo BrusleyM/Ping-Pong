@@ -5,7 +5,14 @@ name: Unity VR Android Build and Upload
 #   Staging bumps y and resets z, Production bumps x and resets y and z; every build bumps the bundle
 #   code), builds, uploads to Meta ALPHA, tags vX.Y.Z, and commits ProjectSettings back to the pushed
 #   branch ([skip ci]). The version is the same file locally and in CI: no second source.
-# main push without a keyword: promote the ALPHA build to BETA, tag vX.Y.Z-beta (no rebuild).
+#   Only develop and main release; a keyword pushed to any other branch does nothing. Release runs go
+#   one at a time, build the branch's latest commit, and the bundle code is always above every code
+#   already released (read from the release tags), so Meta never sees a duplicate. The version is
+#   committed back and tagged before the upload: a failed upload only leaves a gap in the codes.
+#   Merge PRs with a merge commit (not squash), so [skip ci] lines and old keywords don't carry over.
+#   Local Build > Develop/Staging/Production also moves the version: commit ProjectSettings after it.
+# main push without a keyword: promote the ALPHA build to BETA, tag vX.Y.Z-beta (no rebuild). The tag
+#   uses main's version, which matches the ALPHA build once develop's version commit is merged to main.
 # PR: check build (compiles, tests, signs) without touching the version.
 
 on:
@@ -44,6 +51,12 @@ jobs:
               develop) kind=Develop ;; staging) kind=Staging ;; production) kind=Production ;;
               *) if [ "$REF" = "refs/heads/main" ]; then kind=Promote; else kind=None; fi ;;
             esac
+            case "$kind" in Develop|Staging|Production)
+              if [ "$REF" != "refs/heads/develop" ] && [ "$REF" != "refs/heads/main" ]; then
+                echo "::notice::$kind keyword ignored: only develop and main release."
+                kind=None
+              fi ;;
+            esac
           fi
           echo "This run: $kind"
           echo "kind=$kind" >> "$GITHUB_OUTPUT"
@@ -52,6 +65,10 @@ jobs:
     name: Build Unity Android
     needs: plan
     if: needs.plan.outputs.kind != 'None' && needs.plan.outputs.kind != 'Promote'
+    # Release runs (build + release) go one at a time, so each starts from the previous one's version.
+    concurrency:
+      group: ${{ needs.plan.outputs.kind == 'Check' && format('check-{0}', github.ref) || 'release' }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
@@ -66,6 +83,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
+          # A release builds the branch's latest commit, which includes the previous release's version commit.
+          ref: ${{ needs.plan.outputs.kind != 'Check' && github.ref_name || '' }}
+
+      - name: Highest code already released
+        id: released
+        run: |
+          git fetch --tags --quiet
+          # Release tags are annotated "<Kind> build X.Y.Z (CODE)".
+          code=$(git for-each-ref refs/tags --format='%(contents:subject)' | sed -nE 's/.* \(([0-9]+)\)$/\1/p' | sort -n | tail -1)
+          echo "Highest released code: ${code:-none}"
+          echo "code=${code:-0}" >> "$GITHUB_OUTPUT"
 
       - name: Apply CI manifests
         run: |
@@ -155,6 +183,7 @@ jobs:
           targetPlatform: Android
           # Check -> CheckBuild (version untouched); Develop/Staging/Production -> BuildDevelop/...
           buildMethod: PingPong.EditorTools.Build.BuildScript.${{ needs.plan.outputs.kind == 'Check' && 'CheckBuild' || format('Build{0}', needs.plan.outputs.kind) }}
+          customParameters: ReleasedCode=${{ steps.released.outputs.code }}
           buildsPath: Builds/Android
           allowDirtyBuild: true
           androidKeystoreName: .keystore.keystore
@@ -171,15 +200,6 @@ jobs:
           echo "Built $version ($code)"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "code=$code" >> "$GITHUB_OUTPUT"
-
-      - name: Keep the bumped ProjectSettings
-        if: needs.plan.outputs.kind != 'Check'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ProjectSettings
-          path: ProjectSettings/ProjectSettings.asset
-          retention-days: 7
-          if-no-files-found: error
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -200,6 +220,9 @@ jobs:
     name: Upload to Meta ALPHA
     needs: [plan, build]
     if: needs.plan.outputs.kind == 'Develop' || needs.plan.outputs.kind == 'Staging' || needs.plan.outputs.kind == 'Production'
+    concurrency:
+      group: release
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -207,13 +230,13 @@ jobs:
       CODE: ${{ needs.build.outputs.code }}
       BRANCH: ${{ github.ref_name }}
     steps:
-      # Checked first: without it the version can't be committed back and the next build would reuse this code.
+      # Checked first: without it the version can't be committed back.
       - name: Check the push token
         env:
           TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
         run: |
           if [ -z "$TOKEN" ]; then
-            echo "::error::Add a RELEASE_PUSH_TOKEN secret (a token from an admin account with contents: write) so CI can commit the version back."
+            echo "::error::Add a RELEASE_PUSH_TOKEN secret (a fine-grained token from an admin account, this repo only, Contents: read and write) so CI can commit the version back."
             exit 1
           fi
 
@@ -222,6 +245,34 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
           token: ${{ secrets.RELEASE_PUSH_TOKEN }}
+
+      # Saved before the upload, so a code is never uploaded without being recorded. Only the two version
+      # lines are written, into the branch's current file, so other settings changed meanwhile are kept.
+      - name: Commit the version back
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          pushed=0
+          for _ in 1 2 3; do
+            git pull --quiet --rebase origin "$BRANCH"
+            sed -i -e "s/^  bundleVersion: .*/  bundleVersion: $VERSION/" \
+                   -e "s/^  AndroidBundleVersionCode: .*/  AndroidBundleVersionCode: $CODE/" ProjectSettings/ProjectSettings.asset
+            git add ProjectSettings/ProjectSettings.asset
+            if git diff --cached --quiet; then echo "Version already committed."; pushed=1; break; fi
+            git commit --quiet -m "Version $VERSION ($CODE) [skip ci]"
+            if git push --quiet origin "HEAD:$BRANCH"; then pushed=1; break; fi
+            git reset --quiet --hard "origin/$BRANCH"
+          done
+          if [ "$pushed" != 1 ]; then echo "::error::Could not commit version $VERSION ($CODE) to $BRANCH; not uploading."; exit 1; fi
+
+      - name: Tag the release
+        run: |
+          TAG="v$VERSION"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            TAG="v$VERSION+$CODE" # the same name released again (e.g. main and develop): keep the code unique
+          fi
+          git tag -a "$TAG" -m "${{ needs.plan.outputs.kind }} build $VERSION ($CODE)"
+          git push --quiet origin "$TAG"
 
       - name: Download APK
         uses: actions/download-artifact@v4
@@ -242,33 +293,6 @@ jobs:
           ageGroup: 'MIXED_AGES'
           draft: false
           releaseNotes: '${{ needs.plan.outputs.kind }} build ${{ needs.build.outputs.version }} (${{ needs.build.outputs.code }}) from ${{ github.ref_name }} @ ${{ github.sha }}'
-
-      # Only the two version lines are written, into the branch's current file, so other settings that
-      # changed on the branch meanwhile are kept.
-      - name: Commit the version back
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          for _ in 1 2 3; do
-            git pull --quiet --rebase origin "$BRANCH"
-            sed -i -e "s/^  bundleVersion: .*/  bundleVersion: $VERSION/" \
-                   -e "s/^  AndroidBundleVersionCode: .*/  AndroidBundleVersionCode: $CODE/" ProjectSettings/ProjectSettings.asset
-            git add ProjectSettings/ProjectSettings.asset
-            git diff --cached --quiet && { echo "Version already committed."; break; }
-            git commit --quiet -m "Version $VERSION ($CODE) [skip ci]"
-            git push --quiet origin "HEAD:$BRANCH" && break
-            git reset --quiet --hard "origin/$BRANCH"
-          done
-
-      - name: Tag the release
-        run: |
-          TAG="v$VERSION"
-          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
-            echo "Tag $TAG already exists; skipping."
-          else
-            git tag -a "$TAG" -m "${{ needs.plan.outputs.kind }} build $VERSION ($CODE)"
-            git push --quiet origin "$TAG"
-          fi
 
   promote:
     name: Promote ALPHA to BETA

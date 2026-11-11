@@ -28,7 +28,8 @@ namespace PingPong.EditorTools.Build
 
         static void Run(ReleaseKind? kind)
         {
-            var builder = new AndroidBuildStrategy("Builds/Android", new AndroidSigning(), new BuildVersioning());
+            int.TryParse(Arg("ReleasedCode"), out int releasedCode); // CI only: the highest code already released
+            var builder = new AndroidBuildStrategy("Builds/Android", new AndroidSigning(), new BuildVersioning(releasedCode));
             // In CI (batch mode) any failure must end Unity with a non-zero exit code, so the job fails here
             // instead of later with "no APK found".
             try
@@ -41,6 +42,14 @@ namespace PingPong.EditorTools.Build
                 if (Application.isBatchMode) EditorApplication.Exit(1);
                 throw;
             }
+        }
+
+        /// <summary>A game-ci custom parameter (Name=value), or null.</summary>
+        static string Arg(string name)
+        {
+            foreach (string arg in System.Environment.GetCommandLineArgs())
+                if (arg.StartsWith(name + "=")) return arg.Substring(name.Length + 1);
+            return null;
         }
     }
 }

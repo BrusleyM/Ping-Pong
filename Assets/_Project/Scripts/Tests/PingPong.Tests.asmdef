@@ -7,7 +7,7 @@
         "PingPong.Presentation",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "PingPong.Editor"
+        "PingPong.Editor.Build"
     ],
     "includePlatforms": [
         "Editor"

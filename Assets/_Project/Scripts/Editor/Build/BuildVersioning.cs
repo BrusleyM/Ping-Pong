@@ -5,11 +5,16 @@ namespace PingPong.EditorTools.Build
 {
     /// <summary>
     /// The version lives in Player Settings (ProjectSettings.asset), for local and CI builds alike: a release
-    /// build moves it on (<see cref="ReleaseVersion.Next"/>) and saves it, and CI commits the saved file back
-    /// after a successful upload. A failed build puts the old version back.
+    /// build moves it on (<see cref="ReleaseVersion.Next"/>) and saves it, and CI commits the version back
+    /// before uploading. A failed build puts the old version back.
     /// </summary>
     public sealed class BuildVersioning
     {
+        readonly int _releasedCode;
+
+        /// <param name="releasedCode">The highest code already released (CI reads it from the release tags; 0 locally).</param>
+        public BuildVersioning(int releasedCode = 0) => _releasedCode = releasedCode;
+
         public static ReleaseVersion Current =>
             ReleaseVersion.Parse(PlayerSettings.bundleVersion, PlayerSettings.Android.bundleVersionCode);
 
@@ -17,7 +22,7 @@ namespace PingPong.EditorTools.Build
         public ReleaseVersion Bump(ReleaseKind kind)
         {
             ReleaseVersion previous = Current;
-            Set(previous.Next(kind));
+            Set(previous.Next(kind, _releasedCode));
             return previous;
         }
 
