@@ -23,7 +23,7 @@ namespace PingPong.Tests
             Assert.That(MatchText.Status(MatchPhase.WaitingForServe, Side.Near, Side.Near, Ai), Is.EqualTo("Your serve"));
             Assert.That(MatchText.Status(MatchPhase.WaitingForServe, Side.Far, Side.Near, Ai), Is.EqualTo(Ai + " serves"));
             Assert.That(MatchText.Status(MatchPhase.Rally, Side.Near, Side.Near, Ai), Is.Empty, "nothing distracting during a rally");
-            Assert.That(MatchText.Status(MatchPhase.GameOver, Side.Near, Side.Near, Ai), Is.EqualTo("Press A to play again"));
+            Assert.That(MatchText.Status(MatchPhase.GameOver, Side.Near, Side.Near, Ai), Is.EqualTo(MatchText.PlayAgain));
         }
 
         [Test]
@@ -53,8 +53,8 @@ namespace PingPong.Tests
         {
             Assert.That(MatchText.Detail(MatchPhase.WaitingForServe, "", "Your serve"), Is.EqualTo("Your serve"));
             Assert.That(MatchText.Detail(MatchPhase.PointOver, "You score - out", "Your serve"), Is.EqualTo("You score - out"));
-            Assert.That(MatchText.Detail(MatchPhase.GameOver, "You win!", "Press A to play again"), Is.EqualTo("You win!\nPress A to play again"));
-            Assert.That(MatchText.Detail(MatchPhase.GameOver, "", "Press A to play again"), Is.EqualTo("Press A to play again"), "no blank first line");
+            Assert.That(MatchText.Detail(MatchPhase.GameOver, "You win!", MatchText.PlayAgain), Is.EqualTo("You win!\n" + MatchText.PlayAgain));
+            Assert.That(MatchText.Detail(MatchPhase.GameOver, "", MatchText.PlayAgain), Is.EqualTo(MatchText.PlayAgain), "no blank first line");
         }
 
         [Test]

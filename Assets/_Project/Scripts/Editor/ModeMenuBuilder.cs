@@ -1,5 +1,4 @@
 using Oculus.Interaction;
-using Oculus.Interaction.Surfaces;
 using PingPong.Presentation;
 using TMPro;
 using UnityEditor;
@@ -11,8 +10,8 @@ namespace PingPong.EditorTools
 {
     /// <summary>
     /// Builds the mode menu as a base prefab and a platform variant, like PaddleModel and Paddle:
-    /// ModeMenu is the Meta-free UGUI panel (canvas, buttons, presenter); ModeMenuMeta adds pointing
-    /// with the rig's Meta rays (PointableCanvas + RayInteractable on a clipped plane). Another input
+    /// ModeMenu is the Meta-free UGUI panel (canvas, buttons, presenter); ModeMenuMeta adds Meta's ray and
+    /// poke canvas interaction (the same pieces as the Interaction SDK canvas wizard). Another input
     /// (hands, poke, desktop) is another variant. Idempotent: existing children are reused and every
     /// value is written the same way each run.
     /// </summary>
@@ -45,7 +44,7 @@ namespace PingPong.EditorTools
                 PrefabUtility.SaveAsPrefabAsset(instance, PrefabPath); // saving an instance makes a variant
                 Object.DestroyImmediate(instance);
             }
-            EditPrefab(PrefabPath, AddMetaRayPointing);
+            EditPrefab(PrefabPath, AddMetaCanvasInteraction);
         }
 
         static void BuildContents(GameObject root)
@@ -128,25 +127,51 @@ namespace PingPong.EditorTools
             }
         }
 
-        /// <summary>Meta rays: the panel becomes a pointable canvas on a plane clipped to the canvas rectangle.</summary>
-        static void AddMetaRayPointing(GameObject root)
+        // Meta's "Add Ray / Poke Interaction to Canvas" wizard templates (Interaction SDK quick actions).
+        const string RayCanvasTemplateGuid = "8369d93f7b6b99742bbea0649a41b7b1";
+        const string PokeCanvasTemplateGuid = "4db41829582c7d24f80ee9603868dd67";
+
+        /// <summary>
+        /// Makes the canvas pointable and pokeable exactly as Meta's canvas wizard does: its ray and poke
+        /// canvas templates under the canvas, filling it, pointed at it. The rig supplies the interactors.
+        /// </summary>
+        static void AddMetaCanvasInteraction(GameObject root)
         {
             var panel = root.transform.Find("Panel").gameObject;
             var canvas = panel.GetComponentInChildren<Canvas>(true);
-            var surfaceGo = GetOrCreate("Surface", panel.transform);
-            surfaceGo.transform.localPosition = Vector3.zero;
-            surfaceGo.transform.localRotation = Quaternion.identity;
-            surfaceGo.transform.localScale = new Vector3(Size.x / PixelsPerMetre, Size.y / PixelsPerMetre, 0.01f);
-            var plane = GetOrAdd<PlaneSurface>(surfaceGo);
-            var clipper = GetOrAdd<BoundsClipper>(surfaceGo); // unit box, scaled with the surface
-            var clipped = GetOrAdd<ClippedPlaneSurface>(surfaceGo);
-            Set(clipped, "_planeSurface", plane);
-            SetArray(clipped, "_clippers", new Object[] { clipper });
-            var pointable = GetOrAdd<PointableCanvas>(panel);
-            Set(pointable, "_canvas", canvas);
-            var ray = GetOrAdd<RayInteractable>(panel);
-            Set(ray, "_surface", clipped);
-            Set(ray, "_pointableElement", pointable);
+
+            // The earlier hand-built pointing (a clipped plane surface on the panel) is replaced.
+            foreach (var c in panel.GetComponents<RayInteractable>()) Object.DestroyImmediate(c);
+            foreach (var c in panel.GetComponents<PointableCanvas>()) Object.DestroyImmediate(c);
+            var oldSurface = panel.transform.Find("Surface");
+            if (oldSurface != null) Object.DestroyImmediate(oldSurface.gameObject);
+
+            AddCanvasTemplate(canvas, "ISDK_RayCanvasInteraction", RayCanvasTemplateGuid);
+            AddCanvasTemplate(canvas, "ISDK_PokeCanvasInteraction", PokeCanvasTemplateGuid);
+        }
+
+        static void AddCanvasTemplate(Canvas canvas, string name, string templateGuid)
+        {
+            var existing = canvas.transform.Find(name);
+            GameObject go;
+            if (existing != null) go = existing.gameObject;
+            else
+            {
+                var template = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(templateGuid));
+                if (template == null) { Debug.LogError($"Ping Pong setup: Meta canvas template {name} not found."); return; }
+                go = Object.Instantiate(template, canvas.transform, false);
+                go.name = name;
+            }
+            var rt = (RectTransform)go.transform;
+            rt.localPosition = Vector3.zero;
+            rt.localRotation = Quaternion.identity;
+            rt.localScale = Vector3.one;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = Vector2.zero;
+            GetOrAdd<LayoutElement>(go).ignoreLayout = true; // fills the canvas; not a row of the menu layout
+            Set(go.GetComponent<PointableCanvas>(), "_canvas", canvas);
         }
 
         static TextMeshProUGUI Text(Transform parent, string name, string text, float size, FontStyles style, float height)

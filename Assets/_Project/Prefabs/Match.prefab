@@ -317,7 +317,6 @@ MonoBehaviour:
     _component: {fileID: 0}
   _passthrough:
     _component: {fileID: 0}
-  _startSoloOnPlay: 1
   _localPlayer: 0
 --- !u!1001 &393327183960975466
 PrefabInstance:

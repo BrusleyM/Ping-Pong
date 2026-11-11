@@ -32,6 +32,18 @@ namespace PingPong.EditorTools
         {
             // Opening GameScene replaces the open scene: let the user save (or cancel) first.
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            SetUp(() => EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single));
+        }
+
+        /// <summary>
+        /// Adds the game to the open scene: it needs an OVRCameraRig (e.g. Meta's Camera Rig building block with
+        /// the interaction rig); the table, match, paddle and menu are placed if missing.
+        /// </summary>
+        [MenuItem("Ping Pong/Set Up Open Scene")]
+        public static void RunOnOpenScene() => SetUp(() => UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+
+        static void SetUp(System.Func<UnityEngine.SceneManagement.Scene> openScene)
+        {
             var log = new System.Text.StringBuilder("Ping Pong setup:\n");
 
             // Tuning profiles (created once, then edited as assets).
@@ -49,13 +61,19 @@ namespace PingPong.EditorTools
             ModeMenuBuilder.Build();
 
             // 2. Scene.
-            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var scene = openScene();
+            var rig = Object.FindAnyObjectByType<OVRCameraRig>(FindObjectsInactive.Include);
+            if (rig == null) { Debug.LogError("Ping Pong setup: OVRCameraRig not found (add Meta's Camera Rig building block)."); return; }
             var table = Object.FindAnyObjectByType<PingPongTable>(FindObjectsInactive.Include);
-            if (table == null) { Debug.LogError("Ping Pong setup: no table in the scene (place the Environment prefab)."); return; }
+            if (table == null)
+            {
+                var environment = Instance(EnvironmentPrefabPath);
+                table = environment.GetComponentInChildren<PingPongTable>(true);
+                PlaceInFrontOf(rig, environment, table);
+                log.AppendLine("Environment placed in front of the player");
+            }
             var match = Instance(MatchPrefabPath);
             var paddle = Instance(PaddlePrefabPath);
-            var rig = Object.FindAnyObjectByType<OVRCameraRig>(FindObjectsInactive.Include);
-            if (rig == null) { Debug.LogError("Ping Pong setup: OVRCameraRig not found."); return; }
 
             // The local player is the Near side: flip the table frame if the rig stands at the other end.
             table.Rebuild();
@@ -90,6 +108,7 @@ namespace PingPong.EditorTools
             SetSeam(grip, "_commands", commands);
             Set(grip, "_leftHand", rig.leftControllerAnchor);
             Set(grip, "_rightHand", rig.rightControllerAnchor);
+            Set(grip, "_modes", modes); // a starting match puts the paddle in the right hand
             SetSeam(modes, "_passthrough", passthrough);
 
             // The mode menu opens in front of the head; Meta rays point at it through the event system.
@@ -113,6 +132,29 @@ namespace PingPong.EditorTools
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             Debug.Log(log.ToString());
+        }
+
+        /// <summary>
+        /// Puts a newly placed environment where the player stands: the table top at regulation height above
+        /// the rig's floor (floor-level tracking puts the floor at the rig's origin) and its near end just in
+        /// front of the player, running away from them.
+        /// </summary>
+        static void PlaceInFrontOf(OVRCameraRig rig, GameObject environment, PingPongTable table)
+        {
+            const float GapToTable = 0.45f;     // from the player to the near end line, metres
+            const float SurfaceHeight = 0.76f;  // regulation table height
+            table.Rebuild();
+            Vector3 rigForward = Vector3.ProjectOnPlane(rig.transform.forward, Vector3.up).normalized;
+            Vector3 tableForward = Vector3.ProjectOnPlane(table.Frame.Forward, Vector3.up).normalized;
+            Transform env = environment.transform;
+            env.rotation = Quaternion.FromToRotation(tableForward, rigForward) * env.rotation;
+            table.Rebuild();
+
+            Vector3 wantedCentre = rig.transform.position + rigForward * (table.Frame.HalfLength + GapToTable)
+                                   + Vector3.up * SurfaceHeight;
+            Vector3 move = wantedCentre - table.Frame.SurfaceCenter;
+            env.position += move;
+            table.Rebuild();
         }
 
         /// <summary>The table and its net (the model has no net collider), inside the Environment prefab.</summary>
@@ -294,7 +336,9 @@ namespace PingPong.EditorTools
                 EditorUtility.SetDirty(mgr);
                 log.AppendLine("OVRManager: Insight Passthrough enabled.");
             }
-            var layer = GetOrAdd<OVRPassthroughLayer>(rig.gameObject);
+            // Reuse a passthrough layer the scene already has (e.g. Meta's Passthrough building block).
+            var layer = Object.FindAnyObjectByType<OVRPassthroughLayer>(FindObjectsInactive.Include)
+                        ?? GetOrAdd<OVRPassthroughLayer>(rig.gameObject);
 #pragma warning disable CS0618 // overlayType is deprecated with flexible layering; Underlay is still the setting we need
             layer.overlayType = OVROverlay.OverlayType.Underlay;
 #pragma warning restore CS0618

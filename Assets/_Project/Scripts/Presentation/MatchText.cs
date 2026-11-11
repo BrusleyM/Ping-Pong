@@ -11,6 +11,8 @@ namespace PingPong.Presentation
     {
         public const string LocalName = "You";
 
+        public const string PlayAgain = "Menu button to play again";
+
         public static string Score(int local, int opponent) => $"{local}  -  {opponent}";
 
         /// <summary>What to call the other side: the AI and its level in solo play, otherwise "Opponent".</summary>
@@ -34,7 +36,7 @@ namespace PingPong.Presentation
         public static string Status(MatchPhase phase, Side server, Side local, string opponentName) => phase switch
         {
             MatchPhase.WaitingForServe => server == local ? "Your serve" : $"{opponentName} serves",
-            MatchPhase.GameOver => "Press A to play again",
+            MatchPhase.GameOver => PlayAgain,
             MatchPhase.FreePlay => "Free play",
             _ => "",
         };
