@@ -6,7 +6,7 @@ name: Unity VR Android Build and Upload
 #   code), builds, uploads to Meta ALPHA, tags vX.Y.Z, and commits ProjectSettings back to the pushed
 #   branch ([skip ci]). The version is the same file locally and in CI: no second source.
 #   Only develop and main release; a keyword pushed to any other branch does nothing. Release runs go
-#   one at a time, build the branch's latest commit, and the bundle code is always above every code
+#   one at a time (one workflow-level queue), build the branch's latest commit, and the bundle code is always above every code
 #   already released (read from the release tags), so Meta never sees a duplicate. The version is
 #   committed back and tagged before the upload: a failed upload only leaves a gap in the codes.
 #   Merge PRs with a merge commit (not squash), so [skip ci] lines and old keywords don't carry over.
@@ -22,9 +22,11 @@ on:
     branches: [main, develop]
     paths-ignore: ['**.md']
 
+# develop/main pushes (releases and promotions) form one queue: a whole run finishes, version commit and
+# tag included, before the next starts. GitHub keeps one *pending* run per group, so a third quick push
+# replaces a second that hasn't started. Superseded PR checks are cancelled.
 concurrency:
-  group: unity-android-${{ github.ref }}
-  # Cancel superseded PR builds, but never interrupt an upload/promotion.
+  group: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && 'release' || format('ci-{0}', github.ref) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -65,10 +67,6 @@ jobs:
     name: Build Unity Android
     needs: plan
     if: needs.plan.outputs.kind != 'None' && needs.plan.outputs.kind != 'Promote'
-    # Release runs (build + release) go one at a time, so each starts from the previous one's version.
-    concurrency:
-      group: ${{ needs.plan.outputs.kind == 'Check' && format('check-{0}', github.ref) || 'release' }}
-      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
@@ -90,8 +88,8 @@ jobs:
         id: released
         run: |
           git fetch --tags --quiet
-          # Release tags are annotated "<Kind> build X.Y.Z (CODE)".
-          code=$(git for-each-ref refs/tags --format='%(contents:subject)' | sed -nE 's/.* \(([0-9]+)\)$/\1/p' | sort -n | tail -1)
+          # Release tags are annotated v* tags whose subject is "<Kind> build X.Y.Z (CODE)".
+          code=$(git for-each-ref 'refs/tags/v*' --format='%(objecttype) %(contents:subject)' | sed -nE 's/^tag .* \(([0-9]+)\)$/\1/p' | sort -n | tail -1)
           echo "Highest released code: ${code:-none}"
           echo "code=${code:-0}" >> "$GITHUB_OUTPUT"
 
@@ -220,9 +218,6 @@ jobs:
     name: Upload to Meta ALPHA
     needs: [plan, build]
     if: needs.plan.outputs.kind == 'Develop' || needs.plan.outputs.kind == 'Staging' || needs.plan.outputs.kind == 'Production'
-    concurrency:
-      group: release
-      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
