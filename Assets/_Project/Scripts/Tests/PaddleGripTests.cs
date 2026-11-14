@@ -77,9 +77,10 @@ namespace PingPong.Tests
         sealed class FakeCommands : MonoBehaviour, IPlayerCommands
         {
             public bool RightControllerActive = true;
-            public bool GrabPressed(Hand hand) => false;
+            public event System.Action<Hand> GrabPerformed;
+            public event System.Action MenuPerformed;
             public bool ControllerActive(Hand hand) => hand != Hand.Right || RightControllerActive;
-            public bool MenuPressed => false;
+            public void Press(Hand hand) => GrabPerformed?.Invoke(hand);
         }
 
         [Test]
@@ -98,7 +99,7 @@ namespace PingPong.Tests
                 Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Right));
 
                 commands.RightControllerActive = false; // hand tracking took over
-                InvokeUpdate();
+                InvokeLateUpdate();
                 Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None));
                 var body = _paddle.GetComponent<Rigidbody>();
                 Assert.That(body.isKinematic, Is.False);
@@ -107,6 +108,6 @@ namespace PingPong.Tests
             finally { Object.DestroyImmediate(host); }
         }
 
-        void InvokeUpdate() => typeof(PaddleGrip).GetMethod("Update", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(_grip, null);
+        void InvokeLateUpdate() => typeof(PaddleGrip).GetMethod("LateUpdate", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(_grip, null);
     }
 }

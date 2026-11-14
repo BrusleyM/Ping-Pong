@@ -48,13 +48,17 @@ namespace PingPong.Gameplay
         {
             if (_ai != null) _ai.LevelChanged += OnLevelChanged;
             _match.GameWon += OnGameWon;
+            if (_commands.Value != null) _commands.Value.MenuPerformed += OnMenuPerformed;
         }
 
         void OnDisable()
         {
             if (_ai != null) _ai.LevelChanged -= OnLevelChanged;
             _match.GameWon -= OnGameWon;
+            if (_commands.Value != null) _commands.Value.MenuPerformed -= OnMenuPerformed;
         }
+
+        void OnMenuPerformed() => MenuRequested?.Invoke();
 
         void OnGameWon(Side winner) => GameEnded?.Invoke();
 
@@ -82,12 +86,5 @@ namespace PingPong.Gameplay
         }
 
         void OnLevelChanged(int level) => Changed?.Invoke();
-
-        void Update()
-        {
-            IPlayerCommands c = _commands.Value;
-            if (c == null) return;
-            if (c.MenuPressed) MenuRequested?.Invoke();
-        }
     }
 }

@@ -14,12 +14,8 @@ namespace PingPong.Gameplay
         [SerializeField] InputAction _grabRight = Button("Grab Right", "<XRController>{RightHand}/gripPressed", "<Keyboard>/g");
         [SerializeField] InputAction _menu = Button("Menu", "<XRController>{LeftHand}/menuButton", "<Keyboard>/escape");
 
-        public bool GrabPressed(Hand hand) => hand switch
-        {
-            Hand.Left => _grabLeft.WasPressedThisFrame(),
-            Hand.Right => _grabRight.WasPressedThisFrame(),
-            _ => false,
-        };
+        public event System.Action<Hand> GrabPerformed;
+        public event System.Action MenuPerformed;
 
         public bool ControllerActive(Hand hand)
         {
@@ -32,17 +28,25 @@ namespace PingPong.Gameplay
             return c == null || c.isTracked.isPressed;
         }
 
-        public bool MenuPressed => _menu.WasPressedThisFrame();
-
         void OnEnable()
         {
+            _grabLeft.performed += OnGrabLeft;
+            _grabRight.performed += OnGrabRight;
+            _menu.performed += OnMenu;
             _grabLeft.Enable(); _grabRight.Enable(); _menu.Enable();
         }
 
         void OnDisable()
         {
             _grabLeft.Disable(); _grabRight.Disable(); _menu.Disable();
+            _grabLeft.performed -= OnGrabLeft;
+            _grabRight.performed -= OnGrabRight;
+            _menu.performed -= OnMenu;
         }
+
+        void OnGrabLeft(InputAction.CallbackContext _) => GrabPerformed?.Invoke(Hand.Left);
+        void OnGrabRight(InputAction.CallbackContext _) => GrabPerformed?.Invoke(Hand.Right);
+        void OnMenu(InputAction.CallbackContext _) => MenuPerformed?.Invoke();
 
         static InputAction Button(string name, params string[] bindings)
         {

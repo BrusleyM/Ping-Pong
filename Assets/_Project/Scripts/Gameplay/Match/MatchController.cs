@@ -32,7 +32,13 @@ namespace PingPong.Gameplay
         public int HitCount { get; private set; }
 
         /// <summary>False on network clients: rules run on the state authority only.</summary>
-        public bool IsAuthority { get; set; } = true;
+        public bool IsAuthority
+        {
+            get => _isAuthority;
+            set { _isAuthority = value; SyncWatching(); }
+        }
+
+        bool _isAuthority = true;
 
         public event Action Changed;
         public event Action<Side, PointReason> PointWon;
@@ -47,25 +53,30 @@ namespace PingPong.Gameplay
         MatchRulesEngine CreateEngine()
         {
             var engine = new MatchRulesEngine(_profile.Rules);
-            engine.Changed += () => Changed?.Invoke();
+            engine.Changed += () => { SyncWatching(); Changed?.Invoke(); };
             engine.PointAwarded += OnPointAwarded;
             engine.GameWon += w => GameWon?.Invoke(w);
             engine.Let += OnLet;
             return engine;
         }
 
-        void OnEnable()
+        // Update (ball lost / rally timeout / dropped serve) matters only in these phases, so the component is
+        // enabled just then. It listens from Awake to OnDestroy for that reason; coroutines keep running while disabled.
+        void Awake()
         {
             _ball.TableBounce += OnTableBounce;
             _ball.OtherContact += OnOtherContact;
+            SyncWatching();
         }
 
-        void OnDisable()
+        void OnDestroy()
         {
             _ball.TableBounce -= OnTableBounce;
             _ball.OtherContact -= OnOtherContact;
             CancelPendingServe();
         }
+
+        void SyncWatching() => enabled = IsAuthority && Phase is MatchPhase.Rally or MatchPhase.WaitingForServe;
 
         void OnValidate()
         {
