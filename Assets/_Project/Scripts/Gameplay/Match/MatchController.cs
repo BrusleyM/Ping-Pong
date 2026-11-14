@@ -113,16 +113,20 @@ namespace PingPong.Gameplay
         public bool CanHit(Side player) => Engine.CanHit(player);
 
         /// <summary>
-        /// The one way a player strikes the ball (local paddle, AI, and later the network): launches the
-        /// ball from 'from' with 'velocity', raises <see cref="PaddleHit"/> and lets the rules judge the hit.
+        /// The one way a player strikes the ball (local paddle, AI, and later the network). On the authority the rules
+        /// judge first: if the player may not hit now (wrong server, point over, game over) nothing happens and it returns
+        /// false. Otherwise it launches the ball from 'from' with 'velocity', raises <see cref="PaddleHit"/> and registers
+        /// the hit. Clients predict the hit locally and follow the authority's snapshots.
         /// </summary>
-        public void Strike(Side player, Vector3 from, Vector3 velocity)
+        public bool Strike(Side player, Vector3 from, Vector3 velocity)
         {
+            if (IsAuthority && !Engine.CanHit(player)) return false;
             _ball.Launch(from, velocity);
             LastHitTime = Time.time;
             HitCount++;
             PaddleHit?.Invoke(player);
             if (IsAuthority) Engine.RegisterHit(player, Table.Frame.IsOverTable(from));
+            return true;
         }
 
         /// <summary>Network clients mirror the authority's rules state through this; point and game events fire as on the authority.</summary>
