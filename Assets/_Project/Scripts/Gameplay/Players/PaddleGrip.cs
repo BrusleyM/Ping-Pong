@@ -61,7 +61,7 @@ namespace PingPong.Gameplay
             IPlayerCommands c = _commands.Value;
             if (c == null) return;
             // Hand tracking took over: the controller anchor is stale, so let go and leave the paddle to Meta's grab.
-            if (HeldBy != Hand.None && !c.ControllerActive(HeldBy)) Release();
+            if (HeldBy != Hand.None && !c.ControllerActive(HeldBy)) Release(withHandMotion: false);
             if (c.GrabPressed(Hand.Left)) Toggle(Hand.Left);
             else if (c.GrabPressed(Hand.Right)) Toggle(Hand.Right);
         }
@@ -112,11 +112,12 @@ namespace PingPong.Gameplay
             HeldByChanged?.Invoke(hand);
         }
 
-        void Release()
+        // 'withHandMotion' false drops it where it is: a stale anchor's last velocity would fling it.
+        void Release(bool withHandMotion = true)
         {
             HeldBy = Hand.None;
             Body.isKinematic = false;
-            Body.linearVelocity = _handVelocity;
+            Body.linearVelocity = withHandMotion ? _handVelocity : Vector3.zero;
             HeldByChanged?.Invoke(Hand.None);
         }
 

@@ -83,6 +83,7 @@ namespace PingPong.EditorTools
                 table.Rebuild();
             }
             TableFrame frame = table.Frame;
+            log.AppendLine("Scoreboards and banner are placed once from the table: re-run this after moving the Environment.");
             log.AppendLine($"Table: {Path(table.transform)}  {frame.HalfLength * 2:F2} x {frame.HalfWidth * 2:F2} m");
 
             // The ball plays on this table, and the rig (hands, body) never ends a rally.
@@ -325,13 +326,14 @@ namespace PingPong.EditorTools
             SetUpBanner(root, matchCtl, modes);
         }
 
-        /// <summary>
-        /// Puts each scoreboard on the floor behind its end of
-        /// the table, facing the table with its board tilted down.
-        /// </summary>
         const string BannerName = "MatchBanner";
         const string BoardBehindPlayer = "ScoreboardBehindPlayer", BoardBehindAI = "ScoreboardBehindAI";
 
+        /// <summary>
+        /// Puts each scoreboard on the floor behind its end of the table, facing the table with its board tilted
+        /// down, and the banner above the far end. They are placed once and saved in the scene, so after moving the
+        /// Environment run Set Up Open Scene again.
+        /// </summary>
         static void PlaceBoards(GameObject match, TableFrame t)
         {
             const float TableHeight = 0.76f, BehindTable = 2f, Tilt = 8f;
@@ -360,13 +362,8 @@ namespace PingPong.EditorTools
         /// </summary>
         static void SetUpBoard(GameObject root, string name, MatchController match, GameModeController modes)
         {
-            const string Folder = "Assets/_Project/Materials/Scoreboard";
             const float W = 2.4f, H = 1.2f, Centre = 3.8f, HeaderH = 0.34f;
-            if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets/_Project/Materials", "Scoreboard");
-            Material panelMat = UnlitMaterial(Folder + "/ScoreboardPanel.mat", new Color(0.04f, 0.05f, 0.08f));
-            Material playerMat = UnlitMaterial(Folder + "/ScoreboardPlayer.mat", new Color(0.15f, 0.55f, 1f));
-            Material aiMat = UnlitMaterial(Folder + "/ScoreboardAI.mat", new Color(1f, 0.3f, 0.25f));
-            Material lineMat = UnlitMaterial(Folder + "/ScoreboardDivider.mat", new Color(0.8f, 0.82f, 0.9f));
+            Material panelMat = BoardMaterials.Panel, playerMat = BoardMaterials.Player, aiMat = BoardMaterials.AI, lineMat = BoardMaterials.Line;
 
             var rootGo = GetOrCreate(name, root.transform);
             var sb = GetOrAdd<MatchScoreboard>(rootGo);
@@ -414,9 +411,7 @@ namespace PingPong.EditorTools
         /// <summary>The banner that pops in for points, lets and the game result; a static object above the far end of the table.</summary>
         static void SetUpBanner(GameObject root, MatchController match, GameModeController modes)
         {
-            const string Folder = "Assets/_Project/Materials/Scoreboard";
-            Material panelMat = UnlitMaterial(Folder + "/ScoreboardPanel.mat", new Color(0.04f, 0.05f, 0.08f));
-            Material frameMat = UnlitMaterial(Folder + "/ScoreboardDivider.mat", new Color(0.8f, 0.82f, 0.9f));
+            Material panelMat = BoardMaterials.Panel, frameMat = BoardMaterials.Line;
             var rootGo = GetOrCreate(BannerName, root.transform);
             var banner = GetOrAdd<MatchBanner>(rootGo);
             var visual = GetOrCreate("Visual", rootGo.transform).transform;
@@ -428,6 +423,22 @@ namespace PingPong.EditorTools
             Set(banner, "_modes", modes);
             Set(banner, "_visual", visual);
             Set(banner, "_text", text);
+        }
+
+        /// <summary>The scoreboard and banner materials: one place for the paths and colours.</summary>
+        static class BoardMaterials
+        {
+            const string Folder = "Assets/_Project/Materials/Scoreboard";
+            public static Material Panel => Get("ScoreboardPanel", new Color(0.04f, 0.05f, 0.08f));
+            public static Material Player => Get("ScoreboardPlayer", new Color(0.15f, 0.55f, 1f));
+            public static Material AI => Get("ScoreboardAI", new Color(1f, 0.3f, 0.25f));
+            public static Material Line => Get("ScoreboardDivider", new Color(0.8f, 0.82f, 0.9f));
+
+            static Material Get(string name, Color color)
+            {
+                if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets/_Project/Materials", "Scoreboard");
+                return UnlitMaterial($"{Folder}/{name}.mat", color);
+            }
         }
 
         static Material UnlitMaterial(string path, Color color)
@@ -491,6 +502,14 @@ namespace PingPong.EditorTools
             // Reuse a passthrough layer the scene already has (e.g. Meta's Passthrough building block).
             var layer = Object.FindAnyObjectByType<OVRPassthroughLayer>(FindObjectsInactive.Include)
                         ?? GetOrAdd<OVRPassthroughLayer>(rig.gameObject);
+            // Passthrough must be an underlay. Newer Meta SDKs force it and no longer have the field; older ones need it set.
+            var layerObject = new SerializedObject(layer);
+            SerializedProperty overlayType = layerObject.FindProperty("overlayType");
+            if (overlayType != null && overlayType.propertyType == SerializedPropertyType.Enum)
+            {
+                overlayType.enumValueIndex = (int)OVROverlay.OverlayType.Underlay;
+                layerObject.ApplyModifiedPropertiesWithoutUndo();
+            }
             layer.hidden = true;
             EditorUtility.SetDirty(layer);
 
