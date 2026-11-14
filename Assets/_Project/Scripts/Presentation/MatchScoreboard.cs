@@ -27,6 +27,7 @@ namespace PingPong.Presentation
         [SerializeField, Min(0.05f)] float _punchSeconds = 0.35f;
 
         int _shownLocal = -1, _shownOpponent = -1;
+        string _shownLocalName, _shownOpponentName;
         Coroutine _localPunch, _opponentPunch;
 
         Side Local => _modes != null ? _modes.LocalPlayer : Side.Near;
@@ -57,12 +58,20 @@ namespace PingPong.Presentation
             GameMode mode = _modes != null ? _modes.Mode : GameMode.Online;
             Side local = Local, other = local.Opponent();
             int l = _match.Score(local), o = _match.Score(other);
-            if (_localName != null) _localName.text = MatchText.BoardName(local, local, mode);
-            if (_opponentName != null) _opponentName.text = MatchText.BoardName(other, local, mode);
+            SetName(_localName, MatchText.BoardName(local, local, mode), ref _shownLocalName);
+            SetName(_opponentName, MatchText.BoardName(other, local, mode), ref _shownOpponentName);
             ShowScore(_localScore, l, ref _shownLocal, ref _localPunch);
             ShowScore(_opponentScore, o, ref _shownOpponent, ref _opponentPunch);
             ShowServe(_localServe, local);
             ShowServe(_opponentServe, other);
+        }
+
+        // Names are constants that change only with the mode or the local side.
+        static void SetName(TMP_Text text, string name, ref string shown)
+        {
+            if (text == null || ReferenceEquals(name, shown) || name == shown) return;
+            shown = name;
+            text.text = name;
         }
 
         // Text is rewritten only when the score changes; a rise punches the number.
@@ -71,7 +80,7 @@ namespace PingPong.Presentation
             if (score == shown) return;
             bool rose = shown >= 0 && score > shown;
             shown = score;
-            text.text = score.ToString();
+            text.text = MatchText.Number(score);
             if (!rose) { text.transform.localScale = Vector3.one; return; }
             if (punch != null) StopCoroutine(punch);
             punch = StartCoroutine(Punch(text.transform));

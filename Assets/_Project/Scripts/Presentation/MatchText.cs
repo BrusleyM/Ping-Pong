@@ -14,6 +14,18 @@ namespace PingPong.Presentation
         public const string OpponentBoardName = "OPPONENT";
         public const string ServeMarker = "SERVE";
 
+        static readonly string[] SmallNumbers = BuildNumbers(31);
+
+        /// <summary>A score as text. 0 to 30 come from a table, so showing a score allocates nothing.</summary>
+        public static string Number(int n) => n >= 0 && n < SmallNumbers.Length ? SmallNumbers[n] : n.ToString();
+
+        static string[] BuildNumbers(int count)
+        {
+            var numbers = new string[count];
+            for (int i = 0; i < count; i++) numbers[i] = i.ToString();
+            return numbers;
+        }
+
         /// <summary>The label on a side's scoreboard: PLAYER for the local player, AI or OPPONENT for the other side.</summary>
         public static string BoardName(Side side, Side local, GameMode mode) =>
             side == local ? PlayerBoardName : mode == GameMode.Solo ? AiBoardName : OpponentBoardName;

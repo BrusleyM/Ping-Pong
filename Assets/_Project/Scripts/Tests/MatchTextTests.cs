@@ -10,6 +10,17 @@ namespace PingPong.Tests
         const string Ai = "AI (Medium)";
 
         [Test]
+        public void Number_IsTheScoreAsText_AndReusesTheTableStrings()
+        {
+            Assert.That(MatchText.Number(0), Is.EqualTo("0"));
+            Assert.That(MatchText.Number(11), Is.EqualTo("11"));
+            Assert.That(MatchText.Number(30), Is.EqualTo("30"));
+            Assert.That(MatchText.Number(31), Is.EqualTo("31"), "beyond the table");
+            Assert.That(MatchText.Number(-1), Is.EqualTo("-1"));
+            Assert.That(ReferenceEquals(MatchText.Number(7), MatchText.Number(7)), Is.True, "no new string per call");
+        }
+
+        [Test]
         public void BoardNames_LabelPlayerAndAI()
         {
             Assert.That(MatchText.BoardName(Side.Near, Side.Near, GameMode.Solo), Is.EqualTo("PLAYER"));
