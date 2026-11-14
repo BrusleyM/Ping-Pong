@@ -2,8 +2,7 @@
     "name": "PingPong.Gameplay",
     "rootNamespace": "PingPong.Gameplay",
     "references": [
-        "PingPong.Core",
-        "Unity.InputSystem"
+        "PingPong.Core"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

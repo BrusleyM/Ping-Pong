@@ -100,18 +100,88 @@ namespace PingPong.Tests
         }
 
         [Test]
-        public void LosingTheControllerReleasesThePaddle_WithoutAFling()
+        public void LosingTheControllerReleasesThePaddle_AfterTheDebounce_WithoutAFling()
         {
             _right.transform.position = Handle;
             _grip.Toggle(Hand.Right);
             Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Right));
 
             _commands.RightControllerActive = false; // hand tracking took over
-            _grip.FollowHand();
+            _grip.FollowHand(0.00f);
+            _grip.FollowHand(0.10f);
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Right), "a short loss is ridden out");
+            _grip.FollowHand(0.25f);
             Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None));
             var body = _paddle.GetComponent<Rigidbody>();
             Assert.That(body.isKinematic, Is.False);
             Assert.That(body.linearVelocity, Is.EqualTo(Vector3.zero));
+        }
+
+        [Test]
+        public void AFlickerOfTrackingDoesNotDropThePaddle()
+        {
+            _right.transform.position = Handle;
+            _grip.Toggle(Hand.Right);
+            _commands.RightControllerActive = false;
+            _grip.FollowHand(0.00f);
+            _commands.RightControllerActive = true;
+            _grip.FollowHand(0.05f);
+            _commands.RightControllerActive = false;
+            _grip.FollowHand(0.15f);
+            _grip.FollowHand(0.30f); // only 0.15 s since the last good reading
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Right));
+        }
+
+        [Test]
+        public void WhenTheControllerReturns_ThePaddleComesBackToThatHand()
+        {
+            _right.transform.position = Handle;
+            _grip.Toggle(Hand.Right);
+            _commands.RightControllerActive = false;
+            _grip.FollowHand(0f);
+            _grip.FollowHand(0.3f);
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None));
+            Assert.That(_grip.enabled, Is.True, "still watching for the controller");
+
+            _commands.RightControllerActive = true;
+            _grip.FollowHand(1.0f);
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None), "tracked, but not long enough yet");
+            _grip.FollowHand(1.3f);
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Right));
+            Assert.That(_paddle.GetComponent<Rigidbody>().isKinematic, Is.True);
+        }
+
+        [Test]
+        public void IfSomethingElseHoldsThePaddleMeanwhile_TheControllerDoesNotTakeItBack()
+        {
+            _right.transform.position = Handle;
+            _grip.Toggle(Hand.Right);
+            _commands.RightControllerActive = false;
+            _grip.FollowHand(0f);
+            _grip.FollowHand(0.3f);
+            _paddle.GetComponent<Rigidbody>().isKinematic = true; // Meta's hand grab took it
+            _commands.RightControllerActive = true;
+            _grip.FollowHand(1.0f);
+            _grip.FollowHand(1.5f);
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None), "no fight over the paddle");
+            Assert.That(_grip.enabled, Is.False, "the wait is over");
+        }
+
+        [Test]
+        public void ManuallyGrabbingWhileWaiting_StopsTheWait()
+        {
+            _right.transform.position = Handle;
+            _grip.Toggle(Hand.Right);
+            _commands.RightControllerActive = false;
+            _grip.FollowHand(0f);
+            _grip.FollowHand(0.3f);
+            _left.transform.position = Handle;
+            _grip.Toggle(Hand.Left); // grabbed with the other controller
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Left));
+            _commands.RightControllerActive = true;
+            _grip.FollowHand(2f);
+            _grip.FollowHand(2.5f);
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Left), "the right controller returning does not steal it");
         }
 
         [Test]
