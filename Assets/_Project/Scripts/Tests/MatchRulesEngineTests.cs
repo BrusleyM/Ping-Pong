@@ -53,8 +53,9 @@ namespace PingPong.Tests
 
         void PlayTo(int near, int far)
         {
-            while (S.ScoreNear < near) WinPoint(Side.Near);
-            while (S.ScoreFar < far) WinPoint(Side.Far);
+            // Stops at game over: WinPoint does nothing after it, so an unreachable target would loop forever.
+            while (S.ScoreNear < near && S.Phase != MatchPhase.GameOver) WinPoint(Side.Near);
+            while (S.ScoreFar < far && S.Phase != MatchPhase.GameOver) WinPoint(Side.Far);
         }
 
         [Test]
@@ -223,7 +224,8 @@ namespace PingPong.Tests
         [Test]
         public void StartMatch_AfterGameOverBeginsAFreshGame()
         {
-            PlayTo(11, 4);
+            PlayTo(10, 4);
+            WinPoint(Side.Near);
             Assert.That(S.Phase, Is.EqualTo(MatchPhase.GameOver));
             _engine.StartMatch(Side.Near);
             Assert.That(S.Phase, Is.EqualTo(MatchPhase.WaitingForServe));
