@@ -6427,6 +6427,7 @@ Transform:
   - {fileID: 5455221771615276046}
   - {fileID: 1509607283548045038}
   - {fileID: 4158217898295302005}
+  - {fileID: 6884945191784915512}
   m_Father: {fileID: 30065063009367807}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4964888197327585282
@@ -8453,6 +8454,55 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2099145108596366726}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6437957140593375511
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6884945191784915512}
+  - component: {fileID: 2170772871091775998}
+  m_Layer: 0
+  m_Name: WristGlanceMenu
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6884945191784915512
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6437957140593375511}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5221316761339206238}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2170772871091775998
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6437957140593375511}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea4e49edabd4447a9fafd7aff859da3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PingPong.Platform.Meta::PingPong.Platform.Meta.WristGlanceMenu
+  _profile: {fileID: 11400000, guid: 4af532f58f900445d96a19d16a9b50b5, type: 2}
+  _hand: {fileID: 3370725015026111620}
+  _skeleton: {fileID: 2510171486629282239}
+  _head: {fileID: 8634395623497799864}
+  _match: {fileID: 2553383751260390057}
 --- !u!1 &6574527643884671177
 GameObject:
   m_ObjectHideFlags: 0
@@ -12290,6 +12340,10 @@ PrefabInstance:
       propertyPath: _commands._component
       value: 
       objectReference: {fileID: 2277396452568720518}
+    - target: {fileID: 3632498679609705581, guid: 69e6993485cfe4130b58741bf490a81d, type: 3}
+      propertyPath: _menuGesture._component
+      value: 
+      objectReference: {fileID: 2170772871091775998}
     - target: {fileID: 3632498679609705581, guid: 69e6993485cfe4130b58741bf490a81d, type: 3}
       propertyPath: _passthrough._component
       value: 
