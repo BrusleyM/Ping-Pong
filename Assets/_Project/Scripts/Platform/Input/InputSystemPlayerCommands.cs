@@ -1,7 +1,8 @@
+using PingPong.Gameplay;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace PingPong.Gameplay
+namespace PingPong.Platform.Input
 {
     /// <summary>
     /// Player commands from Unity Input System actions: grip = grab the paddle, left menu button = menu on
