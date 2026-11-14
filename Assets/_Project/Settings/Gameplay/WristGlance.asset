@@ -13,10 +13,11 @@ MonoBehaviour:
   m_Name: WristGlance
   m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.WristGlanceProfile
   _settings:
-    MaxPalmAngle: 35
+    MaxFacingAngle: 35
     MaxGazeAngle: 40
     MinDistance: 0.15
     MaxDistance: 0.6
     Dwell: 0.5
     RallyDwell: 1
     Cooldown: 1.5
+    ReleaseTime: 0.3

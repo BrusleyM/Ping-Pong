@@ -6,7 +6,7 @@ using UnityEngine;
 namespace PingPong.Platform.Meta
 {
     /// <summary>
-    /// The hand-tracking menu gesture: look at your left wrist like a watch. Reads the left hand's wrist and palm
+    /// The hand-tracking menu gesture: look at your left wrist like a watch (the back of the wrist faces your eyes). Reads the left hand's wrist and fingers
     /// from Meta's skeleton and feeds <see cref="WristGlanceDetector"/>; the glance raises <see cref="Performed"/>.
     /// Checked 30 times a second, and only work when the hand is tracked (controllers in hand: nothing happens).
     /// </summary>
@@ -42,10 +42,7 @@ namespace PingPong.Platform.Meta
         {
             if (Time.unscaledTime < _nextCheck) return;
             _nextCheck = Time.unscaledTime + CheckInterval;
-            if (!TryReadHand(out WristGlanceInput input))
-            {
-                input.Tracked = false;
-            }
+            TryReadHand(out WristGlanceInput input); // input stays default (not tracked) when it fails
             if (_detector.Update(Time.unscaledTime, input)) Performed?.Invoke();
         }
 
@@ -55,15 +52,14 @@ namespace PingPong.Platform.Meta
             if (_hand == null || !_hand.IsTracked || !_hand.IsDataHighConfidence) return false;
             if (!FindBones()) return false;
             Vector3 wrist = _wrist.position;
-            // Left hand: this cross product points out of the palm, the side of the inner wrist.
-            Vector3 palm = Vector3.Cross(_index.position - wrist, _pinky.position - wrist).normalized;
+            Vector3 back = WristGlanceDetector.BackOfLeftWristNormal(wrist, _index.position, _pinky.position);
             input = new WristGlanceInput
             {
                 Tracked = true,
                 HeadPosition = _head.position,
                 HeadForward = _head.forward,
                 WristPosition = wrist,
-                PalmNormal = palm,
+                BackOfWristNormal = back,
                 InRally = _match != null && _match.Phase == MatchPhase.Rally,
             };
             return true;
