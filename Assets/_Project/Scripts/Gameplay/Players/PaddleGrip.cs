@@ -68,8 +68,12 @@ namespace PingPong.Gameplay
             Grab(_handOnMatchStart);
         }
 
-        void LateUpdate()
+        void LateUpdate() => FollowHand();
+
+        /// <summary>Poses the held paddle on its hand now (every frame while held); lets go if the controller lost tracking.</summary>
+        public void FollowHand()
         {
+            if (HeldBy == Hand.None) return;
             // Hand tracking took over: the controller anchor is stale, so let go and leave the paddle to Meta's grab.
             if (!ControllerActive(HeldBy)) { Release(withHandMotion: false); return; }
             Transform hand = HandTransform(HeldBy);

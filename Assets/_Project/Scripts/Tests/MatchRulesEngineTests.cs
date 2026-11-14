@@ -53,8 +53,9 @@ namespace PingPong.Tests
 
         void PlayTo(int near, int far)
         {
-            while (S.ScoreNear < near) WinPoint(Side.Near);
-            while (S.ScoreFar < far) WinPoint(Side.Far);
+            // Stops at game over: WinPoint does nothing after it, so an unreachable target would loop forever.
+            while (S.ScoreNear < near && S.Phase != MatchPhase.GameOver) WinPoint(Side.Near);
+            while (S.ScoreFar < far && S.Phase != MatchPhase.GameOver) WinPoint(Side.Far);
         }
 
         [Test]
@@ -223,7 +224,8 @@ namespace PingPong.Tests
         [Test]
         public void StartMatch_AfterGameOverBeginsAFreshGame()
         {
-            PlayTo(11, 4);
+            PlayTo(10, 4);
+            WinPoint(Side.Near);
             Assert.That(S.Phase, Is.EqualTo(MatchPhase.GameOver));
             _engine.StartMatch(Side.Near);
             Assert.That(S.Phase, Is.EqualTo(MatchPhase.WaitingForServe));
@@ -231,6 +233,29 @@ namespace PingPong.Tests
             Assert.That(S.Winner, Is.EqualTo(Side.None));
             WinPoint(Side.Near);
             Assert.That(S.ScoreNear, Is.EqualTo(1), "the restarted game scores normally");
+        }
+
+        // MatchController enables its per-frame watch from the engine's Changed event, so every phase change must raise it.
+        [Test]
+        public void EveryPhaseChange_RaisesChanged()
+        {
+            MatchPhase seen = S.Phase;
+            _engine.Changed += () => seen = S.Phase;
+            void AssertNotified(string after) => Assert.That(seen, Is.EqualTo(S.Phase), $"Changed was not raised for the phase change after {after}");
+
+            _engine.StartMatch(Side.Near); AssertNotified("StartMatch");
+            _engine.RegisterHit(Side.Near, false); AssertNotified("serve hit");
+            _engine.RegisterTableBounce(Side.Near); AssertNotified("serve bounce");
+            _engine.RegisterTableBounce(Side.Far); AssertNotified("serve lands");
+            _engine.RegisterBallDead(); AssertNotified("ball dead");
+            _engine.BeginServe(); AssertNotified("BeginServe");
+            _engine.Stop(); AssertNotified("Stop");
+            _engine.StartMatch(Side.Near);
+            while (S.Phase != MatchPhase.GameOver) { WinPoint(Side.Near); AssertNotified("a point"); }
+            _engine.StartMatch(Side.Far); AssertNotified("restart after game over");
+            var other = new MatchRulesEngine(MatchRules.Standard);
+            other.StartMatch(Side.Near); other.RegisterHit(Side.Near, false);
+            _engine.Restore(other.State); AssertNotified("Restore");
         }
 
         [Test]
