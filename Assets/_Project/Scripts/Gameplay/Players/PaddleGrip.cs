@@ -1,4 +1,5 @@
 using System;
+using PingPong.Core;
 using UnityEngine;
 
 namespace PingPong.Gameplay
@@ -28,10 +29,18 @@ namespace PingPong.Gameplay
         [Tooltip("Optional: when a match starts, the paddle goes into this hand (None to leave it where it is).")]
         [SerializeField] GameModeController _modes;
         [SerializeField] Hand _handOnMatchStart = Hand.Right;
+        [Tooltip("The controller must read untracked this long before the paddle is let go, seconds.")]
+        [SerializeField, Min(0f)] float _lostAfter = 0.2f;
+        [Tooltip("After tracking loss, the controller must read tracked this long before the paddle comes back to it, seconds.")]
+        [SerializeField, Min(0f)] float _regainAfter = 0.2f;
 
         Rigidbody _body;
         Vector3 _prevHandPos;
         Vector3 _handVelocity;
+        TrackingDebouncer _tracking;
+        Hand _returnTo = Hand.None; // set after a tracking-loss release: the hand the paddle goes back to
+        float _nextReturnCheck;
+        const float ReturnCheckInterval = 0.1f;
 
         public Hand HeldBy { get; private set; } = Hand.None;
 
@@ -68,19 +77,44 @@ namespace PingPong.Gameplay
             Grab(_handOnMatchStart);
         }
 
-        void LateUpdate() => FollowHand();
+        void LateUpdate() => FollowHand(Time.unscaledTime); // unscaled: a pause must not freeze the debounce
 
-        /// <summary>Poses the held paddle on its hand now (every frame while held); lets go if the controller lost tracking.</summary>
-        public void FollowHand()
+        /// <summary>Poses the held paddle on its hand now (every frame while held), lets go when the controller has lost tracking, and takes the paddle back when it returns.</summary>
+        public void FollowHand() => FollowHand(Time.unscaledTime);
+
+        public void FollowHand(float now)
         {
-            if (HeldBy == Hand.None) return;
-            // Hand tracking took over: the controller anchor is stale, so let go and leave the paddle to Meta's grab.
-            if (!ControllerActive(HeldBy)) { Release(withHandMotion: false); return; }
+            if (HeldBy == Hand.None)
+            {
+                WaitForTheControllerToReturn(now);
+                return;
+            }
+            // Hand tracking took over (the anchor is stale): after the debounce, let go and wait for the controller to come back.
+            if (!_tracking.Update(now, ControllerActive(HeldBy)))
+            {
+                Hand lost = HeldBy;
+                Release(withHandMotion: false);
+                _returnTo = lost;
+                _tracking = new TrackingDebouncer(false, _lostAfter, _regainAfter);
+                _nextReturnCheck = now;
+                enabled = true; // keep watching for the return
+                return;
+            }
             Transform hand = HandTransform(HeldBy);
             Pose grip = GripPose(hand);
             transform.SetPositionAndRotation(grip.position, grip.rotation);
             if (Time.deltaTime > 0f) _handVelocity = (hand.position - _prevHandPos) / Time.deltaTime;
             _prevHandPos = hand.position;
+        }
+
+        void WaitForTheControllerToReturn(float now)
+        {
+            if (_returnTo == Hand.None) { enabled = false; return; }
+            // Something else picked the paddle up meanwhile (Meta's hand grab holds it kinematic): don't fight it.
+            if (Body.isKinematic) { _returnTo = Hand.None; enabled = false; return; }
+            if (now < _nextReturnCheck) return; // ten checks a second are plenty
+            _nextReturnCheck = now + ReturnCheckInterval;
+            if (_tracking.Update(now, ControllerActive(_returnTo))) Grab(_returnTo); // snaps the paddle back into the hand
         }
 
         bool ControllerActive(Hand hand) { IPlayerCommands c = _commands.Value; return c == null || c.ControllerActive(hand); }
@@ -113,6 +147,8 @@ namespace PingPong.Gameplay
         void Grab(Hand hand)
         {
             HeldBy = hand;
+            _returnTo = Hand.None;
+            _tracking = new TrackingDebouncer(true, _lostAfter, _regainAfter);
             enabled = true; // LateUpdate follows the hand while held
             Body.isKinematic = true;
             _prevHandPos = HandTransform(hand).position;
