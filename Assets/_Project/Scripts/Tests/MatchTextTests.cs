@@ -10,20 +10,11 @@ namespace PingPong.Tests
         const string Ai = "AI (Medium)";
 
         [Test]
-        public void Names_AreFromTheLocalPlayersPointOfView()
+        public void BoardNames_LabelPlayerAndAI()
         {
-            Assert.That(MatchText.Name(Side.Near, Side.Near, Ai), Is.EqualTo("You"));
-            Assert.That(MatchText.Name(Side.Far, Side.Near, Ai), Is.EqualTo(Ai));
-            Assert.That(MatchText.Name(Side.Near, Side.Far, Ai), Is.EqualTo(Ai), "a Far-side local player sees Near as the opponent");
-        }
-
-        [Test]
-        public void Status_DependsOnPhaseAndServer()
-        {
-            Assert.That(MatchText.Status(MatchPhase.WaitingForServe, Side.Near, Side.Near, Ai), Is.EqualTo("Your serve"));
-            Assert.That(MatchText.Status(MatchPhase.WaitingForServe, Side.Far, Side.Near, Ai), Is.EqualTo(Ai + " serves"));
-            Assert.That(MatchText.Status(MatchPhase.Rally, Side.Near, Side.Near, Ai), Is.Empty, "nothing distracting during a rally");
-            Assert.That(MatchText.Status(MatchPhase.GameOver, Side.Near, Side.Near, Ai), Is.EqualTo(MatchText.PlayAgain));
+            Assert.That(MatchText.BoardName(Side.Near, Side.Near, GameMode.Solo), Is.EqualTo("PLAYER"));
+            Assert.That(MatchText.BoardName(Side.Far, Side.Near, GameMode.Solo), Is.EqualTo("AI"));
+            Assert.That(MatchText.BoardName(Side.Far, Side.Near, GameMode.Online), Is.EqualTo("OPPONENT"));
         }
 
         [Test]
@@ -46,15 +37,6 @@ namespace PingPong.Tests
             Assert.That(MatchText.OpponentName(GameMode.Solo, "Hard"), Is.EqualTo("AI (Hard)"));
             Assert.That(MatchText.OpponentName(GameMode.Online, "Hard"), Is.EqualTo("Opponent"));
             Assert.That(MatchText.OpponentName(GameMode.Solo, null), Is.EqualTo("Opponent"), "solo without an AI");
-        }
-
-        [Test]
-        public void Detail_ShowsMessageOverStatus_AndBothAtGameOver()
-        {
-            Assert.That(MatchText.Detail(MatchPhase.WaitingForServe, "", "Your serve"), Is.EqualTo("Your serve"));
-            Assert.That(MatchText.Detail(MatchPhase.PointOver, "You score - out", "Your serve"), Is.EqualTo("You score - out"));
-            Assert.That(MatchText.Detail(MatchPhase.GameOver, "You win!", MatchText.PlayAgain), Is.EqualTo("You win!\n" + MatchText.PlayAgain));
-            Assert.That(MatchText.Detail(MatchPhase.GameOver, "", MatchText.PlayAgain), Is.EqualTo(MatchText.PlayAgain), "no blank first line");
         }
 
         [Test]

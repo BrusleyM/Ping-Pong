@@ -9,37 +9,18 @@ namespace PingPong.Presentation
     /// </summary>
     public static class MatchText
     {
-        public const string LocalName = "You";
+        public const string PlayerBoardName = "PLAYER";
+        public const string AiBoardName = "AI";
+        public const string OpponentBoardName = "OPPONENT";
+        public const string ServeMarker = "SERVE";
 
-        public const string PlayAgain = "Menu button to play again";
-
-        public static string Score(int local, int opponent) => $"{local}  -  {opponent}";
+        /// <summary>The label on a side's scoreboard: PLAYER for the local player, AI or OPPONENT for the other side.</summary>
+        public static string BoardName(Side side, Side local, GameMode mode) =>
+            side == local ? PlayerBoardName : mode == GameMode.Solo ? AiBoardName : OpponentBoardName;
 
         /// <summary>What to call the other side: the AI and its level in solo play, otherwise "Opponent".</summary>
         public static string OpponentName(GameMode mode, string aiLevelName) =>
             mode == GameMode.Solo && !string.IsNullOrEmpty(aiLevelName) ? $"AI ({aiLevelName})" : "Opponent";
-
-        /// <summary>
-        /// The second board line: a point message replaces the status for a moment; at game over the
-        /// result stays and the status (how to play again) goes under it.
-        /// </summary>
-        public static string Detail(MatchPhase phase, string message, string status)
-        {
-            if (phase == MatchPhase.GameOver) return message.Length > 0 ? $"{message}\n{status}" : status;
-            return message.Length > 0 ? message : status;
-        }
-
-        /// <param name="opponentName">What to call the other side, e.g. "AI (Medium)" or "Opponent".</param>
-        public static string Name(Side side, Side local, string opponentName) => side == local ? LocalName : opponentName;
-
-        /// <summary>The standing line under the score for the current phase; empty during a rally.</summary>
-        public static string Status(MatchPhase phase, Side server, Side local, string opponentName) => phase switch
-        {
-            MatchPhase.WaitingForServe => server == local ? "Your serve" : $"{opponentName} serves",
-            MatchPhase.GameOver => PlayAgain,
-            MatchPhase.FreePlay => "Free play",
-            _ => "",
-        };
 
         public static string Point(Side winner, PointReason reason, Side local, string opponentName)
         {

@@ -221,6 +221,19 @@ namespace PingPong.Tests
         }
 
         [Test]
+        public void StartMatch_AfterGameOverBeginsAFreshGame()
+        {
+            PlayTo(11, 4);
+            Assert.That(S.Phase, Is.EqualTo(MatchPhase.GameOver));
+            _engine.StartMatch(Side.Near);
+            Assert.That(S.Phase, Is.EqualTo(MatchPhase.WaitingForServe));
+            Assert.That((S.ScoreNear, S.ScoreFar), Is.EqualTo((0, 0)));
+            Assert.That(S.Winner, Is.EqualTo(Side.None));
+            WinPoint(Side.Near);
+            Assert.That(S.ScoreNear, Is.EqualTo(1), "the restarted game scores normally");
+        }
+
+        [Test]
         public void Restore_ReproducesTheExactState()
         {
             PlayTo(3, 2);

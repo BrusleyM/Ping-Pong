@@ -9,6 +9,8 @@ namespace PingPong.Gameplay
     {
         /// <summary>The grab button on that hand went down this frame.</summary>
         bool GrabPressed(Hand hand);
+        /// <summary>That hand's controller is tracked, or there is no controller to judge by (keyboard). False once hand tracking takes over.</summary>
+        bool ControllerActive(Hand hand);
         bool MenuPressed { get; }
     }
 

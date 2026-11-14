@@ -73,5 +73,40 @@ namespace PingPong.Tests
             Assert.That(reported, Is.EqualTo(Hand.None));
             Assert.That(_paddle.GetComponent<Rigidbody>().isKinematic, Is.False);
         }
+
+        sealed class FakeCommands : MonoBehaviour, IPlayerCommands
+        {
+            public bool RightControllerActive = true;
+            public bool GrabPressed(Hand hand) => false;
+            public bool ControllerActive(Hand hand) => hand != Hand.Right || RightControllerActive;
+            public bool MenuPressed => false;
+        }
+
+        [Test]
+        public void LosingTheControllerReleasesThePaddle_WithoutAFling()
+        {
+            var host = new GameObject("Commands", typeof(FakeCommands));
+            try
+            {
+                var commands = host.GetComponent<FakeCommands>();
+                var so = new SerializedObject(_grip);
+                so.FindProperty("_commands._component").objectReferenceValue = commands;
+                so.ApplyModifiedPropertiesWithoutUndo();
+
+                _right.transform.position = Handle;
+                _grip.Toggle(Hand.Right);
+                Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Right));
+
+                commands.RightControllerActive = false; // hand tracking took over
+                InvokeUpdate();
+                Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None));
+                var body = _paddle.GetComponent<Rigidbody>();
+                Assert.That(body.isKinematic, Is.False);
+                Assert.That(body.linearVelocity, Is.EqualTo(Vector3.zero));
+            }
+            finally { Object.DestroyImmediate(host); }
+        }
+
+        void InvokeUpdate() => typeof(PaddleGrip).GetMethod("Update", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(_grip, null);
     }
 }
