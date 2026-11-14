@@ -12,9 +12,9 @@ Repo BrusleyM/Ping-Pong (public). Default branch `main`, work branch `develop`. 
 - Disk was ~100% full: free space before Unity builds. Git worktrees fail on the LFS avatar files; use the GitHub contents API for small edits.
 
 ## State
-- develop is at version **0.0.7 (code 217)**. All earlier PRs (55-65) are merged; no open PRs.
+- develop is at version **0.0.8 (code 210)** (the build uploaded to Meta; fixed by PR 66, was wrongly 0.0.7 (217)). PRs 55-65 are merged; PR 66 (scoreboards, banner, restart) and PR 67 (World prefab, stacked on 66) are open.
 - **Scene:** `Assets/_Project/Scenes/test scene.unity` (Meta Camera Rig + interaction rig). It is the scene the build launches; `GameScene.unity` is kept but disabled and has stale overrides (decide: delete or re-run setup).
-- Setup: Unity menu **Ping Pong > Set Up Open Scene** (idempotent) places table (0.76 m, in front), match, paddle, menu.
+- Scene: `test scene.unity` is a thin scene (Directional Light + one `World` prefab instance). Everything lives in `Assets/_Project/Prefabs/World.prefab` (World > Environment, Match, Player, UI, Platform > leaf prefabs; one shared `Scoreboard.prefab` at both ends). Edit prefabs in Unity and apply overrides to the prefab that owns them; there is no scene setup tool any more (deleted in PR 67; git history has it).
 - **Menu** (ModeMenuMeta): Meta canvas ray/poke templates; opens at 0.55 m. Start picks a level, starts solo vs AI, paddle goes to the right hand. Only grip (grab paddle) and the left menu button remain on the controllers.
 - Paddle: controllers use the snapped toggle grip (`PaddleGrip`); bare hands keep Meta's free grab.
 - Rules done: let serves, receiver-volley let. AI returns serves and holds the paddle face-on.
@@ -23,7 +23,7 @@ Repo BrusleyM/Ping-Pong (public). Default branch `main`, work branch `develop`. 
 - Version lives only in ProjectSettings (`bundleVersion`, `AndroidBundleVersionCode`).
 - Editor menu **Build > Develop / Staging / Production / Check Build**. Develop bumps z; Staging bumps y, z=0; Production bumps x, y=z=0; every build bumps the code, above the highest released code (read from annotated `v*` tags, subject `<Kind> build X.Y.Z (CODE)`).
 - CI: a push to **develop or main** whose commit message (or merged PR title) contains `[Develop]`, `[Staging]` or `[Production]` builds, commits the version back (`[skip ci]`), tags `vX.Y.Z`, then uploads to Meta **ALPHA**. Main without a keyword promotes ALPHA to BETA. PRs run a check build. Use merge commits, not squash.
-- Secret `RELEASE_PUSH_TOKEN` is set. **First release is untested:** next `[Develop]` should give 0.0.8 (218); watch it once.
+- Secret `RELEASE_PUSH_TOKEN` is set. **First release is untested:** next `[Develop]` should give 0.0.9 (211); watch it once.
 - A PR check failed once from the runner running out of disk (re-run passed). Optional fix, not applied: move the "Free disk space" step before "Restore Unity Library" in `.github/workflows/main.yml`.
 
 ## Notion
