@@ -322,16 +322,43 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the gate below walks history
+
+      # ALPHA holds the last released build. Promote only if this commit contains exactly that build:
+      # the latest release tag must be in this commit's history, and the game content (Assets, Packages,
+      # ProjectSettings) must be unchanged since it. Otherwise a hotfix or revert merged to main, or
+      # develop work that was never released, would silently be promoted as if it were in the build.
+      - name: Check that ALPHA matches this commit
+        run: |
+          git fetch --tags --quiet
+          tag=$(git for-each-ref 'refs/tags/v*' --format='%(objecttype) %(refname:short) %(contents:subject)' \
+                | sed -nE 's/^tag ([^ ]+) .* \(([0-9]+)\)$/\2 \1/p' | sort -n | tail -1 | cut -d' ' -f2)
+          if [ -z "$tag" ]; then echo "::error::No release tag found; nothing on ALPHA came from this pipeline."; exit 1; fi
+          commit=$(git rev-list -n 1 "$tag")
+          if ! git merge-base --is-ancestor "$commit" HEAD; then
+            echo "::error::The latest release ($tag) is not in this commit's history: merge the released develop commit into main first."
+            exit 1
+          fi
+          if ! git diff --quiet "$commit" HEAD -- Assets Packages ProjectSettings; then
+            echo "::error::Game content changed since the latest release ($tag): ALPHA does not contain it. Release it from develop first."
+            git diff --stat "$commit" HEAD -- Assets Packages ProjectSettings | tail -5
+            exit 1
+          fi
+          echo "ALPHA is $tag; this commit has the same game content."
 
       - name: Setup ovr-platform-util
         uses: RageAgainstThePixel/setup-ovr-platform-util@v2
 
       - name: Promote ALPHA to BETA
+        env:
+          META_APP_ID: ${{ secrets.META_APP_ID }}
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
         run: |
           ovr-platform-util set-release-channel-build \
             --age-group MIXED_AGES \
-            --app-id ${{ secrets.META_APP_ID }} \
-            --app-secret ${{ secrets.META_APP_SECRET }} \
+            --app-id "$META_APP_ID" \
+            --app-secret "$META_APP_SECRET" \
             --source-channel ALPHA \
             --destination-channel BETA
 
