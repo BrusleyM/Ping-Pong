@@ -133,9 +133,49 @@ namespace PingPong.EditorTools
                 log.AppendLine("Project setting: fixed timestep set to 1/90 s.");
             }
 
+            PackIntoWorld(rig, platform, menu, log);
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             Debug.Log(log.ToString());
+        }
+
+        /// <summary>
+        /// Keeps the scene thin: everything the game needs lives in one World prefab, in three levels (World, its groups,
+        /// then the prefabs and objects inside). First run groups the scene's objects into it; every run then applies the
+        /// scene's changes to the prefab, so the scene file itself only changes when the scene does.
+        /// </summary>
+        static void PackIntoWorld(OVRCameraRig rig, GameObject platform, ModeMenuPresenter menu, System.Text.StringBuilder log)
+        {
+            GameObject world = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .Select(t => t.gameObject)
+                .FirstOrDefault(g => PrefabUtility.IsOutermostPrefabInstanceRoot(g) && PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(g) == WorldPrefabPath);
+            if (world == null)
+            {
+                world = new GameObject("World");
+                Transform Group(string name, params Transform[] members)
+                {
+                    var group = new GameObject(name).transform;
+                    group.SetParent(world.transform, false);
+                    foreach (Transform m in members.Where(m => m != null).Distinct()) m.SetParent(group, true);
+                    return group;
+                }
+                var eventSystem = Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>(FindObjectsInactive.Include);
+                var layer = Object.FindAnyObjectByType<OVRPassthroughLayer>(FindObjectsInactive.Include);
+                Transform RootOf(Component c) => c != null ? c.transform.root : null;
+                Transform paddleRoot = RootOf(Object.FindAnyObjectByType<PaddleGrip>(FindObjectsInactive.Include));
+                Transform matchRoot = RootOf(Object.FindAnyObjectByType<MatchController>(FindObjectsInactive.Include));
+                Transform environmentRoot = RootOf(Object.FindAnyObjectByType<PingPongTable>(FindObjectsInactive.Include));
+                // Prefab roots and the Platform object sit directly under World; the loose Meta blocks are grouped.
+                environmentRoot.SetParent(world.transform, true);
+                matchRoot.SetParent(world.transform, true);
+                Group("Player", rig.transform.root, RootOf(layer), paddleRoot);
+                Group("UI", menu.transform.root, RootOf(eventSystem));
+                platform.transform.SetParent(world.transform, true);
+                PrefabUtility.SaveAsPrefabAssetAndConnect(world, WorldPrefabPath, InteractionMode.AutomatedAction);
+                log.AppendLine($"World prefab created: {WorldPrefabPath}");
+            }
+            else PrefabUtility.ApplyPrefabInstance(world, InteractionMode.AutomatedAction);
         }
 
         /// <summary>
@@ -326,6 +366,8 @@ namespace PingPong.EditorTools
             SetUpBanner(root, matchCtl, modes);
         }
 
+        const string ScoreboardPrefabPath = "Assets/_Project/Prefabs/UI/Scoreboard.prefab";
+        const string WorldPrefabPath = "Assets/_Project/Prefabs/World.prefab";
         const string BannerName = "MatchBanner";
         const string BoardBehindPlayer = "ScoreboardBehindPlayer", BoardBehindAI = "ScoreboardBehindAI";
 
@@ -336,7 +378,7 @@ namespace PingPong.EditorTools
         /// </summary>
         static void PlaceBoards(GameObject match, TableFrame t)
         {
-            const float TableHeight = 0.76f, BehindTable = 2f, Tilt = 8f;
+            const float TableHeight = 0.76f, BehindTable = 2f;
             Transform banner = match.transform.Find(BannerName);
             if (banner != null) // above the far end line, facing the player
             {
@@ -349,31 +391,53 @@ namespace PingPong.EditorTools
                 if (board == null) continue;
                 Vector3 outward = t.Forward * side.Sign();
                 board.SetPositionAndRotation(t.SurfaceCenter + outward * (t.HalfLength + BehindTable) - Vector3.up * TableHeight, Quaternion.LookRotation(outward, Vector3.up));
-                Transform face = board.Find("Board");
-                if (face != null) face.localRotation = Quaternion.Euler(-Tilt, 0f, 0f);
                 EditorUtility.SetDirty(board);
             }
+        }
+
+        static void SetUpBoard(GameObject root, string name, MatchController match, GameModeController modes)
+        {
+            var prefab = EnsureScoreboardPrefab();
+            Transform existing = root.transform.Find(name);
+            if (existing != null && !PrefabUtility.IsAnyPrefabInstanceRoot(existing.gameObject))
+            {
+                Object.DestroyImmediate(existing.gameObject); // earlier layouts built the board inline
+                existing = null;
+            }
+            var board = existing != null ? existing.gameObject : (GameObject)PrefabUtility.InstantiatePrefab(prefab, root.transform);
+            board.name = name;
+            var sb = board.GetComponent<MatchScoreboard>();
+            Set(sb, "_match", match);
+            Set(sb, "_modes", modes);
+        }
+
+        /// <summary>The one scoreboard prefab, used for both ends: built or refreshed here, so a change is made in one place.</summary>
+        static GameObject EnsureScoreboardPrefab()
+        {
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(ScoreboardPrefabPath) == null)
+            {
+                var temp = new GameObject("Scoreboard");
+                try { BuildScoreboard(temp); PrefabUtility.SaveAsPrefabAsset(temp, ScoreboardPrefabPath); }
+                finally { Object.DestroyImmediate(temp); }
+            }
+            else EditPrefab(ScoreboardPrefabPath, BuildScoreboard);
+            return AssetDatabase.LoadAssetAtPath<GameObject>(ScoreboardPrefabPath);
         }
 
         /// <summary>
         /// A scoreboard like a tournament venue's, floating near the ceiling: a dark board with the local player on the
         /// left (blue) and the opponent on the right (red), each with a name, a big score and a SERVE marker.
-        /// The root sits on the floor, under the board.
+        /// The root sits on the floor, under the board; the board is tilted down towards the players.
         /// </summary>
-        static void SetUpBoard(GameObject root, string name, MatchController match, GameModeController modes)
+        static void BuildScoreboard(GameObject rootGo)
         {
-            const float W = 2.4f, H = 1.2f, Centre = 3.8f, HeaderH = 0.34f;
+            const float W = 2.4f, H = 1.2f, Centre = 3.8f, HeaderH = 0.34f, Tilt = 8f;
             Material panelMat = BoardMaterials.Panel, playerMat = BoardMaterials.Player, aiMat = BoardMaterials.AI, lineMat = BoardMaterials.Line;
 
-            var rootGo = GetOrCreate(name, root.transform);
             var sb = GetOrAdd<MatchScoreboard>(rootGo);
-            foreach (string legacy in new[] { "Panel", "Header", "Frame", "Name", "Score", "Serve", "PostLeft", "PostRight", "Base" })
-            {
-                Transform old = rootGo.transform.Find(legacy);
-                if (old != null) Object.DestroyImmediate(old.gameObject);
-            }
             var board = GetOrCreate("Board", rootGo.transform).transform;
             board.localPosition = new Vector3(0f, Centre, 0f);
+            board.localRotation = Quaternion.Euler(-Tilt, 0f, 0f);
 
             float half = W * 0.25f; // centre of each half
             Shape("Panel", board, PrimitiveType.Quad, new Vector3(0f, 0f, 0.002f), new Vector3(W, H, 1f), panelMat);
@@ -398,8 +462,6 @@ namespace PingPong.EditorTools
             oppName.text = MatchText.BoardName(Side.Far, Side.Near, GameMode.Solo);
             localScore.text = oppScore.text = "0";
 
-            Set(sb, "_match", match);
-            Set(sb, "_modes", modes);
             Set(sb, "_localName", localName);
             Set(sb, "_localScore", localScore);
             Set(sb, "_localServe", localServe);
@@ -533,7 +595,7 @@ namespace PingPong.EditorTools
         {
             var existing = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
                 .Select(t => t.gameObject)
-                .FirstOrDefault(g => PrefabUtility.IsOutermostPrefabInstanceRoot(g)
+                .FirstOrDefault(g => PrefabUtility.IsAnyPrefabInstanceRoot(g)
                     && PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(g) == prefabPath);
             if (existing != null) return existing;
             return (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath));

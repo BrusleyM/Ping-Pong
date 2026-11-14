@@ -34,8 +34,9 @@ namespace PingPong.EditorTools
         {
             Transform found = parent != null ? parent.Find(name) : null;
             if (found == null && parent == null)
+                // Anywhere in the scene: objects may sit inside the World prefab's groups.
                 found = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
-                    .FirstOrDefault(t => t.parent == null && t.name == name);
+                    .FirstOrDefault(t => t.name == name);
             if (found != null) return found.gameObject;
             var go = new GameObject(name);
             if (parent != null) go.transform.SetParent(parent, false);
