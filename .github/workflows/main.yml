@@ -264,9 +264,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # This job checks out without LFS, so LFS-tracked files can show up as modified and block a pull.
+          # Nothing here needs the working tree: take the branch tip as it is, then write only the version lines.
+          git status --short | head -5 || true
           pushed=0
           for _ in 1 2 3; do
-            git pull --quiet --rebase origin "$BRANCH"
+            git fetch --quiet origin "$BRANCH"
+            git reset --quiet --hard "origin/$BRANCH"
             sed -i -e "s/^  bundleVersion: .*/  bundleVersion: $VERSION/" \
                    -e "s/^  AndroidBundleVersionCode: .*/  AndroidBundleVersionCode: $CODE/" ProjectSettings/ProjectSettings.asset
             git add ProjectSettings/ProjectSettings.asset
