@@ -106,3 +106,8 @@ Assets/Resources/DevAgentSettings.asset.meta
 # Written by the Meta XR SDK when entering play mode
 RuntimeActionBindings.json
 Assets/StreamingAssets/RuntimeActionBindings.json*
+
+# Local build intermediates and Unity recovery (not source)
+/.utmp/
+/Assets/_Recovery/
+/Assets/_Recovery.meta
