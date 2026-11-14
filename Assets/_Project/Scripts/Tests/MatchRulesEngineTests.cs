@@ -56,6 +56,8 @@ namespace PingPong.Tests
             // Stops at game over: WinPoint does nothing after it, so an unreachable target would loop forever.
             while (S.ScoreNear < near && S.Phase != MatchPhase.GameOver) WinPoint(Side.Near);
             while (S.ScoreFar < far && S.Phase != MatchPhase.GameOver) WinPoint(Side.Far);
+            if (S.ScoreNear < near || S.ScoreFar < far)
+                Assert.Fail($"PlayTo({near}, {far}) is unreachable: the game ended {S.ScoreNear}-{S.ScoreFar}");
         }
 
         [Test]
@@ -235,13 +237,25 @@ namespace PingPong.Tests
             Assert.That(S.ScoreNear, Is.EqualTo(1), "the restarted game scores normally");
         }
 
-        // MatchController enables its per-frame watch from the engine's Changed event, so every phase change must raise it.
+        // MatchController enables its per-frame watch from the engine's Changed event, so every phase change must raise
+        // it, and raise it after the phase is set (the handler reads the new phase).
         [Test]
         public void EveryPhaseChange_RaisesChanged()
         {
-            MatchPhase seen = S.Phase;
-            _engine.Changed += () => seen = S.Phase;
-            void AssertNotified(string after) => Assert.That(seen, Is.EqualTo(S.Phase), $"Changed was not raised for the phase change after {after}");
+            MatchPhase before = S.Phase;
+            int raised = 0, raisedAtLastCheck = 0;
+            MatchPhase phaseInHandler = S.Phase;
+            _engine.Changed += () => { raised++; phaseInHandler = S.Phase; };
+            void AssertNotified(string after)
+            {
+                if (S.Phase != before)
+                {
+                    Assert.That(raised, Is.GreaterThan(raisedAtLastCheck), $"Changed was not raised for the phase change after {after}");
+                    Assert.That(phaseInHandler, Is.EqualTo(S.Phase), $"Changed ran before the phase was set (after {after})");
+                }
+                before = S.Phase;
+                raisedAtLastCheck = raised;
+            }
 
             _engine.StartMatch(Side.Near); AssertNotified("StartMatch");
             _engine.RegisterHit(Side.Near, false); AssertNotified("serve hit");
@@ -250,7 +264,7 @@ namespace PingPong.Tests
             _engine.RegisterBallDead(); AssertNotified("ball dead");
             _engine.BeginServe(); AssertNotified("BeginServe");
             _engine.Stop(); AssertNotified("Stop");
-            _engine.StartMatch(Side.Near);
+            _engine.StartMatch(Side.Near); AssertNotified("StartMatch again");
             while (S.Phase != MatchPhase.GameOver) { WinPoint(Side.Near); AssertNotified("a point"); }
             _engine.StartMatch(Side.Far); AssertNotified("restart after game over");
             var other = new MatchRulesEngine(MatchRules.Standard);

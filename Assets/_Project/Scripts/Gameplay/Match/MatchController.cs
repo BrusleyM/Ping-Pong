@@ -15,8 +15,7 @@ namespace PingPong.Gameplay
         [SerializeField] MatchRulesProfile _profile;
 
         MatchRulesEngine _engine;
-        float _nextServeAt = NoServe; // Time.time to start the next serve after a point; NoServe when none is pending
-        const float NoServe = -1f;
+        Countdown _nextServe; // the pause after a point, then the next serve
 
         /// <summary>The table the ball plays on (the ball owns the reference).</summary>
         public PingPongTable Table => _ball.Table;
@@ -35,7 +34,13 @@ namespace PingPong.Gameplay
         public bool IsAuthority
         {
             get => _isAuthority;
-            set { _isAuthority = value; SyncWatching(); }
+            set
+            {
+                _isAuthority = value;
+                SyncWatching();
+                // Becoming the authority in the pause after a point: nobody has started the next serve yet.
+                if (value && Phase == MatchPhase.PointOver && !_nextServe.IsPending) ScheduleNextServe();
+            }
         }
 
         bool _isAuthority = true;
@@ -76,7 +81,7 @@ namespace PingPong.Gameplay
             _ball.OtherContact -= OnOtherContact;
         }
 
-        void SyncWatching() => enabled = IsAuthority && Phase is MatchPhase.Rally or MatchPhase.WaitingForServe or MatchPhase.PointOver;
+        void SyncWatching() => enabled = IsAuthority && Phase.NeedsWatching();
 
         void OnValidate()
         {
@@ -147,8 +152,7 @@ namespace PingPong.Gameplay
                 case MatchPhase.WaitingForServe when !_ball.Body.isKinematic && local.y < Pacing.ServeResetBelow:
                     PlaceServeBall(); // a tossed serve fell without being hit
                     break;
-                case MatchPhase.PointOver when _nextServeAt != NoServe && Time.time >= _nextServeAt:
-                    _nextServeAt = NoServe;
+                case MatchPhase.PointOver when _nextServe.TryFinish(Time.time):
                     Engine.BeginServe();
                     PlaceServeBall();
                     break;
@@ -170,7 +174,7 @@ namespace PingPong.Gameplay
         // The engine's state is final here. Only the authority schedules serves; clients follow snapshots.
         void ScheduleNextServe()
         {
-            if (IsAuthority && Phase == MatchPhase.PointOver) _nextServeAt = Time.time + Pacing.PointPause;
+            if (IsAuthority && Phase == MatchPhase.PointOver) _nextServe.Start(Time.time, Pacing.PointPause);
         }
 
         void PlaceServeBall()
@@ -179,6 +183,6 @@ namespace PingPong.Gameplay
             _ball.Hold(ServePosition(Server));
         }
 
-        void CancelPendingServe() => _nextServeAt = NoServe;
+        void CancelPendingServe() => _nextServe.Cancel();
     }
 }
