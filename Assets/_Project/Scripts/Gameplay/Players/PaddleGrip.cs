@@ -52,7 +52,7 @@ namespace PingPong.Gameplay
         // Starting a match puts the paddle in the player's hand, so nobody has to find it first.
         void OnMatchStarted()
         {
-            if (HeldBy != Hand.None || HandTransform(_handOnMatchStart) == null) return;
+            if (HeldBy != Hand.None || HandTransform(_handOnMatchStart) == null || !ControllerActive(_handOnMatchStart)) return;
             Grab(_handOnMatchStart);
         }
 
@@ -60,6 +60,8 @@ namespace PingPong.Gameplay
         {
             IPlayerCommands c = _commands.Value;
             if (c == null) return;
+            // Hand tracking took over: the controller anchor is stale, so let go and leave the paddle to Meta's grab.
+            if (HeldBy != Hand.None && !c.ControllerActive(HeldBy)) Release();
             if (c.GrabPressed(Hand.Left)) Toggle(Hand.Left);
             else if (c.GrabPressed(Hand.Right)) Toggle(Hand.Right);
         }
@@ -73,6 +75,8 @@ namespace PingPong.Gameplay
             if (Time.deltaTime > 0f) _handVelocity = (hand.position - _prevHandPos) / Time.deltaTime;
             _prevHandPos = hand.position;
         }
+
+        bool ControllerActive(Hand hand) { IPlayerCommands c = _commands.Value; return c == null || c.ControllerActive(hand); }
 
         /// <summary>Grabs with 'hand' if it's free and in reach; lets go if 'hand' is holding it.</summary>
         public void Toggle(Hand hand)

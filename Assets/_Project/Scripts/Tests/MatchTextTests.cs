@@ -18,6 +18,14 @@ namespace PingPong.Tests
         }
 
         [Test]
+        public void BoardNames_LabelPlayerAndAI()
+        {
+            Assert.That(MatchText.BoardName(Side.Near, Side.Near, GameMode.Solo), Is.EqualTo("PLAYER"));
+            Assert.That(MatchText.BoardName(Side.Far, Side.Near, GameMode.Solo), Is.EqualTo("AI"));
+            Assert.That(MatchText.BoardName(Side.Far, Side.Near, GameMode.Online), Is.EqualTo("OPPONENT"));
+        }
+
+        [Test]
         public void Status_DependsOnPhaseAndServer()
         {
             Assert.That(MatchText.Status(MatchPhase.WaitingForServe, Side.Near, Side.Near, Ai), Is.EqualTo("Your serve"));

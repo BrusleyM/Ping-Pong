@@ -90,6 +90,9 @@ namespace PingPong.EditorTools
             Set(ball, "_table", table);
             SetArray(ball, "_ignoredRoots", new Object[] { rig.transform });
 
+            // Static structures: placed once here and saved in the scene, with no runtime positioning.
+            PlaceBoards(match, frame);
+
             // The player's paddle strikes this match's ball.
             var hitter = paddle.GetComponent<PaddleHitter>();
             Set(hitter, "_match", match.GetComponent<MatchController>());
@@ -307,16 +310,164 @@ namespace PingPong.EditorTools
             Set(modes, "_match", matchCtl);
             Set(modes, "_ai", ai);
 
-            var board = GetOrCreate("Scoreboard", root.transform);
-            var presenter = GetOrAdd<ScoreboardPresenter>(board);
-            var tmp = GetOrAdd<TextMeshPro>(GetOrCreate("ScoreText", board.transform));
-            tmp.fontSize = 0.8f; // ~8 cm digits
+            // The old board above the net is gone: the two scoreboards show the score.
+            Transform netBoard = root.transform.Find("Scoreboard");
+            if (netBoard != null) Object.DestroyImmediate(netBoard.gameObject);
+
+            // One floating board behind each end of the table, both showing both scores.
+            foreach (string old in new[] { "PlayerScoreboard", "AIScoreboard" }) // earlier names
+            {
+                Transform legacy = root.transform.Find(old);
+                if (legacy != null) Object.DestroyImmediate(legacy.gameObject);
+            }
+            SetUpBoard(root, BoardBehindPlayer, matchCtl, modes);
+            SetUpBoard(root, BoardBehindAI, matchCtl, modes);
+            SetUpBanner(root, matchCtl, modes);
+        }
+
+        /// <summary>
+        /// Puts each scoreboard on the floor behind its end of
+        /// the table, facing the table with its board tilted down.
+        /// </summary>
+        const string BannerName = "MatchBanner";
+        const string BoardBehindPlayer = "ScoreboardBehindPlayer", BoardBehindAI = "ScoreboardBehindAI";
+
+        static void PlaceBoards(GameObject match, TableFrame t)
+        {
+            const float TableHeight = 0.76f, BehindTable = 2f, Tilt = 8f;
+            Transform banner = match.transform.Find(BannerName);
+            if (banner != null) // above the far end line, facing the player
+            {
+                banner.SetPositionAndRotation(t.SurfaceCenter + t.Forward * Side.Far.Sign() * t.HalfLength + Vector3.up * 1.7f, Quaternion.LookRotation(t.Forward * Side.Far.Sign(), Vector3.up));
+                EditorUtility.SetDirty(banner);
+            }
+            foreach (var (name, side) in new[] { (BoardBehindPlayer, Side.Near), (BoardBehindAI, Side.Far) })
+            {
+                Transform board = match.transform.Find(name);
+                if (board == null) continue;
+                Vector3 outward = t.Forward * side.Sign();
+                board.SetPositionAndRotation(t.SurfaceCenter + outward * (t.HalfLength + BehindTable) - Vector3.up * TableHeight, Quaternion.LookRotation(outward, Vector3.up));
+                Transform face = board.Find("Board");
+                if (face != null) face.localRotation = Quaternion.Euler(-Tilt, 0f, 0f);
+                EditorUtility.SetDirty(board);
+            }
+        }
+
+        /// <summary>
+        /// A scoreboard like a tournament venue's, floating near the ceiling: a dark board with the local player on the
+        /// left (blue) and the opponent on the right (red), each with a name, a big score and a SERVE marker.
+        /// The root sits on the floor, under the board.
+        /// </summary>
+        static void SetUpBoard(GameObject root, string name, MatchController match, GameModeController modes)
+        {
+            const string Folder = "Assets/_Project/Materials/Scoreboard";
+            const float W = 2.4f, H = 1.2f, Centre = 3.8f, HeaderH = 0.34f;
+            if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets/_Project/Materials", "Scoreboard");
+            Material panelMat = UnlitMaterial(Folder + "/ScoreboardPanel.mat", new Color(0.04f, 0.05f, 0.08f));
+            Material playerMat = UnlitMaterial(Folder + "/ScoreboardPlayer.mat", new Color(0.15f, 0.55f, 1f));
+            Material aiMat = UnlitMaterial(Folder + "/ScoreboardAI.mat", new Color(1f, 0.3f, 0.25f));
+            Material lineMat = UnlitMaterial(Folder + "/ScoreboardDivider.mat", new Color(0.8f, 0.82f, 0.9f));
+
+            var rootGo = GetOrCreate(name, root.transform);
+            var sb = GetOrAdd<MatchScoreboard>(rootGo);
+            foreach (string legacy in new[] { "Panel", "Header", "Frame", "Name", "Score", "Serve", "PostLeft", "PostRight", "Base" })
+            {
+                Transform old = rootGo.transform.Find(legacy);
+                if (old != null) Object.DestroyImmediate(old.gameObject);
+            }
+            var board = GetOrCreate("Board", rootGo.transform).transform;
+            board.localPosition = new Vector3(0f, Centre, 0f);
+
+            float half = W * 0.25f; // centre of each half
+            Shape("Panel", board, PrimitiveType.Quad, new Vector3(0f, 0f, 0.002f), new Vector3(W, H, 1f), panelMat);
+            Shape("HeaderPlayer", board, PrimitiveType.Quad, new Vector3(-half, H * 0.5f - HeaderH * 0.5f, 0f), new Vector3(W * 0.5f - 0.02f, HeaderH, 1f), playerMat);
+            Shape("HeaderAI", board, PrimitiveType.Quad, new Vector3(half, H * 0.5f - HeaderH * 0.5f, 0f), new Vector3(W * 0.5f - 0.02f, HeaderH, 1f), aiMat);
+            Shape("Divider", board, PrimitiveType.Quad, new Vector3(0f, 0f, 0f), new Vector3(0.02f, H, 1f), lineMat);
+            Shape("Frame", board, PrimitiveType.Quad, new Vector3(0f, 0f, 0.004f), new Vector3(W + 0.08f, H + 0.08f, 1f), lineMat);
+
+            float nameY = H * 0.5f - HeaderH * 0.5f, scoreY = -0.08f, serveY = -H * 0.5f + 0.14f;
+            Vector2 nameBox = new Vector2(W * 0.5f - 0.1f, 0.3f), scoreBox = new Vector2(W * 0.5f - 0.1f, 0.8f), serveBox = new Vector2(W * 0.5f - 0.1f, 0.22f);
+            TextMeshPro localName = BoardText("PlayerName", board, new Vector3(-half, nameY, -0.01f), nameBox, 2.2f, FontStyles.Bold);
+            TextMeshPro localScore = BoardText("PlayerScore", board, new Vector3(-half, scoreY, -0.01f), scoreBox, 9f, FontStyles.Bold);
+            TextMeshPro localServe = BoardText("PlayerServe", board, new Vector3(-half, serveY, -0.01f), serveBox, 1.5f, FontStyles.Bold);
+            TextMeshPro oppName = BoardText("AIName", board, new Vector3(half, nameY, -0.01f), nameBox, 2.2f, FontStyles.Bold);
+            TextMeshPro oppScore = BoardText("AIScore", board, new Vector3(half, scoreY, -0.01f), scoreBox, 9f, FontStyles.Bold);
+            TextMeshPro oppServe = BoardText("AIServe", board, new Vector3(half, serveY, -0.01f), serveBox, 1.5f, FontStyles.Bold);
+            localServe.text = oppServe.text = MatchText.ServeMarker;
+            localServe.color = new Color(0.4f, 0.75f, 1f);
+            oppServe.color = new Color(1f, 0.5f, 0.45f);
+            // Placeholders so the editor shows the board as it will look; the scoreboard overwrites them at runtime.
+            localName.text = MatchText.BoardName(Side.Near, Side.Near, GameMode.Solo);
+            oppName.text = MatchText.BoardName(Side.Far, Side.Near, GameMode.Solo);
+            localScore.text = oppScore.text = "0";
+
+            Set(sb, "_match", match);
+            Set(sb, "_modes", modes);
+            Set(sb, "_localName", localName);
+            Set(sb, "_localScore", localScore);
+            Set(sb, "_localServe", localServe);
+            Set(sb, "_opponentName", oppName);
+            Set(sb, "_opponentScore", oppScore);
+            Set(sb, "_opponentServe", oppServe);
+        }
+
+        /// <summary>The banner that pops in for points, lets and the game result; a static object above the far end of the table.</summary>
+        static void SetUpBanner(GameObject root, MatchController match, GameModeController modes)
+        {
+            const string Folder = "Assets/_Project/Materials/Scoreboard";
+            Material panelMat = UnlitMaterial(Folder + "/ScoreboardPanel.mat", new Color(0.04f, 0.05f, 0.08f));
+            Material frameMat = UnlitMaterial(Folder + "/ScoreboardDivider.mat", new Color(0.8f, 0.82f, 0.9f));
+            var rootGo = GetOrCreate(BannerName, root.transform);
+            var banner = GetOrAdd<MatchBanner>(rootGo);
+            var visual = GetOrCreate("Visual", rootGo.transform).transform;
+            Shape("Panel", visual, PrimitiveType.Quad, new Vector3(0f, 0f, 0.002f), new Vector3(2.4f, 0.55f, 1f), panelMat);
+            Shape("Frame", visual, PrimitiveType.Quad, new Vector3(0f, 0f, 0.004f), new Vector3(2.46f, 0.61f, 1f), frameMat);
+            TextMeshPro text = BoardText("Text", visual, new Vector3(0f, 0f, -0.01f), new Vector2(2.3f, 0.45f), 2.4f, FontStyles.Bold);
+            text.text = "You score - double bounce"; // placeholder for the editor
+            Set(banner, "_match", match);
+            Set(banner, "_modes", modes);
+            Set(banner, "_visual", visual);
+            Set(banner, "_text", text);
+        }
+
+        static Material UnlitMaterial(string path, Color color)
+        {
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null)
+            {
+                mat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                AssetDatabase.CreateAsset(mat, path);
+            }
+            mat.SetColor("_BaseColor", color);
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        static void Shape(string name, Transform parent, PrimitiveType shape, Vector3 localPos, Vector3 scale, Material mat)
+        {
+            var go = GetOrCreate(name, parent);
+            var mf = GetOrAdd<MeshFilter>(go);
+            mf.sharedMesh = Resources.GetBuiltinResource<Mesh>(shape == PrimitiveType.Quad ? "Quad.fbx" : "Cube.fbx");
+            var mr = GetOrAdd<MeshRenderer>(go);
+            mr.sharedMaterial = mat;
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            mr.receiveShadows = false;
+            go.transform.localPosition = localPos;
+            go.transform.localRotation = Quaternion.identity; // a quad and TextMeshPro both face -Z, the board's readable side
+            go.transform.localScale = scale;
+        }
+
+        static TextMeshPro BoardText(string name, Transform parent, Vector3 localPos, Vector2 size, float fontSize, FontStyles style)
+        {
+            var tmp = GetOrAdd<TextMeshPro>(GetOrCreate(name, parent));
+            tmp.transform.localPosition = localPos;
+            tmp.fontSize = fontSize;
+            tmp.fontStyle = style;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.textWrappingMode = TextWrappingModes.NoWrap;
-            tmp.rectTransform.sizeDelta = new Vector2(1.6f, 0.5f);
-            Set(presenter, "_text", tmp);
-            Set(presenter, "_match", matchCtl);
-            Set(presenter, "_modes", modes);
+            tmp.color = Color.white;
+            tmp.rectTransform.sizeDelta = size;
+            return tmp;
         }
 
         /// <summary>Meta passthrough on the Platform object: the layer on the rig, the room hidden while it's on.</summary>
@@ -340,9 +491,6 @@ namespace PingPong.EditorTools
             // Reuse a passthrough layer the scene already has (e.g. Meta's Passthrough building block).
             var layer = Object.FindAnyObjectByType<OVRPassthroughLayer>(FindObjectsInactive.Include)
                         ?? GetOrAdd<OVRPassthroughLayer>(rig.gameObject);
-#pragma warning disable CS0618 // overlayType is deprecated with flexible layering; Underlay is still the setting we need
-            layer.overlayType = OVROverlay.OverlayType.Underlay;
-#pragma warning restore CS0618
             layer.hidden = true;
             EditorUtility.SetDirty(layer);
 

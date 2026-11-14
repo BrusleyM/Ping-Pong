@@ -21,6 +21,17 @@ namespace PingPong.Gameplay
             _ => false,
         };
 
+        public bool ControllerActive(Hand hand)
+        {
+            UnityEngine.InputSystem.XR.XRController c = hand switch
+            {
+                Hand.Left => UnityEngine.InputSystem.XR.XRController.leftHand,
+                Hand.Right => UnityEngine.InputSystem.XR.XRController.rightHand,
+                _ => null,
+            };
+            return c == null || c.isTracked.isPressed;
+        }
+
         public bool MenuPressed => _menu.WasPressedThisFrame();
 
         void OnEnable()

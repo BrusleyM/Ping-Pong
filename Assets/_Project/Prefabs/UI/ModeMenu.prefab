@@ -2299,3 +2299,4 @@ MonoBehaviour:
   _distance: 0.8
   _belowEyes: 0.15
   _openOnStart: 1
+  _gameOverDelay: 2.5

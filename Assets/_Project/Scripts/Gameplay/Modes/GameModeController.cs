@@ -32,12 +32,11 @@ namespace PingPong.Gameplay
         /// <summary>Raised when the player presses the menu button.</summary>
         public event Action MenuRequested;
 
+        /// <summary>Raised when a game is won, so the menu (with Restart) can come up.</summary>
+        public event Action GameEnded;
+
         /// <summary>Raised when a match starts (or restarts), after the match is set up.</summary>
         public event Action MatchStarted;
-
-        bool CanRestart => _match.Phase is MatchPhase.GameOver or MatchPhase.FreePlay;
-        /// <summary>No rally in play: waiting for a serve, game over or free play.</summary>
-        public bool BetweenPoints => CanRestart || _match.Phase == MatchPhase.WaitingForServe;
 
         void OnValidate()
         {
@@ -45,8 +44,19 @@ namespace PingPong.Gameplay
             Validation.Seam(_passthrough, nameof(_passthrough), this);
         }
 
-        void OnEnable() { if (_ai != null) _ai.LevelChanged += OnLevelChanged; }
-        void OnDisable() { if (_ai != null) _ai.LevelChanged -= OnLevelChanged; }
+        void OnEnable()
+        {
+            if (_ai != null) _ai.LevelChanged += OnLevelChanged;
+            _match.GameWon += OnGameWon;
+        }
+
+        void OnDisable()
+        {
+            if (_ai != null) _ai.LevelChanged -= OnLevelChanged;
+            _match.GameWon -= OnGameWon;
+        }
+
+        void OnGameWon(Side winner) => GameEnded?.Invoke();
 
         public void StartSolo(int level)
         {

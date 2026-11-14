@@ -34,6 +34,8 @@ namespace PingPong.Presentation
         [Tooltip("How far below eye level the panel's centre sits, metres.")]
         [SerializeField] float _belowEyes = 0.15f;
         [SerializeField] bool _openOnStart = true;
+        [Tooltip("After a game is won, the menu opens this many seconds later so Restart is in reach, seconds.")]
+        [SerializeField, Min(0f)] float _gameOverDelay = 2.5f;
 
         readonly List<Button> _levels = new List<Button>();
 
@@ -66,16 +68,42 @@ namespace PingPong.Presentation
             Bind(_close, Close);
         }
 
+        Coroutine _gameOverOpen;
+
         void OnEnable()
         {
             _modes.Changed += Refresh;
             _modes.MenuRequested += Toggle;
+            _modes.GameEnded += OnGameEnded;
+            _modes.MatchStarted += CancelGameOverOpen;
         }
 
         void OnDisable()
         {
             _modes.Changed -= Refresh;
             _modes.MenuRequested -= Toggle;
+            _modes.GameEnded -= OnGameEnded;
+            _modes.MatchStarted -= CancelGameOverOpen;
+        }
+
+        void OnGameEnded()
+        {
+            CancelGameOverOpen();
+            _gameOverOpen = StartCoroutine(OpenAfterGameOver());
+        }
+
+        IEnumerator OpenAfterGameOver()
+        {
+            yield return new WaitForSecondsRealtime(_gameOverDelay);
+            _gameOverOpen = null;
+            if (!IsOpen) Open();
+        }
+
+        void CancelGameOverOpen()
+        {
+            if (_gameOverOpen == null) return;
+            StopCoroutine(_gameOverOpen);
+            _gameOverOpen = null;
         }
 
         IEnumerator Start()
@@ -86,11 +114,11 @@ namespace PingPong.Presentation
             Open();
         }
 
-        /// <summary>Closes the menu, or opens it between points (never mid-rally, where the AI keeps playing).</summary>
+        /// <summary>The menu button: closes the menu, or opens it at any time so a restart is always reachable.</summary>
         public void Toggle()
         {
             if (IsOpen) Close();
-            else if (_modes.BetweenPoints) Open();
+            else Open();
         }
 
         public void Open()

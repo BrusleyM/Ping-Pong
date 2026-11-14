@@ -11,6 +11,15 @@ namespace PingPong.Presentation
     {
         public const string LocalName = "You";
 
+        public const string PlayerBoardName = "PLAYER";
+        public const string AiBoardName = "AI";
+        public const string OpponentBoardName = "OPPONENT";
+        public const string ServeMarker = "SERVE";
+
+        /// <summary>The label on a side's scoreboard: PLAYER for the local player, AI or OPPONENT for the other side.</summary>
+        public static string BoardName(Side side, Side local, GameMode mode) =>
+            side == local ? PlayerBoardName : mode == GameMode.Solo ? AiBoardName : OpponentBoardName;
+
         public const string PlayAgain = "Menu button to play again";
 
         public static string Score(int local, int opponent) => $"{local}  -  {opponent}";
