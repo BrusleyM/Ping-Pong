@@ -68,7 +68,7 @@ namespace PingPong.Core
         }
 
         /// <summary>Whether this player may strike the ball now.</summary>
-        public bool CanHit(Side player) => _s.Phase switch
+        public bool CanHit(Side player) => _s.Phase.AllowsHits() && _s.Phase switch
         {
             MatchPhase.WaitingForServe => player == _s.Server,
             MatchPhase.Rally => player.IsPlayer() && player != _s.LastHitter,

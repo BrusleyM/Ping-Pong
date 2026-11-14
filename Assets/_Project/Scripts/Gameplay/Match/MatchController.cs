@@ -38,8 +38,10 @@ namespace PingPong.Gameplay
             {
                 _isAuthority = value;
                 SyncWatching();
-                // Becoming the authority in the pause after a point: nobody has started the next serve yet.
-                if (value && Phase == MatchPhase.PointOver && !_nextServe.IsPending) ScheduleNextServe();
+                // Only the authority runs the pause. Losing authority drops a pending one, so a stale due time can't
+                // fire later with no pause; becoming the authority in PointOver starts a fresh one.
+                if (!value) CancelPendingServe();
+                else if (Phase == MatchPhase.PointOver && !_nextServe.IsPending) ScheduleNextServe();
             }
         }
 
