@@ -39,6 +39,8 @@ namespace PingPong.Gameplay
         Vector3 _handVelocity;
         TrackingDebouncer _tracking;
         Hand _returnTo = Hand.None; // set after a tracking-loss release: the hand the paddle goes back to
+        float _nextReturnCheck;
+        const float ReturnCheckInterval = 0.1f;
 
         public Hand HeldBy { get; private set; } = Hand.None;
 
@@ -75,10 +77,10 @@ namespace PingPong.Gameplay
             Grab(_handOnMatchStart);
         }
 
-        void LateUpdate() => FollowHand(Time.time);
+        void LateUpdate() => FollowHand(Time.unscaledTime); // unscaled: a pause must not freeze the debounce
 
         /// <summary>Poses the held paddle on its hand now (every frame while held), lets go when the controller has lost tracking, and takes the paddle back when it returns.</summary>
-        public void FollowHand() => FollowHand(Time.time);
+        public void FollowHand() => FollowHand(Time.unscaledTime);
 
         public void FollowHand(float now)
         {
@@ -94,6 +96,7 @@ namespace PingPong.Gameplay
                 Release(withHandMotion: false);
                 _returnTo = lost;
                 _tracking = new TrackingDebouncer(false, _lostAfter, _regainAfter);
+                _nextReturnCheck = now;
                 enabled = true; // keep watching for the return
                 return;
             }
@@ -107,6 +110,10 @@ namespace PingPong.Gameplay
         void WaitForTheControllerToReturn(float now)
         {
             if (_returnTo == Hand.None) { enabled = false; return; }
+            // Something else picked the paddle up meanwhile (Meta's hand grab holds it kinematic): don't fight it.
+            if (Body.isKinematic) { _returnTo = Hand.None; enabled = false; return; }
+            if (now < _nextReturnCheck) return; // ten checks a second are plenty
+            _nextReturnCheck = now + ReturnCheckInterval;
             if (_tracking.Update(now, ControllerActive(_returnTo))) Grab(_returnTo); // snaps the paddle back into the hand
         }
 

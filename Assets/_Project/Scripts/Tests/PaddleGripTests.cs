@@ -152,6 +152,22 @@ namespace PingPong.Tests
         }
 
         [Test]
+        public void IfSomethingElseHoldsThePaddleMeanwhile_TheControllerDoesNotTakeItBack()
+        {
+            _right.transform.position = Handle;
+            _grip.Toggle(Hand.Right);
+            _commands.RightControllerActive = false;
+            _grip.FollowHand(0f);
+            _grip.FollowHand(0.3f);
+            _paddle.GetComponent<Rigidbody>().isKinematic = true; // Meta's hand grab took it
+            _commands.RightControllerActive = true;
+            _grip.FollowHand(1.0f);
+            _grip.FollowHand(1.5f);
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None), "no fight over the paddle");
+            Assert.That(_grip.enabled, Is.False, "the wait is over");
+        }
+
+        [Test]
         public void ManuallyGrabbingWhileWaiting_StopsTheWait()
         {
             _right.transform.position = Handle;
