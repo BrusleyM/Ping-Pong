@@ -17,6 +17,8 @@ namespace PingPong.Gameplay
         [SerializeField] AIOpponent _ai;
         [SerializeField] Seam<IPlayerCommands> _commands;
         [SerializeField] Seam<IPassthrough> _passthrough;
+        [Tooltip("Optional: the hand-tracking way to ask for the menu.")]
+        [SerializeField] Seam<IMenuGesture> _menuGesture;
         [SerializeField] Side _localPlayer = Side.Near;
 
         public GameMode Mode { get; private set; } = GameMode.Solo;
@@ -42,6 +44,7 @@ namespace PingPong.Gameplay
         {
             Validation.Seam(_commands, nameof(_commands), this);
             Validation.Seam(_passthrough, nameof(_passthrough), this);
+            Validation.Seam(_menuGesture, nameof(_menuGesture), this);
         }
 
         void OnEnable()
@@ -49,6 +52,7 @@ namespace PingPong.Gameplay
             if (_ai != null) _ai.LevelChanged += OnLevelChanged;
             _match.GameWon += OnGameWon;
             if (_commands.Value != null) _commands.Value.MenuPerformed += OnMenuPerformed;
+            if (_menuGesture.Value != null) _menuGesture.Value.Performed += OnMenuPerformed;
         }
 
         void OnDisable()
@@ -56,6 +60,7 @@ namespace PingPong.Gameplay
             if (_ai != null) _ai.LevelChanged -= OnLevelChanged;
             _match.GameWon -= OnGameWon;
             if (_commands.Value != null) _commands.Value.MenuPerformed -= OnMenuPerformed;
+            if (_menuGesture.Value != null) _menuGesture.Value.Performed -= OnMenuPerformed;
         }
 
         void OnMenuPerformed() => MenuRequested?.Invoke();

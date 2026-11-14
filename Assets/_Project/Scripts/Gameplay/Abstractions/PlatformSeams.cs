@@ -15,6 +15,12 @@ namespace PingPong.Gameplay
         bool ControllerActive(Hand hand);
     }
 
+    /// <summary>A hand gesture that asks for the menu (the hand-tracking counterpart of the controller menu button).</summary>
+    public interface IMenuGesture
+    {
+        event System.Action Performed;
+    }
+
     /// <summary>Vibration on one controller.</summary>
     public interface IHaptics
     {

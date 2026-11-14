@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 437836d27d44b4a71b4fb8b37302dbd6, type: 3}
+  m_Name: WristGlance
+  m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.WristGlanceProfile
+  _settings:
+    MaxPalmAngle: 35
+    MaxGazeAngle: 40
+    MinDistance: 0.15
+    MaxDistance: 0.6
+    Dwell: 0.5
+    RallyDwell: 1
+    Cooldown: 1.5
