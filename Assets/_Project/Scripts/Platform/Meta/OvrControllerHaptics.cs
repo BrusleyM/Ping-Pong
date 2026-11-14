@@ -24,17 +24,23 @@ namespace PingPong.Platform.Meta
             if (amplitude <= 0f || seconds <= 0f) return;
             OVRInput.SetControllerVibration(_frequency, Mathf.Clamp01(amplitude), _controller);
             _stopAt = Time.unscaledTime + seconds;
+            enabled = true; // Update ends the pulse
+        }
+
+        // Enabled only while a pulse runs: Update stops it and switches itself off. Listens from Awake to OnDestroy for that reason.
+        void Awake()
+        {
+            enabled = false;
+            if (_grip != null) _grip.HeldByChanged += OnHeldByChanged;
         }
 
         void Update()
         {
-            if (_stopAt < 0f || Time.unscaledTime < _stopAt) return;
+            if (Time.unscaledTime < _stopAt) return;
             Stop();
         }
 
-        void OnEnable() { if (_grip != null) _grip.HeldByChanged += OnHeldByChanged; }
-
-        void OnDisable()
+        void OnDestroy()
         {
             if (_grip != null) _grip.HeldByChanged -= OnHeldByChanged;
             Stop();
@@ -50,6 +56,7 @@ namespace PingPong.Platform.Meta
         void Stop()
         {
             _stopAt = -1f;
+            enabled = false;
             OVRInput.SetControllerVibration(0f, 0f, _controller);
         }
     }

@@ -111,3 +111,6 @@ Assets/StreamingAssets/RuntimeActionBindings.json*
 /.utmp/
 /Assets/_Recovery/
 /Assets/_Recovery.meta
+
+# JetBrains Rider IDE settings (per developer)
+/.idea/

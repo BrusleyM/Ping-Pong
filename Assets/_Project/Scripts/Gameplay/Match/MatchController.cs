@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using PingPong.Core;
 using UnityEngine;
 
@@ -16,7 +15,8 @@ namespace PingPong.Gameplay
         [SerializeField] MatchRulesProfile _profile;
 
         MatchRulesEngine _engine;
-        Coroutine _pendingServe;
+        float _nextServeAt = NoServe; // Time.time to start the next serve after a point; NoServe when none is pending
+        const float NoServe = -1f;
 
         /// <summary>The table the ball plays on (the ball owns the reference).</summary>
         public PingPongTable Table => _ball.Table;
@@ -32,7 +32,13 @@ namespace PingPong.Gameplay
         public int HitCount { get; private set; }
 
         /// <summary>False on network clients: rules run on the state authority only.</summary>
-        public bool IsAuthority { get; set; } = true;
+        public bool IsAuthority
+        {
+            get => _isAuthority;
+            set { _isAuthority = value; SyncWatching(); }
+        }
+
+        bool _isAuthority = true;
 
         public event Action Changed;
         public event Action<Side, PointReason> PointWon;
@@ -47,25 +53,30 @@ namespace PingPong.Gameplay
         MatchRulesEngine CreateEngine()
         {
             var engine = new MatchRulesEngine(_profile.Rules);
-            engine.Changed += () => Changed?.Invoke();
+            engine.Changed += () => { SyncWatching(); Changed?.Invoke(); };
             engine.PointAwarded += OnPointAwarded;
             engine.GameWon += w => GameWon?.Invoke(w);
             engine.Let += OnLet;
             return engine;
         }
 
-        void OnEnable()
+        // Update (ball lost, rally timeout, dropped serve, the pause before the next serve) matters only in these
+        // phases, so the component is enabled just then. It listens from Awake to OnDestroy for that reason. The
+        // pause is a timer here, not a coroutine: it survives the object being deactivated and reactivated.
+        void Awake()
         {
             _ball.TableBounce += OnTableBounce;
             _ball.OtherContact += OnOtherContact;
+            SyncWatching();
         }
 
-        void OnDisable()
+        void OnDestroy()
         {
             _ball.TableBounce -= OnTableBounce;
             _ball.OtherContact -= OnOtherContact;
-            CancelPendingServe();
         }
+
+        void SyncWatching() => enabled = IsAuthority && Phase is MatchPhase.Rally or MatchPhase.WaitingForServe or MatchPhase.PointOver;
 
         void OnValidate()
         {
@@ -136,6 +147,11 @@ namespace PingPong.Gameplay
                 case MatchPhase.WaitingForServe when !_ball.Body.isKinematic && local.y < Pacing.ServeResetBelow:
                     PlaceServeBall(); // a tossed serve fell without being hit
                     break;
+                case MatchPhase.PointOver when _nextServeAt != NoServe && Time.time >= _nextServeAt:
+                    _nextServeAt = NoServe;
+                    Engine.BeginServe();
+                    PlaceServeBall();
+                    break;
             }
         }
 
@@ -154,16 +170,7 @@ namespace PingPong.Gameplay
         // The engine's state is final here. Only the authority schedules serves; clients follow snapshots.
         void ScheduleNextServe()
         {
-            if (IsAuthority && Phase == MatchPhase.PointOver) _pendingServe = StartCoroutine(NextServeAfterPause());
-        }
-
-        IEnumerator NextServeAfterPause()
-        {
-            yield return new WaitForSeconds(Pacing.PointPause);
-            _pendingServe = null;
-            if (Engine.State.Phase != MatchPhase.PointOver) yield break;
-            Engine.BeginServe();
-            PlaceServeBall();
+            if (IsAuthority && Phase == MatchPhase.PointOver) _nextServeAt = Time.time + Pacing.PointPause;
         }
 
         void PlaceServeBall()
@@ -172,11 +179,6 @@ namespace PingPong.Gameplay
             _ball.Hold(ServePosition(Server));
         }
 
-        void CancelPendingServe()
-        {
-            if (_pendingServe == null) return;
-            StopCoroutine(_pendingServe);
-            _pendingServe = null;
-        }
+        void CancelPendingServe() => _nextServeAt = NoServe;
     }
 }

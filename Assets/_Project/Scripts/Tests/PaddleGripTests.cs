@@ -7,13 +7,16 @@ namespace PingPong.Tests
 {
     public sealed class PaddleGripTests
     {
-        GameObject _paddle, _left, _right;
+        GameObject _paddle, _left, _right, _commandsHost;
         PaddleGrip _grip;
+        FakeCommands _commands;
 
         [SetUp]
         public void SetUp()
         {
+            // Wired first, then Awake runs: PaddleGrip subscribes to the commands in Awake.
             _paddle = new GameObject("Paddle", typeof(Rigidbody));
+            _paddle.SetActive(false);
             var blade = new GameObject("Blade").transform;
             blade.SetParent(_paddle.transform, false);
             blade.localPosition = new Vector3(0f, 0f, 0.15f);
@@ -21,11 +24,21 @@ namespace PingPong.Tests
             Set(model, "_blade", blade);
             _left = new GameObject("Left");
             _right = new GameObject("Right");
+            _commandsHost = new GameObject("Commands", typeof(FakeCommands));
+            _commands = _commandsHost.GetComponent<FakeCommands>();
             _grip = _paddle.AddComponent<PaddleGrip>();
             Set(_grip, "_model", model);
             Set(_grip, "_leftHand", _left.transform);
             Set(_grip, "_rightHand", _right.transform);
+            Set(_grip, "_commands._component", _commands);
+            _paddle.SetActive(true);
+            // Edit-mode tests don't run Awake on their own (the component isn't ExecuteAlways): run it as Unity would.
+            RunLifecycle("Awake");
         }
+
+        // Edit-mode tests don't get Awake/OnDestroy from Unity (the component isn't ExecuteAlways) and SendMessage asserts there.
+        void RunLifecycle(string method) =>
+            typeof(PaddleGrip).GetMethod(method, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(_grip, null);
 
         [TearDown]
         public void TearDown()
@@ -33,6 +46,7 @@ namespace PingPong.Tests
             Object.DestroyImmediate(_paddle);
             Object.DestroyImmediate(_left);
             Object.DestroyImmediate(_right);
+            Object.DestroyImmediate(_commandsHost);
         }
 
         static void Set(Object target, string field, Object value)
@@ -77,36 +91,56 @@ namespace PingPong.Tests
         sealed class FakeCommands : MonoBehaviour, IPlayerCommands
         {
             public bool RightControllerActive = true;
-            public bool GrabPressed(Hand hand) => false;
+            public event System.Action<Hand> GrabPerformed;
+            public event System.Action MenuPerformed;
             public bool ControllerActive(Hand hand) => hand != Hand.Right || RightControllerActive;
-            public bool MenuPressed => false;
+            public void PressGrab(Hand hand) => GrabPerformed?.Invoke(hand);
+            public void PressMenu() => MenuPerformed?.Invoke();
+            public bool HasGrabListeners => GrabPerformed != null;
         }
 
         [Test]
         public void LosingTheControllerReleasesThePaddle_WithoutAFling()
         {
-            var host = new GameObject("Commands", typeof(FakeCommands));
-            try
-            {
-                var commands = host.GetComponent<FakeCommands>();
-                var so = new SerializedObject(_grip);
-                so.FindProperty("_commands._component").objectReferenceValue = commands;
-                so.ApplyModifiedPropertiesWithoutUndo();
+            _right.transform.position = Handle;
+            _grip.Toggle(Hand.Right);
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Right));
 
-                _right.transform.position = Handle;
-                _grip.Toggle(Hand.Right);
-                Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Right));
-
-                commands.RightControllerActive = false; // hand tracking took over
-                InvokeUpdate();
-                Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None));
-                var body = _paddle.GetComponent<Rigidbody>();
-                Assert.That(body.isKinematic, Is.False);
-                Assert.That(body.linearVelocity, Is.EqualTo(Vector3.zero));
-            }
-            finally { Object.DestroyImmediate(host); }
+            _commands.RightControllerActive = false; // hand tracking took over
+            _grip.FollowHand();
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None));
+            var body = _paddle.GetComponent<Rigidbody>();
+            Assert.That(body.isKinematic, Is.False);
+            Assert.That(body.linearVelocity, Is.EqualTo(Vector3.zero));
         }
 
-        void InvokeUpdate() => typeof(PaddleGrip).GetMethod("Update", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(_grip, null);
+        [Test]
+        public void GrabEvent_TakesThenLetsGo()
+        {
+            _right.transform.position = Handle;
+            _commands.PressGrab(Hand.Right);
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Right), "a grab event near the handle takes the paddle");
+            _commands.PressGrab(Hand.Right);
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None), "the same hand again lets go");
+        }
+
+        [Test]
+        public void TheComponentRunsOnlyWhileHeld()
+        {
+            Assert.That(_grip.enabled, Is.False, "idle: no per-frame work");
+            _right.transform.position = Handle;
+            _grip.Toggle(Hand.Right);
+            Assert.That(_grip.enabled, Is.True);
+            _grip.Toggle(Hand.Right);
+            Assert.That(_grip.enabled, Is.False);
+        }
+
+        [Test]
+        public void DestroyingTheGrip_StopsListeningToTheCommands()
+        {
+            Assert.That(_commands.HasGrabListeners, Is.True);
+            RunLifecycle("OnDestroy"); // edit-mode destruction doesn't call it; run it as Unity would
+            Assert.That(_commands.HasGrabListeners, Is.False);
+        }
     }
 }

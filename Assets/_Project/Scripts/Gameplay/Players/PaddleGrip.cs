@@ -46,8 +46,20 @@ namespace PingPong.Gameplay
 
         Rigidbody Body => _body != null ? _body : _body = GetComponent<Rigidbody>();
 
-        void OnEnable() { if (_modes != null) _modes.MatchStarted += OnMatchStarted; }
-        void OnDisable() { if (_modes != null) _modes.MatchStarted -= OnMatchStarted; }
+        // The component is enabled only while the paddle is held (it follows the hand every frame then), so it
+        // listens from Awake to OnDestroy instead of OnEnable/OnDisable, and does no per-frame work otherwise.
+        void Awake()
+        {
+            enabled = false;
+            if (_commands.Value != null) _commands.Value.GrabPerformed += Toggle;
+            if (_modes != null) _modes.MatchStarted += OnMatchStarted;
+        }
+
+        void OnDestroy()
+        {
+            if (_commands.Value != null) _commands.Value.GrabPerformed -= Toggle;
+            if (_modes != null) _modes.MatchStarted -= OnMatchStarted;
+        }
 
         // Starting a match puts the paddle in the player's hand, so nobody has to find it first.
         void OnMatchStarted()
@@ -56,20 +68,15 @@ namespace PingPong.Gameplay
             Grab(_handOnMatchStart);
         }
 
-        void Update()
-        {
-            IPlayerCommands c = _commands.Value;
-            if (c == null) return;
-            // Hand tracking took over: the controller anchor is stale, so let go and leave the paddle to Meta's grab.
-            if (HeldBy != Hand.None && !c.ControllerActive(HeldBy)) Release(withHandMotion: false);
-            if (c.GrabPressed(Hand.Left)) Toggle(Hand.Left);
-            else if (c.GrabPressed(Hand.Right)) Toggle(Hand.Right);
-        }
+        void LateUpdate() => FollowHand();
 
-        void LateUpdate()
+        /// <summary>Poses the held paddle on its hand now (every frame while held); lets go if the controller lost tracking.</summary>
+        public void FollowHand()
         {
+            if (HeldBy == Hand.None) return;
+            // Hand tracking took over: the controller anchor is stale, so let go and leave the paddle to Meta's grab.
+            if (!ControllerActive(HeldBy)) { Release(withHandMotion: false); return; }
             Transform hand = HandTransform(HeldBy);
-            if (hand == null) return;
             Pose grip = GripPose(hand);
             transform.SetPositionAndRotation(grip.position, grip.rotation);
             if (Time.deltaTime > 0f) _handVelocity = (hand.position - _prevHandPos) / Time.deltaTime;
@@ -106,6 +113,7 @@ namespace PingPong.Gameplay
         void Grab(Hand hand)
         {
             HeldBy = hand;
+            enabled = true; // LateUpdate follows the hand while held
             Body.isKinematic = true;
             _prevHandPos = HandTransform(hand).position;
             _handVelocity = Vector3.zero;
@@ -116,6 +124,7 @@ namespace PingPong.Gameplay
         void Release(bool withHandMotion = true)
         {
             HeldBy = Hand.None;
+            enabled = false;
             Body.isKinematic = false;
             Body.linearVelocity = withHandMotion ? _handVelocity : Vector3.zero;
             HeldByChanged?.Invoke(Hand.None);

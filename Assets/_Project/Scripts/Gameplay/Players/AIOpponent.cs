@@ -87,10 +87,15 @@ namespace PingPong.Gameplay
             return Table.PointOnSide(_player, 0f, Table.HalfLength + rest.y, rest.x);
         }
 
+        bool _atRest;
+
         void Update()
         {
             var ball = _match.Ball;
-            switch (_match.Phase)
+            MatchPhase phase = _match.Phase;
+            bool playing = phase is MatchPhase.WaitingForServe or MatchPhase.Rally;
+            if (!playing && _atRest) return; // idle between points and after a game: nothing to move
+            switch (phase)
             {
                 case MatchPhase.WaitingForServe when _match.Server == _player:
                     _target = ball.transform.position + Table.Forward * (_player.Sign() * Behaviour.BehindBall * 1.5f);
@@ -111,6 +116,7 @@ namespace PingPong.Gameplay
             Paddle.position = Vector3.MoveTowards(Paddle.position, _target, Difficulty.MoveSpeed * Time.deltaTime);
             _swing = Mathf.MoveTowards(_swing, 0f, Time.deltaTime * Behaviour.Swing.y);
             Paddle.rotation = Quaternion.AngleAxis(-Behaviour.Swing.x * _swing, _swingAxis) * _restRotation;
+            _atRest = !playing && _strikeTime < 0f && _swing <= 0f && Paddle.position == _target;
         }
 
         void FixedUpdate()

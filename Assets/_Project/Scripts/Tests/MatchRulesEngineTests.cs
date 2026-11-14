@@ -235,6 +235,29 @@ namespace PingPong.Tests
             Assert.That(S.ScoreNear, Is.EqualTo(1), "the restarted game scores normally");
         }
 
+        // MatchController enables its per-frame watch from the engine's Changed event, so every phase change must raise it.
+        [Test]
+        public void EveryPhaseChange_RaisesChanged()
+        {
+            MatchPhase seen = S.Phase;
+            _engine.Changed += () => seen = S.Phase;
+            void AssertNotified(string after) => Assert.That(seen, Is.EqualTo(S.Phase), $"Changed was not raised for the phase change after {after}");
+
+            _engine.StartMatch(Side.Near); AssertNotified("StartMatch");
+            _engine.RegisterHit(Side.Near, false); AssertNotified("serve hit");
+            _engine.RegisterTableBounce(Side.Near); AssertNotified("serve bounce");
+            _engine.RegisterTableBounce(Side.Far); AssertNotified("serve lands");
+            _engine.RegisterBallDead(); AssertNotified("ball dead");
+            _engine.BeginServe(); AssertNotified("BeginServe");
+            _engine.Stop(); AssertNotified("Stop");
+            _engine.StartMatch(Side.Near);
+            while (S.Phase != MatchPhase.GameOver) { WinPoint(Side.Near); AssertNotified("a point"); }
+            _engine.StartMatch(Side.Far); AssertNotified("restart after game over");
+            var other = new MatchRulesEngine(MatchRules.Standard);
+            other.StartMatch(Side.Near); other.RegisterHit(Side.Near, false);
+            _engine.Restore(other.State); AssertNotified("Restore");
+        }
+
         [Test]
         public void Restore_ReproducesTheExactState()
         {

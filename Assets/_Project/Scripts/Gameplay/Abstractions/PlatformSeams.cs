@@ -4,14 +4,15 @@ namespace PingPong.Gameplay
 {
     public enum Hand { None, Left, Right }
 
-    /// <summary>Player commands, polled once per frame. Implementations map devices to these actions.</summary>
+    /// <summary>Player commands, raised as they happen (no polling). Implementations map devices to these actions.</summary>
     public interface IPlayerCommands
     {
-        /// <summary>The grab button on that hand went down this frame.</summary>
-        bool GrabPressed(Hand hand);
+        /// <summary>The grab button on that hand went down.</summary>
+        event System.Action<Hand> GrabPerformed;
+        /// <summary>The menu button went down.</summary>
+        event System.Action MenuPerformed;
         /// <summary>That hand's controller is tracked, or there is no controller to judge by (keyboard). False once hand tracking takes over.</summary>
         bool ControllerActive(Hand hand);
-        bool MenuPressed { get; }
     }
 
     /// <summary>Vibration on one controller.</summary>

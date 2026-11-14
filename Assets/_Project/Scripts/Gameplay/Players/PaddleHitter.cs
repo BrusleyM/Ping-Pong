@@ -78,6 +78,18 @@ namespace PingPong.Gameplay
 
         void OnEnable() { _hasPrev = false; _vSamples = 0; }
 
+        // Nobody can hit between a point and the next serve or after the game, so the hitter sleeps then (no 90 Hz
+        // physics checks, no pose sampling). It listens from Awake to OnDestroy because it is switched off itself.
+        void Awake()
+        {
+            _match.Changed += SyncActive;
+            SyncActive();
+        }
+
+        void OnDestroy() => _match.Changed -= SyncActive;
+
+        void SyncActive() => enabled = _match.Phase is not (MatchPhase.PointOver or MatchPhase.GameOver);
+
         void LateUpdate()
         {
             Transform b = Blade;
