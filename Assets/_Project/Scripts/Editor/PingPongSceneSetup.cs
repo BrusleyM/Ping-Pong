@@ -101,7 +101,8 @@ namespace PingPong.EditorTools
             log.AppendLine($"Player paddle: {Path(paddle.transform)} (haptics: right controller)");
 
             // Platform services live outside the Match prefab, which stays free of Meta code.
-            var platform = GetOrCreate("Platform");
+            var existingCommands = Object.FindAnyObjectByType<InputSystemPlayerCommands>(FindObjectsInactive.Include);
+            var platform = existingCommands != null ? existingCommands.gameObject : new GameObject("Platform");
             var passthrough = SetUpPassthrough(platform, rig, table, log);
             var commands = GetOrAdd<InputSystemPlayerCommands>(platform);
             var modes = match.GetComponent<GameModeController>();
@@ -142,40 +143,55 @@ namespace PingPong.EditorTools
 
         /// <summary>
         /// Keeps the scene thin: everything the game needs lives in one World prefab, in three levels (World, its groups,
-        /// then the prefabs and objects inside). First run groups the scene's objects into it; every run then applies the
-        /// scene's changes to the prefab, so the scene file itself only changes when the scene does.
+        /// then the prefabs and objects inside). Every run puts the game's objects under World, in their group, and applies
+        /// the scene's changes to the prefab, so the scene file itself only changes when the scene does. A scene without a
+        /// World instance never overwrites an existing World prefab (e.g. GameScene): it is left as it is.
         /// </summary>
         static void PackIntoWorld(OVRCameraRig rig, GameObject platform, ModeMenuPresenter menu, System.Text.StringBuilder log)
         {
             GameObject world = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
                 .Select(t => t.gameObject)
                 .FirstOrDefault(g => PrefabUtility.IsOutermostPrefabInstanceRoot(g) && PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(g) == WorldPrefabPath);
-            if (world == null)
+            bool create = world == null;
+            if (create && AssetDatabase.LoadAssetAtPath<GameObject>(WorldPrefabPath) != null)
             {
-                world = new GameObject("World");
-                Transform Group(string name, params Transform[] members)
-                {
-                    var group = new GameObject(name).transform;
-                    group.SetParent(world.transform, false);
-                    foreach (Transform m in members.Where(m => m != null).Distinct()) m.SetParent(group, true);
-                    return group;
-                }
-                var eventSystem = Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>(FindObjectsInactive.Include);
-                var layer = Object.FindAnyObjectByType<OVRPassthroughLayer>(FindObjectsInactive.Include);
-                Transform RootOf(Component c) => c != null ? c.transform.root : null;
-                Transform paddleRoot = RootOf(Object.FindAnyObjectByType<PaddleGrip>(FindObjectsInactive.Include));
-                Transform matchRoot = RootOf(Object.FindAnyObjectByType<MatchController>(FindObjectsInactive.Include));
-                Transform environmentRoot = RootOf(Object.FindAnyObjectByType<PingPongTable>(FindObjectsInactive.Include));
-                // Prefab roots and the Platform object sit directly under World; the loose Meta blocks are grouped.
-                environmentRoot.SetParent(world.transform, true);
-                matchRoot.SetParent(world.transform, true);
-                Group("Player", rig.transform.root, RootOf(layer), paddleRoot);
-                Group("UI", menu.transform.root, RootOf(eventSystem));
-                platform.transform.SetParent(world.transform, true);
+                log.AppendLine("World prefab exists but this scene has no World instance: not packed (the prefab is not overwritten).");
+                return;
+            }
+            if (create) world = new GameObject("World");
+
+            Transform GroupOf(string name)
+            {
+                Transform group = world.transform.Find(name);
+                if (group == null) { group = new GameObject(name).transform; group.SetParent(world.transform, false); }
+                return group;
+            }
+            // The one rule for where things go: prefab roots and Platform directly under World, loose Meta blocks grouped.
+            void Place(Component member, string group = null)
+            {
+                if (member == null) return;
+                Transform root = member.transform.root;
+                if (root == world.transform) return; // already packed
+                root.SetParent(group == null ? world.transform : GroupOf(group), true);
+            }
+            Place(Object.FindAnyObjectByType<PingPongTable>(FindObjectsInactive.Include));
+            Place(Object.FindAnyObjectByType<MatchController>(FindObjectsInactive.Include));
+            Place(rig, "Player");
+            Place(Object.FindAnyObjectByType<OVRPassthroughLayer>(FindObjectsInactive.Include), "Player");
+            Place(Object.FindAnyObjectByType<PaddleGrip>(FindObjectsInactive.Include), "Player");
+            Place(menu, "UI");
+            Place(Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>(FindObjectsInactive.Include), "UI");
+            Place(platform.transform);
+
+            if (create)
+            {
                 PrefabUtility.SaveAsPrefabAssetAndConnect(world, WorldPrefabPath, InteractionMode.AutomatedAction);
                 log.AppendLine($"World prefab created: {WorldPrefabPath}");
             }
             else PrefabUtility.ApplyPrefabInstance(world, InteractionMode.AutomatedAction);
+
+            foreach (GameObject stray in world.scene.GetRootGameObjects().Where(g => g != world && g.GetComponent<Light>() == null))
+                log.AppendLine($"Warning: '{stray.name}' is outside World; the scene should hold only World and its light.");
         }
 
         /// <summary>
