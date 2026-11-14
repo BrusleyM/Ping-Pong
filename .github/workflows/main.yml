@@ -261,19 +261,26 @@ jobs:
       # Saved before the upload, so a code is never uploaded without being recorded. Only the two version
       # lines are written, into the branch's current file, so other settings changed meanwhile are kept.
       - name: Commit the version back
+        env:
+          GIT_LFS_SKIP_SMUDGE: "1"   # never download LFS files here: only a text file is edited
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Files can show as modified in this checkout (it has no LFS data) and a rebase-pull refuses to run then.
+          # Nothing else is needed from the working tree: point the index at the branch tip (a mixed reset leaves
+          # other files alone) and take only ProjectSettings from it, then write the two version lines.
+          git status --short | head -5 || true
           pushed=0
           for _ in 1 2 3; do
-            git pull --quiet --rebase origin "$BRANCH"
+            git fetch --quiet origin "$BRANCH"
+            git reset --quiet "origin/$BRANCH"
+            git checkout --quiet "origin/$BRANCH" -- ProjectSettings/ProjectSettings.asset
             sed -i -e "s/^  bundleVersion: .*/  bundleVersion: $VERSION/" \
                    -e "s/^  AndroidBundleVersionCode: .*/  AndroidBundleVersionCode: $CODE/" ProjectSettings/ProjectSettings.asset
             git add ProjectSettings/ProjectSettings.asset
             if git diff --cached --quiet; then echo "Version already committed."; pushed=1; break; fi
             git commit --quiet -m "Version $VERSION ($CODE) [skip ci]"
             if git push --quiet origin "HEAD:$BRANCH"; then pushed=1; break; fi
-            git reset --quiet --hard "origin/$BRANCH"
           done
           if [ "$pushed" != 1 ]; then echo "::error::Could not commit version $VERSION ($CODE) to $BRANCH; not uploading."; exit 1; fi
 
