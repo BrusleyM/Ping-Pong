@@ -21,12 +21,22 @@ on:
   pull_request:
     branches: [main, develop]
     paths-ignore: ['**.md']
+  # Run a release or promotion by hand (Actions > Run workflow, or: gh workflow run main.yml --ref develop -f kind=Develop).
+  # Needed because a push that changes no files (e.g. merging an empty release PR) never starts a push run
+  # (paths-ignore), and as a way to retry a failed release. Only develop and main release.
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: 'What to run'
+        type: choice
+        options: [Develop, Staging, Production, Promote]
+        default: Develop
 
 # develop/main pushes (releases and promotions) form one queue: a whole run finishes, version commit and
 # tag included, before the next starts. GitHub keeps one *pending* run per group, so a third quick push
 # replaces a second that hasn't started. Superseded PR checks are cancelled.
 concurrency:
-  group: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && 'release' || format('ci-{0}', github.ref) }}
+  group: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && 'release' || format('ci-{0}', github.ref) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -45,8 +55,15 @@ jobs:
           EVENT: ${{ github.event_name }}
           REF: ${{ github.ref }}
           MESSAGE: ${{ github.event.head_commit.message }}
+          DISPATCH_KIND: ${{ github.event.inputs.kind }}
         run: |
           if [ "$EVENT" = "pull_request" ]; then kind=Check
+          elif [ "$EVENT" = "workflow_dispatch" ]; then
+            kind="$DISPATCH_KIND"
+            if [ "$REF" != "refs/heads/develop" ] && [ "$REF" != "refs/heads/main" ]; then
+              echo "::notice::Manual $kind ignored: only develop and main release."
+              kind=None
+            fi
           else
             kind=$(printf '%s' "$MESSAGE" | grep -oiE '\[(develop|staging|production)\]' | head -1 | tr -d '[]' | tr '[:upper:]' '[:lower:]')
             case "$kind" in
@@ -208,7 +225,7 @@ jobs:
           if-no-files-found: error
 
       - name: Save Unity Library
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         uses: actions/cache/save@v4
         with:
           path: Library
