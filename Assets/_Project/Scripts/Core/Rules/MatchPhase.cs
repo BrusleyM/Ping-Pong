@@ -1,5 +1,9 @@
 namespace PingPong.Core
 {
+    /// <remarks>
+    /// Adding a phase: decide it in <see cref="MatchPhaseRules"/> (AllowsHits, NeedsWatching) and handle it in
+    /// MatchController.Update if it needs watching; a phase missing from NeedsWatching is never watched.
+    /// </remarks>
     public enum MatchPhase
     {
         /// <summary>No match: anyone may hit, nothing is scored.</summary>

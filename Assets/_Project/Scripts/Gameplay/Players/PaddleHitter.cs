@@ -88,7 +88,7 @@ namespace PingPong.Gameplay
 
         void OnDestroy() => _match.Changed -= SyncActive;
 
-        void SyncActive() => enabled = _match.Phase is not (MatchPhase.PointOver or MatchPhase.GameOver);
+        void SyncActive() => enabled = _match.Phase.AllowsHits();
 
         void LateUpdate()
         {
