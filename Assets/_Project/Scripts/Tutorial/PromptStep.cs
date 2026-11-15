@@ -21,12 +21,17 @@ namespace PingPong.Tutorial
 
         public static PromptStep ForSeconds(string text, ITutorialCues cues, float seconds)
         {
-            return new PromptStep(text, text, cues, null, seconds);
+            return new PromptStep(NameOf(text), text, cues, null, seconds);
         }
 
         public static PromptStep UntilSatisfied(string text, ITutorialCues cues, IStepCondition condition)
         {
-            return new PromptStep(text, text, cues, condition, 0f);
+            return new PromptStep(NameOf(text), text, cues, condition, 0f);
+        }
+
+        private static string NameOf(string text)
+        {
+            return "Prompt: " + text;
         }
 
         protected override void OnEnter()
@@ -39,7 +44,7 @@ namespace PingPong.Tutorial
                 _condition.Satisfied += Finish;
                 _condition.Arm();
             }
-            else if (!(_seconds > 0f))
+            else if (_seconds <= 0f)
             {
                 Finish();
             }

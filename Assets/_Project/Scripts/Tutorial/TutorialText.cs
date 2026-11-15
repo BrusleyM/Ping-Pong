@@ -6,6 +6,7 @@ namespace PingPong.Tutorial
         public const string Overview = "Let's learn the basics";
         public const string GrabPaddle = "Press the grab button next to the paddle handle to pick it up";
         public const string OpenMenu = "Press the menu button to open the menu";
+        public const string StartGame = "Choose Solo in the menu to start a game";
         public const string HitBall = "Serve and hit the ball";
         public const string WinPoint = "Win a point against the AI";
         public const string Finished = "You're ready. Have fun!";

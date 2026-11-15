@@ -19,6 +19,7 @@ namespace PingPong.Tutorial
                     .Then(PromptStep.UntilSatisfied(TutorialText.GrabPaddle, cues, signals.PaddleHeld))
                     .Then(PromptStep.UntilSatisfied(TutorialText.OpenMenu, cues, signals.MenuOpened)))
                 .Stage(PlayStage, play => play
+                    .Then(PromptStep.UntilSatisfied(TutorialText.StartGame, cues, signals.MatchRunning))
                     .Then(PromptStep.UntilSatisfied(TutorialText.HitBall, cues, signals.BallHit))
                     .Then(PromptStep.UntilSatisfied(TutorialText.WinPoint, cues, signals.PointWon))
                     .Then(PromptStep.ForSeconds(TutorialText.Finished, cues, timing.FinishedSeconds)))
