@@ -624,7 +624,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4417688501524026996
 Transform:
   m_ObjectHideFlags: 0
@@ -884,7 +884,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &26410738036279230
 Transform:
   m_ObjectHideFlags: 0
@@ -940,59 +940,6 @@ MonoBehaviour:
   _materialBlock: {fileID: 0}
   _reticleMode: 1
   _hideReticle: 0
---- !u!1 &8630658311492747772
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 5119071881487531110}
-  - component: {fileID: 6220212525177326274}
-  m_Layer: 0
-  m_Name: Net
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &5119071881487531110
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8630658311492747772}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 0.00060388446, y: 0.8162501, z: -0.00018048286}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5194109605950783758}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &6220212525177326274
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8630658311492747772}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1.8521078, y: 0.1525, z: 0.014999996}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1001 &1305591615009898170
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1109,43 +1056,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 951836700817034102, guid: 09126b44299d649beba534f243eaa847, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5119071881487531110}
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 5480754779971315805, guid: 09126b44299d649beba534f243eaa847, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5385465151273740338}
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 09126b44299d649beba534f243eaa847, type: 3}
---- !u!1 &661809424736969253 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5480754779971315805, guid: 09126b44299d649beba534f243eaa847, type: 3}
-  m_PrefabInstance: {fileID: 4981180497830152824}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &5385465151273740338
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 661809424736969253}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4622d4fa629e42bca3caabcf26730eb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PingPong.Gameplay.PingPongTable
-  _top: {fileID: 8651628492372946526}
-  _net: {fileID: 6220212525177326274}
-  _netHeight: 0.1525
-  _flipSides: 0
 --- !u!4 &5194109605950783758 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 951836700817034102, guid: 09126b44299d649beba534f243eaa847, type: 3}
-  m_PrefabInstance: {fileID: 4981180497830152824}
-  m_PrefabAsset: {fileID: 0}
---- !u!65 &8651628492372946526 stripped
-BoxCollider:
-  m_CorrespondingSourceObject: {fileID: 4409154894255924262, guid: 09126b44299d649beba534f243eaa847, type: 3}
   m_PrefabInstance: {fileID: 4981180497830152824}
   m_PrefabAsset: {fileID: 0}
