@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 5454916987824879687}
   - component: {fileID: 5486565972145284219}
   - component: {fileID: 452275168130358761}
+  - component: {fileID: 2251545632595249293}
   m_Layer: 0
   m_Name: Ball
   m_TagString: Untagged
@@ -157,9 +158,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _physics: {fileID: 11400000, guid: 2fe9a7370ad8242f082325dbaed1c259, type: 2}
   _table: {fileID: 0}
-  _audio:
-    _component: {fileID: 0}
-  _ignoredRoots: []
+  _ignoredRoots:
+  - {fileID: 0}
 --- !u!82 &452275168130358761
 AudioSource:
   m_ObjectHideFlags: 0
@@ -172,7 +172,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
-  m_PlayOnAwake: 1
+  m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
   Loop: 0
@@ -257,6 +257,26 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &2251545632595249293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6913287927650320432}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b420c566d62c640269b080d9525c03d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.AudioSourceImpactAudio
+  _ball: {fileID: 5486565972145284219}
+  _table: {fileID: 8300000, guid: c68f605b3a40145fb873f4210b4ecc23, type: 3}
+  _paddle: {fileID: 0}
+  _net: {fileID: 0}
+  _other: {fileID: 0}
+  _fullVolumeSpeed: 8
+  _pitchVariation: 0.05
+  _minSpeed: 0.3
 --- !u!1 &7905104491463410584
 GameObject:
   m_ObjectHideFlags: 0
