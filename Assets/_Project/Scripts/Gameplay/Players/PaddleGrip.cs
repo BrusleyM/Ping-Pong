@@ -167,6 +167,12 @@ namespace PingPong.Gameplay
             enabled = true; // LateUpdate follows the hand while held
             Body.isKinematic = true;
             _prevHandPos = HandTransform(hand).position;
+            if (DrivenByPhysics && TryGetGripPose(out Pose onHand)) // posed on the grab frame, not a physics step later
+            {
+                transform.SetPositionAndRotation(onHand.position, onHand.rotation);
+                Body.position = onHand.position;
+                Body.rotation = onHand.rotation;
+            }
             _handVelocity = Vector3.zero;
             HeldByChanged?.Invoke(hand);
         }
