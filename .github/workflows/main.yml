@@ -1,4 +1,4 @@
-name: Unity VR Android Build and Upload
+name: Unity VR Android Build and Deploy
 
 # Release build: push a commit (or merge a PR whose title) contains [Develop], [Staging] or [Production].
 #   The matching BuildScript method moves the version in ProjectSettings (x.y.z: Develop bumps z,
@@ -231,11 +231,12 @@ jobs:
           echo "code=$code" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: Unity-Build${{ github.event_name == 'pull_request' && format('-PR-{0}', github.event.pull_request.number) || '' }}
+          name: Unity-Build
           path: Builds/Android/*.apk
-          retention-days: ${{ github.event_name == 'pull_request' && 7 || 30 }}
+          retention-days: 30
           if-no-files-found: error
 
       - name: Save Unity Library
@@ -246,7 +247,7 @@ jobs:
           key: Library-Android-${{ hashFiles('ProjectSettings/ProjectVersion.txt', 'Packages/packages-lock.json') }}-${{ github.sha }}
 
   release:
-    name: Upload to Meta ALPHA
+    name: Deploy to Meta ALPHA
     needs: [plan, build]
     if: needs.plan.outputs.kind == 'Develop' || needs.plan.outputs.kind == 'Staging' || needs.plan.outputs.kind == 'Production'
     runs-on: ubuntu-latest
