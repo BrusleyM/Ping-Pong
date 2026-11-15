@@ -7,6 +7,7 @@ namespace PingPong.Presentation
         public const string Online = "Online";
         public const string OnlineUnavailable = "Online (coming soon)";
         public const string Restart = "Restart";
+        public const string ReplayTutorial = "Replay tutorial";
         public const string Close = "Close";
         public const string Hint = "Menu button opens and closes this menu";
 
