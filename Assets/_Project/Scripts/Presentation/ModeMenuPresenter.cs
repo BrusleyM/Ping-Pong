@@ -30,6 +30,8 @@ namespace PingPong.Presentation
         [Tooltip("Optional: switches between scripted and physics paddle hits.")]
         [SerializeField] Button _hitMode;
         [SerializeField] Button _restart;
+        [Tooltip("Optional: asks for the tutorial to play again.")]
+        [SerializeField] Button _replayTutorial;
         [SerializeField] Button _close;
         [Tooltip("Distance from the head to the panel, metres.")]
         [SerializeField] float _distance = 0.55f; // within arm's reach, so buttons can be poked as well as pointed at
@@ -46,6 +48,9 @@ namespace PingPong.Presentation
         readonly List<Button> _levels = new List<Button>();
 
         public bool IsOpen => _panel.activeSelf;
+
+        /// <summary>Raised when the player picks Replay tutorial; the menu has closed by then.</summary>
+        public event System.Action TutorialRequested;
 
         void OnValidate()
         {
@@ -72,6 +77,7 @@ namespace PingPong.Presentation
             Bind(_passthrough, _modes.TogglePassthrough);
             Bind(_hitMode, _modes.TogglePhysicsHits);
             Bind(_restart, () => Pick(_modes.Restart));
+            Bind(_replayTutorial, () => Pick(() => TutorialRequested?.Invoke()));
             Bind(_close, Close);
         }
 
@@ -166,6 +172,7 @@ namespace PingPong.Presentation
             Label(_passthrough, MenuText.Passthrough(_modes.PassthroughOn));
             Label(_hitMode, MenuText.HitMode(_modes.PhysicsHits));
             Label(_restart, MenuText.Restart);
+            Label(_replayTutorial, MenuText.ReplayTutorial);
             Label(_close, MenuText.Close);
         }
 

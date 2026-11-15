@@ -1688,6 +1688,7 @@ Transform:
   - {fileID: 5221316761339206238}
   - {fileID: 3960823112268304147}
   - {fileID: 8287592879108564249}
+  - {fileID: 8145661205442552735}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1181882091208852093
@@ -11812,6 +11813,103 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 018d8fe4362d0401aade85bc5c9419c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.PhysicsPaddleContacts
+--- !u!114 &6162788165165053817 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4759419765657888614, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
+  m_PrefabInstance: {fileID: 1696243115090120735}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 142974389db3d45ec819dad4b26ec006, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.PaddleGrip
+--- !u!1001 &2979827076394389501
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 30065063009367807}
+    m_Modifications:
+    - target: {fileID: 4083870293005217246, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: m_Name
+      value: Tutorial
+      objectReference: {fileID: 0}
+    - target: {fileID: 6363950509778365538, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6363950509778365538, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6363950509778365538, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6363950509778365538, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6363950509778365538, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6363950509778365538, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6363950509778365538, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6363950509778365538, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6363950509778365538, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6363950509778365538, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9016677468724473304, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: _menu
+      value: 
+      objectReference: {fileID: 1259863216787287791}
+    - target: {fileID: 9016677468724473304, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: _match
+      value: 
+      objectReference: {fileID: 2553383751260390057}
+    - target: {fileID: 9016677468724473304, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: _modes
+      value: 
+      objectReference: {fileID: 5558242943205727769}
+    - target: {fileID: 9016677468724473304, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: _paddle
+      value: 
+      objectReference: {fileID: 6162788165165053817}
+    - target: {fileID: 9016677468724473304, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: _commands._component
+      value: 
+      objectReference: {fileID: 2277396452568720518}
+    - target: {fileID: 9016677468724473304, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: _menuGesture._component
+      value: 
+      objectReference: {fileID: 2170772871091775998}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+--- !u!4 &8145661205442552735 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6363950509778365538, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+  m_PrefabInstance: {fileID: 2979827076394389501}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &4006630414260795671
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11852,6 +11950,10 @@ PrefabInstance:
       propertyPath: _modes
       value: 
       objectReference: {fileID: 5558242943205727769}
+    - target: {fileID: 2801669743015467000, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+      propertyPath: _openOnStart
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4134831761043178565, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
       propertyPath: m_AnchorMax.y
       value: 1
@@ -12069,6 +12171,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+--- !u!114 &1259863216787287791 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2801669743015467000, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}
+  m_PrefabInstance: {fileID: 4006630414260795671}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7daf58524316e4d9baf7a8844e39e247, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PingPong.Presentation::PingPong.Presentation.ModeMenuPresenter
 --- !u!4 &5271402924612688376 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 9132631703795589359, guid: d7afa72cd9cdb44bc85913cde6f32f93, type: 3}

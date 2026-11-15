@@ -4,7 +4,10 @@
     "references": [
         "PingPong.Core",
         "PingPong.Gameplay",
-        "Framework.Sequencing.Core"
+        "PingPong.Presentation",
+        "Framework.Sequencing.Core",
+        "Framework.Sequencing.Unity",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
