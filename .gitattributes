@@ -1,2 +1,7 @@
-*.fbx filter=lfs diff=lfs merge=lfs -text
-*.glb filter=lfs diff=lfs merge=lfs -text
+# Large models live in Git LFS. Patterns are case-sensitive on Linux (CI), so both spellings are listed:
+# "*.fbx" alone left Assets/Models/Table tennis/Table_Tennis.FBX as a pointer text file in CI builds.
+# Limited to our own models: the Meta avatar sample glbs under Assets/Oculus are regular blobs.
+Assets/Models/**/*.fbx filter=lfs diff=lfs merge=lfs -text
+Assets/Models/**/*.FBX filter=lfs diff=lfs merge=lfs -text
+Assets/Models/**/*.glb filter=lfs diff=lfs merge=lfs -text
+Assets/Models/**/*.GLB filter=lfs diff=lfs merge=lfs -text

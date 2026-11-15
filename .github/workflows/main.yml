@@ -101,6 +101,20 @@ jobs:
           # A release builds the branch's latest commit, which includes the previous release's version commit.
           ref: ${{ needs.plan.outputs.kind != 'Check' && github.ref_name || '' }}
 
+      # Fails the build if any LFS-tracked file was left as pointer text (the checkout fetched the objects but did not
+      # replace the pointers, e.g. an attribute pattern that does not match on Linux): such a build would silently
+      # miss models (the table was missing from the 0.0.9 build this way).
+      - name: Check that LFS files are real files
+        run: |
+          git lfs ls-files --name-only > /tmp/lfs-files.txt
+          echo "LFS files in this checkout: $(wc -l < /tmp/lfs-files.txt)"
+          bad=$(while IFS= read -r f; do if head -c 80 "$f" | grep -q 'git-lfs.github.com/spec'; then echo "$f"; fi; done < /tmp/lfs-files.txt)
+          if [ -n "$bad" ]; then
+            echo "::error::These LFS files are still pointer text, not content (check .gitattributes patterns, they are case-sensitive on Linux):"
+            echo "$bad"
+            exit 1
+          fi
+
       - name: Highest code already released
         id: released
         run: |
