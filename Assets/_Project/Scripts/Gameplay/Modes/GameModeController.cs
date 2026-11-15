@@ -20,6 +20,8 @@ namespace PingPong.Gameplay
         [Tooltip("Optional: the hand-tracking way to ask for the menu.")]
         [SerializeField] Seam<IMenuGesture> _menuGesture;
         [SerializeField] Side _localPlayer = Side.Near;
+        [Tooltip("Optional: the physical way to hit the ball. Enabled = physics hits, disabled = scripted hits.")]
+        [SerializeField] PhysicsPaddleContacts _physicsPaddle;
 
         public GameMode Mode { get; private set; } = GameMode.Solo;
         public Side LocalPlayer => _localPlayer;
@@ -80,6 +82,16 @@ namespace PingPong.Gameplay
         public void Restart()
         {
             if (Mode == GameMode.Solo) StartSolo(_ai != null ? _ai.Level : 0);
+        }
+
+        public bool PhysicsHits => _physicsPaddle != null && _physicsPaddle.enabled;
+
+        /// <summary>Switches between scripted hits and physics hits (for comparing them on the device).</summary>
+        public void TogglePhysicsHits()
+        {
+            if (_physicsPaddle == null) return;
+            _physicsPaddle.enabled = !_physicsPaddle.enabled;
+            Changed?.Invoke();
         }
 
         public void TogglePassthrough()

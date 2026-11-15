@@ -11787,6 +11787,10 @@ PrefabInstance:
       propertyPath: _commands._component
       value: 
       objectReference: {fileID: 2277396452568720518}
+    - target: {fileID: 5039783484591893503, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
+      propertyPath: _match
+      value: 
+      objectReference: {fileID: 2553383751260390057}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -11797,6 +11801,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3332295413380548458, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
   m_PrefabInstance: {fileID: 1696243115090120735}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &5943252052642429920 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5039783484591893503, guid: 2b8041f007bd04898ab9dc55c95e3767, type: 3}
+  m_PrefabInstance: {fileID: 1696243115090120735}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 018d8fe4362d0401aade85bc5c9419c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.PhysicsPaddleContacts
 --- !u!1001 &4006630414260795671
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12364,6 +12379,10 @@ PrefabInstance:
       propertyPath: m_TextStyleHashCode
       value: -1183493901
       objectReference: {fileID: 0}
+    - target: {fileID: 3632498679609705581, guid: 69e6993485cfe4130b58741bf490a81d, type: 3}
+      propertyPath: _physicsPaddle
+      value: 
+      objectReference: {fileID: 5943252052642429920}
     - target: {fileID: 3632498679609705581, guid: 69e6993485cfe4130b58741bf490a81d, type: 3}
       propertyPath: _commands._component
       value: 
