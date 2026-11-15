@@ -74,7 +74,51 @@ namespace PingPong.Tests
             _scenario.MenuOpened.Raise();
 
             Assert.AreEqual(TutorialPlan.PlayStage, _tutorial.CurrentStep.Name);
+            Assert.AreEqual($"show {TutorialText.StartGame}", _scenario.Cues.Journal[_scenario.Cues.Journal.Count - 1]);
+        }
+
+        [Test]
+        public void Starting_a_match_asks_the_player_to_hit_the_ball()
+        {
+            _tutorial.Start();
+            PlayThroughIntro();
+            _scenario.PaddleHeld.Raise();
+            _scenario.MenuOpened.Raise();
+
+            _scenario.MatchRunning.Raise();
+
             Assert.AreEqual($"show {TutorialText.HitBall}", _scenario.Cues.Journal[_scenario.Cues.Journal.Count - 1]);
+        }
+
+        [Test]
+        public void A_paddle_already_held_when_the_controllers_stage_starts_skips_straight_to_asking_for_the_menu()
+        {
+            var scenario = new TutorialScenario();
+            scenario.PaddleHeld.AlreadySatisfied = true;
+            var tutorial = scenario.BuildRunner();
+            tutorial.Start();
+            tutorial.Advance(1f);
+            tutorial.Advance(2f);
+
+            Assert.AreEqual(TutorialPlan.ControllersStage, tutorial.CurrentStep.Name);
+            Assert.AreEqual($"show {TutorialText.OpenMenu}", scenario.Cues.Journal[scenario.Cues.Journal.Count - 1]);
+            Assert.AreEqual(0, scenario.PaddleHeld.ListenerCount);
+            Assert.AreEqual(1, scenario.MenuOpened.ListenerCount);
+        }
+
+        [Test]
+        public void A_match_already_running_when_the_play_stage_starts_skips_straight_to_asking_for_a_hit()
+        {
+            var scenario = new TutorialScenario();
+            scenario.MatchRunning.AlreadySatisfied = true;
+            var tutorial = scenario.BuildRunner();
+            tutorial.Start();
+            tutorial.Advance(1f);
+            tutorial.Advance(2f);
+            scenario.PaddleHeld.Raise();
+            scenario.MenuOpened.Raise();
+
+            Assert.AreEqual($"show {TutorialText.HitBall}", scenario.Cues.Journal[scenario.Cues.Journal.Count - 1]);
         }
 
         [Test]
@@ -84,6 +128,7 @@ namespace PingPong.Tests
             PlayThroughIntro();
             _scenario.PaddleHeld.Raise();
             _scenario.MenuOpened.Raise();
+            _scenario.MatchRunning.Raise();
 
             _scenario.BallHit.Raise();
             Assert.AreEqual($"show {TutorialText.WinPoint}", _scenario.Cues.Journal[_scenario.Cues.Journal.Count - 1]);
@@ -106,7 +151,8 @@ namespace PingPong.Tests
 
             Assert.AreEqual(0, _scenario.PaddleHeld.ListenerCount);
             Assert.AreEqual(TutorialPlan.PlayStage, _tutorial.CurrentStep.Name);
-            Assert.AreEqual(1, _scenario.BallHit.ListenerCount);
+            Assert.AreEqual(1, _scenario.MatchRunning.ListenerCount);
+            Assert.AreEqual(new[] { "hide", $"show {TutorialText.StartGame}" }, _scenario.Cues.Journal.GetRange(_scenario.Cues.Journal.Count - 2, 2));
         }
 
         [Test]
@@ -147,25 +193,13 @@ namespace PingPong.Tests
         }
 
         [Test]
-        public void Pausing_holds_the_intro_timers()
-        {
-            _tutorial.Start();
-            _tutorial.Pause();
-
-            _tutorial.Advance(5f);
-
-            Assert.AreEqual(TutorialPlan.IntroStage, _tutorial.CurrentStep.Name);
-            Assert.AreEqual(new[] { $"show {TutorialText.Welcome}" }, _scenario.Cues.Journal);
-        }
-
-        [Test]
-        public void The_timing_profile_hands_its_values_to_the_plan()
+        public void The_default_timing_profile_gives_the_welcome_2_5_seconds_and_the_overview_and_closing_3_seconds_each()
         {
             var profile = UnityEngine.ScriptableObject.CreateInstance<TutorialProfile>();
 
-            Assert.Greater(profile.Timing.WelcomeSeconds, 0f);
-            Assert.Greater(profile.Timing.OverviewSeconds, 0f);
-            Assert.Greater(profile.Timing.FinishedSeconds, 0f);
+            Assert.AreEqual(2.5f, profile.Timing.WelcomeSeconds);
+            Assert.AreEqual(3f, profile.Timing.OverviewSeconds);
+            Assert.AreEqual(3f, profile.Timing.FinishedSeconds);
             UnityEngine.Object.DestroyImmediate(profile);
         }
     }
