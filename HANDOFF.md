@@ -13,8 +13,8 @@ Repo BrusleyM/Ping-Pong (public). Default branch `main`, work branch `develop`. 
 
 ## State
 - develop is at version **0.0.8 (code 210)** (the build uploaded to Meta; fixed by PR 66, was wrongly 0.0.7 (217)). PRs 55-65 are merged; PR 66 (scoreboards, banner, restart) and PR 67 (World prefab, stacked on 66) are open.
-- **Scene:** `Assets/_Project/Scenes/test scene.unity` (Meta Camera Rig + interaction rig). It is the scene the build launches; `GameScene.unity` is kept but disabled and has stale overrides (decide: delete or re-run setup).
-- Scene: `test scene.unity` is a thin scene (Directional Light + one `World` prefab instance). Everything lives in `Assets/_Project/Prefabs/World.prefab` (World > Environment, Match, Player, UI, Platform > leaf prefabs; one shared `Scoreboard.prefab` at both ends). Edit prefabs in Unity and apply overrides to the prefab that owns them; there is no scene setup tool any more (deleted in PR 67; git history has it).
+- **Scene:** `Assets/_Project/Scenes/Main.unity`, the only scene and the one the build launches.
+- Scene: `Main.unity` is a thin scene (Directional Light + one `World` prefab instance). Everything lives in `Assets/_Project/Prefabs/World.prefab` (World > Environment, Match, Player, UI, Platform > leaf prefabs; one shared `Scoreboard.prefab` at both ends). Edit prefabs in Unity and apply overrides to the prefab that owns them; there is no scene setup tool any more (deleted in PR 67; git history has it).
 - **Menu** (ModeMenuMeta): Meta canvas ray/poke templates; opens at 0.55 m. Start picks a level, starts solo vs AI, paddle goes to the right hand. Only grip (grab paddle) and the left menu button remain on the controllers.
 - Paddle: controllers use the snapped toggle grip (`PaddleGrip`); bare hands keep Meta's free grab.
 - Rules done: let serves, receiver-volley let. AI returns serves and holds the paddle face-on.
@@ -34,7 +34,7 @@ Tasks DB "Ping Pong VR - Tasks", data source `b5cbde60-aeb9-44ef-82c8-5d23bdcf4e
 2. Run the first `[Develop]` release and watch it (see above).
 3. Rules: AI follows the rules (no volleys over table), best-of 3/5/7 + change ends, edge-ball / net-touch.
 4. LAN multiplayer (no internet): spike the transport first (Fusion needs Photon Cloud; NGO + Unity Transport works direct over Wi-Fi), then discovery/join, host-authoritative sync, offline table alignment, two-Quest test.
-5. Housekeeping: GameScene decision; CI exit-139 crash after tests; CI speed; optimise scripts/models/textures for Quest; B5 list (binding display strings, localization, seedable AI RNG, `.inputactions`, IHaptics.Pulse(Hand), release paddle when controller untracked, late-latch lag).
+5. Housekeeping: CI exit-139 crash after tests; CI speed; optimise scripts/models/textures for Quest; B5 list (binding display strings, localization, seedable AI RNG, `.inputactions`, IHaptics.Pulse(Hand), release paddle when controller untracked, late-latch lag).
 
 ## Waiting on the user
 Photon Fusion/Voice SDK + App IDs (only if Fusion is chosen), Meta Platform App ID (Edit Settings), Quest testing.
