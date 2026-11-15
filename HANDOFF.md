@@ -1,40 +1,41 @@
-# Ping Pong Mania: handoff (2026-11-13)
+# Ping Pong Mania: handoff (2026-11-15)
 
-VR table tennis for Quest. Unity 6000.3.9f1, Meta XR SDK 78, OpenXR, solo vs AI now, Photon Fusion / LAN multiplayer later.
-Repo BrusleyM/Ping-Pong (public). Default branch `main`, work branch `develop`. Unity MCP instance: **Ping-Pong@4f493402** (never touch "NEO AR Showroom@4beeff28"; set it before Unity actions).
+VR table tennis for Quest. Unity 6000.3.9f1, URP, Meta XR SDK (OpenXR), solo vs AI, LAN multiplayer later.
+Repo BrusleyM/Ping-Pong. Default branch `main`, work branch `develop`. Unity MCP instance **Ping-Pong@4f493402**: always `set_active_instance` and check `Application.productName == "Ping Pong Mania"` (a second Unity project may be open).
 
 ## Rules for working
-- Replies short, minimal changes. Don't poll CI. Fresh session per task. See memory: lean-working-habits, quality-bar, single-source-rule, pr-review-workflow.
-- **Tests:** CI runs them; don't run locally. Check Unity console for compile errors, push, act only on CI failure.
-- **PR flow:** every PR goes to the fork session "PR (fork)" (`local_ed529ebd-39d6-4aa1-8789-3e2c81fc4fd2`) for review (keep briefs 5-8 lines; skip for trivial changes). The user merges. I never merge.
-- **Git:** stage only named files (`git add <paths>`), never `-A` on the whole tree. The working tree has the user's uncommitted Unity changes (URP settings, OVRBuildConfig, PlayerRig, GameScene, Meta Platform sample, `.utmp/`, `_Recovery`, ProjectSettings version lines). Leave them.
-- Never read/print secrets or password.txt. The user enters API keys, App IDs and tokens.
-- Disk was ~100% full: free space before Unity builds. Git worktrees fail on the LFS avatar files; use the GitHub contents API for small edits.
+- Replies short, minimal changes. Never poll CI or builds. Fresh session per task.
+- **Never stash, revert or discard the user's local changes.** Understand each one, then commit it or ask.
+- **Tests:** run EditMode locally through Unity MCP `run_tests` before every push (about 10 s). Say plainly when not run. Run them with Main.unity closed or accept that the open scene is swapped.
+- **PRs:** one concern each. PR into develop: title starts `[Develop]` (merge uploads to Meta ALPHA, bumps version). PR into main: no keyword (promotes ALPHA to BETA). Merge commit, never squash. The review session (`local_553ad29f-b633-458a-8b61-a4b190f5b73c`, "Review PR 67: World prefab") reviews every PR before the user merges. After a review do not push to that PR. The user merges; I never merge. No "Generated with Claude Code" line in PR bodies.
+- **Code style:** no comments or XML summaries in code; names (types, methods, tests) tell the story; test names are full sentences. Single source for logic used twice. No scripts that position or compute static things at runtime: bake into prefabs. Events over polling. Tuning in ScriptableObjects.
+- Never read or print secrets.
 
 ## State
-- develop is at version **0.0.8 (code 210)** (the build uploaded to Meta; fixed by PR 66, was wrongly 0.0.7 (217)). PRs 55-65 are merged; PR 66 (scoreboards, banner, restart) and PR 67 (World prefab, stacked on 66) are open.
-- **Scene:** `Assets/_Project/Scenes/Main.unity`, the only scene and the one the build launches.
-- Scene: `Main.unity` is a thin scene (Directional Light + one `World` prefab instance). Everything lives in `Assets/_Project/Prefabs/World.prefab` (World > Environment, Match, Player, UI, Platform > leaf prefabs; one shared `Scoreboard.prefab` at both ends). Edit prefabs in Unity and apply overrides to the prefab that owns them; there is no scene setup tool any more (deleted in PR 67; git history has it).
-- **Menu** (ModeMenuMeta): Meta canvas ray/poke templates; opens at 0.55 m. Start picks a level, starts solo vs AI, paddle goes to the right hand. Only grip (grab paddle) and the left menu button remain on the controllers.
-- Paddle: controllers use the snapped toggle grip (`PaddleGrip`); bare hands keep Meta's free grab.
-- Rules done: let serves, receiver-volley let. AI returns serves and holds the paddle face-on.
+- develop is at version 0.0.17 (code 219). PRs through 94 are merged. No PR of mine is open.
+- **Scene:** `Assets/_Project/Scenes/Main.unity` is the only scene (thin: light + one `World.prefab`). Overrides live in the prefab that owns them; World keeps only wiring (cross-prefab references such as the Ball's `_table`, `_menuGesture`, `_physicsPaddle`, Tutorial refs). A nested prefab cannot hold a reference to an object outside itself, so "apply down" drops those.
+- Layers: PingPong.Core (pure), Gameplay, Presentation, Platform.Meta, Platform.Input, Editor, Tests (147 EditMode tests).
+- Hits are scripted by default; optional physics paddle contacts via the menu toggle.
+- Hand-tracking menu: wrist glance (back of left wrist faces eyes).
+- Tutorial: built by the Framework package session (PRs 91-93: sequence plus scene wiring, Replay tutorial button in the menu). Ghost hands and further steps are still tickets in Notion.
+- Release pipeline in `.github/workflows/main.yml`; version only in ProjectSettings; BETA promotion gated on the latest release being in main.
 
-## Release pipeline (merged, not yet run for real)
-- Version lives only in ProjectSettings (`bundleVersion`, `AndroidBundleVersionCode`).
-- Editor menu **Build > Develop / Staging / Production / Check Build**. Develop bumps z; Staging bumps y, z=0; Production bumps x, y=z=0; every build bumps the code, above the highest released code (read from annotated `v*` tags, subject `<Kind> build X.Y.Z (CODE)`).
-- CI: a push to **develop or main** whose commit message (or merged PR title) contains `[Develop]`, `[Staging]` or `[Production]` builds, commits the version back (`[skip ci]`), tags `vX.Y.Z`, then uploads to Meta **ALPHA**. Main without a keyword promotes ALPHA to BETA. PRs run a check build. Use merge commits, not squash.
-- Secret `RELEASE_PUSH_TOKEN` is set. **First release is untested:** next `[Develop]` should give 0.0.9 (211); watch it once.
-- A PR check failed once from the runner running out of disk (re-run passed). Optional fix, not applied: move the "Free disk space" step before "Restore Unity Library" in `.github/workflows/main.yml`.
+## Known gaps and open decisions
+- **CI Meta SDK mismatch:** `manifest.ci.json` pins 205, `manifest.json` pins 209. Waiting for the user's yes to align CI to 209 (small `[Develop]` PR touching `manifest.ci.json` and `packages-lock.ci.json`).
+- Ball audio: `BallImpactAudio` paddle, net and other clips are unassigned (silent). Needs clips.
+- Offered, awaiting a go: AI visible-miss fix; floor collider cleanup; hit-zone debug view; silence idle-phase contact in `ContactMatters`; Notion rows for the seven architecture findings.
+- Remaining items of `docs/REVIEW-2026-11-14.md`: M4 (headset), M7, M8, M9, M10, L2-L13, M1.
+- Needs a headset: 1/72 vs 1/90 fixed step, physics-mode lag, scoreboard text size (2.4 to 1.65 is intended), hand-tracking menu.
+
+## Gotchas
+- Unity MCP drops on every domain reload (30-90 s): wait for `~/.unity-mcp/unity-mcp-status-4f493402.json` (`reloading=false`, fresh heartbeat), then `set_active_instance` again. Entering Play mode reloads too.
+- Saving a prefab through `PrefabUtility.SaveAsPrefabAsset` rewrites Meta `BuildingBlock` `instanceId`s: restore them from the git diff.
+- LFS: `Assets/Models/**` is LFS. A checkout from before the `.gitattributes` fix shows `Ping_Pong_Paddle.fbx` as modified (filter artifact, same bytes); switching branches then needs the file reset.
+- Meta Locomotion kit stays deactivated in World. The tracking origin is floor level.
+- Disk fills up: free space before Unity builds.
 
 ## Notion
-Tasks DB "Ping Pong VR - Tasks", data source `b5cbde60-aeb9-44ef-82c8-5d23bdcf4e2d` (https://app.notion.com/p/e5a83ef5d8004edf80449d589076edf8). Keep rows updated.
-
-## Next tasks (by value)
-1. **Test on the Quest** (user): menu ray/poke/hand poke at 0.55 m, paddle snaps to right hand on Start, serve and rally, paddle lag. Tune `_pitch` / `_bladeDistance` on `PaddleGrip`.
-2. Run the first `[Develop]` release and watch it (see above).
-3. Rules: AI follows the rules (no volleys over table), best-of 3/5/7 + change ends, edge-ball / net-touch.
-4. LAN multiplayer (no internet): spike the transport first (Fusion needs Photon Cloud; NGO + Unity Transport works direct over Wi-Fi), then discovery/join, host-authoritative sync, offline table alignment, two-Quest test.
-5. Housekeeping: CI exit-139 crash after tests; CI speed; optimise scripts/models/textures for Quest; B5 list (binding display strings, localization, seedable AI RNG, `.inputactions`, IHaptics.Pulse(Hand), release paddle when controller untracked, late-latch lag).
+Tasks DB "Ping Pong VR - Tasks", data source `b5cbde60-aeb9-44ef-82c8-5d23bdcf4e2d`. Keep rows updated; mark "Rules: let serve" Done.
 
 ## Waiting on the user
-Photon Fusion/Voice SDK + App IDs (only if Fusion is chosen), Meta Platform App ID (Edit Settings), Quest testing.
+Headset test of the latest ALPHA, the CI SDK 209 decision, ball audio clips, go/no-go on the offered items above.
