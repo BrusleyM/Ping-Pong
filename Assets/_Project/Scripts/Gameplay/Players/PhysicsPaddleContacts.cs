@@ -19,9 +19,12 @@ namespace PingPong.Gameplay
         [Tooltip("How much of the ball's speed the rubber gives back, 0-1.")]
         [SerializeField, Range(0f, 1f)] float _bounciness = 0.85f;
         [SerializeField, Range(0f, 1f)] float _friction = 0.6f;
+        [Tooltip("Further touches by the same player within this many seconds are the same swing (not a double hit).")]
+        [SerializeField, Min(0f)] float _contactGrace = 0.12f;
 
         Rigidbody _body;
         PhysicsMaterial _rubber;
+        readonly System.Collections.Generic.Dictionary<Collider, PhysicsMaterial> _originalMaterials = new System.Collections.Generic.Dictionary<Collider, PhysicsMaterial>();
         RigidbodyInterpolation _savedInterpolation;
         CollisionDetectionMode _savedDetection;
 
@@ -39,21 +42,20 @@ namespace PingPong.Gameplay
             _savedDetection = _body.collisionDetectionMode;
             _body.interpolation = RigidbodyInterpolation.Interpolate;
             _body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-            _rubber ??= new PhysicsMaterial("PaddleRubber")
-            {
-                bounciness = _bounciness,
-                dynamicFriction = _friction,
-                staticFriction = _friction,
-                bounceCombine = PhysicsMaterialCombine.Maximum,
-            };
+            if (_rubber == null) _rubber = new PhysicsMaterial("PaddleRubber") { bounceCombine = PhysicsMaterialCombine.Maximum };
+            _rubber.bounciness = _bounciness; // read again on every enable, so tuning applies
+            _rubber.dynamicFriction = _rubber.staticFriction = _friction;
             Collider ball = _match.Ball.GetComponent<Collider>();
+            _originalMaterials.Clear();
             foreach (Collider c in GetComponentsInChildren<Collider>(true))
             {
+                _originalMaterials[c] = c.sharedMaterial;
                 c.sharedMaterial = _rubber;
                 if (ball != null) Physics.IgnoreCollision(c, ball, false); // the scripted mode ignored them
             }
             _hitter.DetectHits = false;
             _grip.DrivenByPhysics = true;
+            _match.ContactGrace = _contactGrace;
             _match.PhysicalContacts = true;
         }
 
@@ -65,7 +67,7 @@ namespace PingPong.Gameplay
             Collider ball = _match != null ? _match.Ball.GetComponent<Collider>() : null;
             foreach (Collider c in GetComponentsInChildren<Collider>(true))
             {
-                c.sharedMaterial = null;
+                c.sharedMaterial = _originalMaterials.TryGetValue(c, out PhysicsMaterial original) ? original : null;
                 if (ball != null) Physics.IgnoreCollision(c, ball, true);
             }
             if (_body != null)
@@ -85,8 +87,15 @@ namespace PingPong.Gameplay
             }
         }
 
+        void OnDestroy()
+        {
+            if (_rubber != null) Destroy(_rubber);
+        }
+
         void OnCollisionEnter(Collision collision)
         {
+            // A paddle nobody holds (dropped, resting) is not a player's hit.
+            if (_grip.HeldBy == Hand.None) return;
             if (collision.rigidbody != null && collision.rigidbody == _match.Ball.Body)
                 _match.RegisterContact(_player, collision.GetContact(0).point);
         }

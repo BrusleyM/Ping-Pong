@@ -63,7 +63,10 @@ namespace PingPong.Gameplay
         }
 
         bool _physicalContacts;
-        readonly PaddleContactJudge _judge = new PaddleContactJudge(0.12f);
+        PaddleContactJudge _judge = new PaddleContactJudge(0.12f);
+
+        /// <summary>Seconds after a counted paddle contact during which the same player's further contacts are the same swing.</summary>
+        public float ContactGrace { set => _judge = new PaddleContactJudge(value); }
 
         public event Action Changed;
         public event Action<Side, PointReason> PointWon;
@@ -154,7 +157,9 @@ namespace PingPong.Gameplay
         /// </summary>
         public void RegisterContact(Side player, Vector3 at)
         {
-            if (!IsAuthority || !_judge.ShouldCount(player, Time.time)) return;
+            // Touches the rules do not care about (point over, game over, the receiver touching the held serve ball) neither
+            // count nor use up the swing's grace.
+            if (!IsAuthority || !Phase.ContactMatters(Server, player) || !_judge.ShouldCount(player, Time.time)) return;
             LastHitTime = Time.time;
             HitCount++;
             PaddleHit?.Invoke(player);
