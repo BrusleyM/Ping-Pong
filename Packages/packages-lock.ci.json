@@ -681,6 +681,18 @@
         "com.unity.modules.jsonserialize": "1.0.0",
         "com.unity.modules.subsystems": "1.0.0"
       }
+    },
+    "com.vishnu.framework": {
+      "version": "https://github.com/BrusleyM/Framework-package.git#v2.0.0-preview.2",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.modules.animation": "1.0.0",
+        "com.unity.modules.audio": "1.0.0",
+        "com.unity.modules.physics": "1.0.0",
+        "com.unity.render-pipelines.universal": "14.0.8"
+      },
+      "hash": "e778483be20de48fb6c35f39e790576fd4822645"
     }
   }
 }

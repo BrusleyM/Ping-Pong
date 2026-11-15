@@ -5,6 +5,8 @@
         "PingPong.Core",
         "PingPong.Gameplay",
         "PingPong.Presentation",
+        "PingPong.Tutorial",
+        "Framework.Sequencing.Core",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "PingPong.Editor.Build"
