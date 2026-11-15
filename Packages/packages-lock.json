@@ -449,7 +449,7 @@
       "url": "https://packages.unity.com"
     },
     "com.vishnu.framework": {
-      "version": "https://github.com/BrusleyM/Framework-package.git#v2.0.0-preview.3",
+      "version": "https://github.com/BrusleyM/Framework-package.git#v2.0.0",
       "depth": 0,
       "source": "git",
       "dependencies": {
@@ -458,7 +458,7 @@
         "com.unity.modules.physics": "1.0.0",
         "com.unity.render-pipelines.universal": "14.0.8"
       },
-      "hash": "d315a25a026ef99ee673d9aa5dea33c3857a1300"
+      "hash": "bd39962c46ea5a0fc0c90f944d0dfaa013617f02"
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",
