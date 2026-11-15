@@ -32,7 +32,11 @@ namespace PingPong.Presentation
         [Tooltip("Distance from the head to the panel, metres.")]
         [SerializeField] float _distance = 0.55f; // within arm's reach, so buttons can be poked as well as pointed at
         [Tooltip("How far below eye level the panel's centre sits, metres.")]
-        [SerializeField] float _belowEyes = 0.15f;
+        [SerializeField] float _belowEyes = 0f;
+        [Tooltip("At launch the menu waits until the head is at least this high above the floor (tracking has settled), metres.")]
+        [SerializeField, Min(0f)] float _minEyeHeight = 0.6f;
+        [Tooltip("...but never longer than this, seconds (no headset, or tracking lost).")]
+        [SerializeField, Min(0f)] float _maxHeadWait = 3f;
         [SerializeField] bool _openOnStart = true;
         [Tooltip("After a game is won, the menu opens this many seconds later so Restart is in reach, seconds.")]
         [SerializeField, Min(0f)] float _gameOverDelay = 2.5f;
@@ -110,7 +114,10 @@ namespace PingPong.Presentation
         {
             Close();
             if (!_openOnStart) yield break;
-            yield return null; // let head tracking settle so the panel opens where the player looks
+            // Head tracking needs more than a frame to deliver the first pose. Opening before that put the menu
+            // at the origin, below the floor: wait for a plausible eye height, with a time limit.
+            for (float waited = 0f; _head != null && _head.position.y < _minEyeHeight && waited < _maxHeadWait; waited += Time.unscaledDeltaTime)
+                yield return null;
             Open();
         }
 
