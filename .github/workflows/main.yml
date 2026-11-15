@@ -124,10 +124,11 @@ jobs:
           echo "Highest released code: ${code:-none}"
           echo "code=${code:-0}" >> "$GITHUB_OUTPUT"
 
-      - name: Apply CI manifests
+      - name: Drop editor-only packages from the manifests
         run: |
-          cp Packages/manifest.ci.json Packages/manifest.json
-          cp Packages/packages-lock.ci.json Packages/packages-lock.json
+          package=com.coplaydev.unity-mcp
+          jq --arg p "$package" 'del(.dependencies[$p])' Packages/manifest.json > manifest.tmp && mv manifest.tmp Packages/manifest.json
+          jq --arg p "$package" 'del(.dependencies[$p])' Packages/packages-lock.json > lock.tmp && mv lock.tmp Packages/packages-lock.json
 
       # One source for the editor version: tests and build run in the same Android image.
       - name: Read Unity version
