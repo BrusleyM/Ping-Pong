@@ -27,6 +27,8 @@ namespace PingPong.Presentation
         [SerializeField] Button _levelTemplate;
         [SerializeField] Button _online;
         [SerializeField] Button _passthrough;
+        [Tooltip("Optional: switches between scripted and physics paddle hits.")]
+        [SerializeField] Button _hitMode;
         [SerializeField] Button _restart;
         [SerializeField] Button _close;
         [Tooltip("Distance from the head to the panel, metres.")]
@@ -64,6 +66,7 @@ namespace PingPong.Presentation
             }
             Bind(_online, null); // no online yet: the button stays disabled
             Bind(_passthrough, _modes.TogglePassthrough);
+            Bind(_hitMode, _modes.TogglePhysicsHits);
             Bind(_restart, () => Pick(_modes.Restart));
             Bind(_close, Close);
         }
@@ -154,6 +157,7 @@ namespace PingPong.Presentation
             _online.interactable = _modes.OnlineAvailable;
             Label(_online, MenuText.OnlineButton(_modes.OnlineAvailable));
             Label(_passthrough, MenuText.Passthrough(_modes.PassthroughOn));
+            Label(_hitMode, MenuText.HitMode(_modes.PhysicsHits));
             Label(_restart, MenuText.Restart);
             Label(_close, MenuText.Close);
         }

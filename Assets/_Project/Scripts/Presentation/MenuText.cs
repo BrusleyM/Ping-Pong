@@ -13,6 +13,7 @@ namespace PingPong.Presentation
         /// <summary>A difficulty button; the level being played is marked.</summary>
         public static string Level(string name, bool current) => current ? $"<b>> {name} <</b>" : name;
 
+        public static string HitMode(bool physics) => physics ? "Hits: Physics" : "Hits: Script";
         public static string Passthrough(bool on) => on ? "Passthrough: On" : "Passthrough: Off";
 
         public static string OnlineButton(bool available) => available ? Online : OnlineUnavailable;

@@ -47,6 +47,24 @@ namespace PingPong.Gameplay
 
         bool _isAuthority = true;
 
+        /// <summary>
+        /// Physical paddle contacts: the ball's reaction comes from the physics engine and <see cref="RegisterContact"/> only
+        /// tells the rules about the touch (they judge volleys and double hits). Off: hits are scripted through <see cref="Strike"/>.
+        /// </summary>
+        public bool PhysicalContacts
+        {
+            get => _physicalContacts;
+            set
+            {
+                if (_physicalContacts == value) return;
+                _physicalContacts = value;
+                if (Phase == MatchPhase.WaitingForServe) PlaceServeBall(); // re-hold the ball the right way
+            }
+        }
+
+        bool _physicalContacts;
+        readonly PaddleContactJudge _judge = new PaddleContactJudge(0.12f);
+
         public event Action Changed;
         public event Action<Side, PointReason> PointWon;
         public event Action<Side> GameWon;
@@ -94,6 +112,7 @@ namespace PingPong.Gameplay
         public void StartMatch(Side firstServer)
         {
             CancelPendingServe();
+            _judge.Reset();
             Engine.StartMatch(firstServer);
             PlaceServeBall();
         }
@@ -127,6 +146,20 @@ namespace PingPong.Gameplay
             PaddleHit?.Invoke(player);
             if (IsAuthority) Engine.RegisterHit(player, Table.Frame.IsOverTable(from));
             return true;
+        }
+
+        /// <summary>
+        /// A physical paddle touched the ball (physical contacts only). The physics engine has already moved the ball;
+        /// this lets the rules judge the touch. Only the first contact of a swing counts.
+        /// </summary>
+        public void RegisterContact(Side player, Vector3 at)
+        {
+            if (!IsAuthority || !_judge.ShouldCount(player, Time.time)) return;
+            LastHitTime = Time.time;
+            HitCount++;
+            PaddleHit?.Invoke(player);
+            Engine.RegisterHit(player, Table.Frame.IsOverTable(at));
+            if (Phase == MatchPhase.Rally) _ball.EndHover(); // a legal serve: let the ball fly with the velocity it was given
         }
 
         /// <summary>Network clients mirror the authority's rules state through this; point and game events fire as on the authority.</summary>
@@ -186,7 +219,7 @@ namespace PingPong.Gameplay
         void PlaceServeBall()
         {
             if (Phase != MatchPhase.WaitingForServe) Engine.BeginServe();
-            _ball.Hold(ServePosition(Server));
+            _ball.Hold(ServePosition(Server), hover: _physicalContacts);
         }
 
         void CancelPendingServe() => _nextServe.Cancel();

@@ -88,6 +88,7 @@ namespace PingPong.EditorTools
             levelTemplate.gameObject.SetActive(false);
             var online = ButtonAt(canvasGo.transform, "Online", MenuText.OnlineUnavailable);
             var passthrough = ButtonAt(canvasGo.transform, "Passthrough", MenuText.Passthrough(false));
+            var hitMode = ButtonAt(canvasGo.transform, "HitMode", MenuText.HitMode(false));
             var restart = ButtonAt(canvasGo.transform, "Restart", MenuText.Restart);
             var close = ButtonAt(canvasGo.transform, "Close", MenuText.Close);
             Text(canvasGo.transform, "Hint", MenuText.Hint, 22f, FontStyles.Italic, 34f);
@@ -104,6 +105,7 @@ namespace PingPong.EditorTools
             Set(presenter, "_levelTemplate", levelTemplate);
             Set(presenter, "_online", online);
             Set(presenter, "_passthrough", passthrough);
+            Set(presenter, "_hitMode", hitMode);
             Set(presenter, "_restart", restart);
             Set(presenter, "_close", close);
 

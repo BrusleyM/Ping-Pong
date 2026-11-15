@@ -160,6 +160,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8616892775881475973, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4759419765657888614}
+    - targetCorrespondingSourceObject: {fileID: 8616892775881475973, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5039783484591893503}
     - targetCorrespondingSourceObject: {fileID: 7020187288193156180, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2769601768665863888}
@@ -371,6 +374,26 @@ MonoBehaviour:
   _pitch: 20
   _modes: {fileID: 0}
   _handOnMatchStart: 2
+  _lostAfter: 0.2
+  _regainAfter: 0.2
+--- !u!114 &5039783484591893503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4178389820277734470}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 018d8fe4362d0401aade85bc5c9419c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.PhysicsPaddleContacts
+  _match: {fileID: 0}
+  _hitter: {fileID: 4243428944041099987}
+  _grip: {fileID: 4759419765657888614}
+  _player: 0
+  _bounciness: 0.85
+  _friction: 0.6
 --- !u!114 &7353783026042077538 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2910494720939637409, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}

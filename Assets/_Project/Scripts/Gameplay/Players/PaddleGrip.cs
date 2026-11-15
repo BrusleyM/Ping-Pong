@@ -44,6 +44,18 @@ namespace PingPong.Gameplay
 
         public Hand HeldBy { get; private set; } = Hand.None;
 
+        /// <summary>True with physical paddle contacts: the paddle's Rigidbody follows the hand through MovePosition, so the grip does not set the transform.</summary>
+        public bool DrivenByPhysics { get; set; }
+
+        /// <summary>Where the held paddle belongs on its hand now; false when it is not held.</summary>
+        public bool TryGetGripPose(out Pose pose)
+        {
+            Transform hand = HandTransform(HeldBy);
+            if (hand == null) { pose = default; return false; }
+            pose = GripPose(hand);
+            return true;
+        }
+
         /// <summary>Raised when the paddle is taken or let go (Hand.None).</summary>
         public event Action<Hand> HeldByChanged;
 
@@ -101,8 +113,11 @@ namespace PingPong.Gameplay
                 return;
             }
             Transform hand = HandTransform(HeldBy);
-            Pose grip = GripPose(hand);
-            transform.SetPositionAndRotation(grip.position, grip.rotation);
+            if (!DrivenByPhysics)
+            {
+                Pose grip = GripPose(hand);
+                transform.SetPositionAndRotation(grip.position, grip.rotation);
+            }
             if (Time.deltaTime > 0f) _handVelocity = (hand.position - _prevHandPos) / Time.deltaTime;
             _prevHandPos = hand.position;
         }

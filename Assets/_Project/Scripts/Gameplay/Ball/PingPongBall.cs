@@ -72,6 +72,15 @@ namespace PingPong.Gameplay
 
         void FixedUpdate()
         {
+            if (_hover)
+            {
+                // Waiting to be served with physical paddles: a free body (a paddle can push it) that stays put until a
+                // hit counts. Gravity and drag do not act on it.
+                Body.linearVelocity = Vector3.zero;
+                Body.angularVelocity = Vector3.zero;
+                Body.position = _hoverAt;
+                return;
+            }
             if (Body.isKinematic) return;
             BallPhysicsSettings s = _physics.Settings;
             Vector3 v = Body.linearVelocity;
@@ -100,14 +109,34 @@ namespace PingPong.Gameplay
             }
             else
             {
-                RaiseImpact(ImpactKind.Other, speed);
+                RaiseImpact(other.attachedRigidbody != null ? ImpactKind.Paddle : ImpactKind.Other, speed);
                 if (ContactFilter.IsDeadBallSurface(other)) OtherContact?.Invoke(BallContact.DeadBall);
             }
         }
 
-        /// <summary>Freezes the ball in place (serve position).</summary>
-        public void Hold(Vector3 position)
+        bool _hover;
+        Vector3 _hoverAt;
+
+        /// <summary>Lets the ball fly after a counted hit (physical paddles); it keeps the velocity the contact gave it.</summary>
+        internal void EndHover() => _hover = false;
+
+        /// <summary>
+        /// Freezes the ball in place (serve position). With 'hover' it is a free body pinned there instead, so a physical
+        /// paddle can touch it; <see cref="EndHover"/> releases it.
+        /// </summary>
+        public void Hold(Vector3 position, bool hover = false)
         {
+            _hover = hover;
+            if (hover)
+            {
+                Body.isKinematic = false;
+                Body.linearVelocity = Vector3.zero;
+                Body.angularVelocity = Vector3.zero;
+                _hoverAt = position;
+                Body.position = position;
+                transform.position = position;
+                return;
+            }
             if (!Body.isKinematic)
             {
                 Body.linearVelocity = Vector3.zero;
@@ -121,6 +150,7 @@ namespace PingPong.Gameplay
         /// <summary>Releases the ball from 'position' with 'velocity'. Players strike through MatchController.Strike.</summary>
         internal void Launch(Vector3 position, Vector3 velocity, bool byPaddle = true)
         {
+            _hover = false;
             Body.isKinematic = false;
             Body.position = position;
             transform.position = position;
