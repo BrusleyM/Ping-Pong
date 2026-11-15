@@ -172,10 +172,17 @@ namespace PingPong.Presentation
             if (action != null) button.onClick.AddListener(action);
         }
 
-        static void Label(Button button, string text)
+        // Each button's label is looked up once, then kept.
+        readonly Dictionary<Button, TMP_Text> _labels = new Dictionary<Button, TMP_Text>();
+
+        void Label(Button button, string text)
         {
             if (button == null) return;
-            TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
+            if (!_labels.TryGetValue(button, out TMP_Text label))
+            {
+                label = button.GetComponentInChildren<TMP_Text>(true);
+                _labels[button] = label;
+            }
             if (label != null) label.text = text;
         }
     }
