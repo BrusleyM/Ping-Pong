@@ -6,16 +6,22 @@ namespace PingPong.Tutorial
 {
     public static class TutorialSignalFactory
     {
-        public static TutorialSignals Create(PaddleGrip paddle, IPlayerCommands commands, IMenuGesture menuGesture, MatchController match, Side localPlayer)
+        public static TutorialSignals Create(PaddleGrip paddle, IPlayerCommands commands, IMenuGesture menuGesture, MatchController match, GameModeController modes, Side localPlayer)
+        {
+            return Create(PaddleHoldFeed.Of(paddle), commands, menuGesture, MatchFeed.Of(match, modes), localPlayer);
+        }
+
+        public static TutorialSignals Create(PaddleHoldFeed paddle, IPlayerCommands commands, IMenuGesture menuGesture, MatchFeed match, Side localPlayer)
         {
             return new TutorialSignals(
                 PaddleHeld(paddle),
                 MenuOpened(commands, menuGesture),
+                MatchRunning(match),
                 BallHit(match, localPlayer),
                 PointWon(match, localPlayer));
         }
 
-        private static EventCondition PaddleHeld(PaddleGrip paddle)
+        private static EventCondition PaddleHeld(PaddleHoldFeed paddle)
         {
             return new EventCondition(
                 satisfy =>
@@ -27,10 +33,10 @@ namespace PingPong.Tutorial
                             satisfy();
                         }
                     };
-                    paddle.HeldByChanged += onHeldByChanged;
-                    return () => paddle.HeldByChanged -= onHeldByChanged;
+                    paddle.Subscribe(onHeldByChanged);
+                    return () => paddle.Unsubscribe(onHeldByChanged);
                 },
-                () => paddle.HeldBy != Hand.None);
+                () => paddle.HeldBy() != Hand.None);
         }
 
         private static EventCondition MenuOpened(IPlayerCommands commands, IMenuGesture menuGesture)
@@ -54,7 +60,18 @@ namespace PingPong.Tutorial
             });
         }
 
-        private static EventCondition BallHit(MatchController match, Side localPlayer)
+        private static EventCondition MatchRunning(MatchFeed match)
+        {
+            return new EventCondition(
+                satisfy =>
+                {
+                    match.SubscribeToMatchStarted(satisfy);
+                    return () => match.UnsubscribeFromMatchStarted(satisfy);
+                },
+                match.IsMatchRunning);
+        }
+
+        private static EventCondition BallHit(MatchFeed match, Side localPlayer)
         {
             return new EventCondition(satisfy =>
             {
@@ -65,12 +82,12 @@ namespace PingPong.Tutorial
                         satisfy();
                     }
                 };
-                match.PaddleHit += onPaddleHit;
-                return () => match.PaddleHit -= onPaddleHit;
+                match.SubscribeToPaddleHit(onPaddleHit);
+                return () => match.UnsubscribeFromPaddleHit(onPaddleHit);
             });
         }
 
-        private static EventCondition PointWon(MatchController match, Side localPlayer)
+        private static EventCondition PointWon(MatchFeed match, Side localPlayer)
         {
             return new EventCondition(satisfy =>
             {
@@ -81,8 +98,8 @@ namespace PingPong.Tutorial
                         satisfy();
                     }
                 };
-                match.PointWon += onPointWon;
-                return () => match.PointWon -= onPointWon;
+                match.SubscribeToPointWon(onPointWon);
+                return () => match.UnsubscribeFromPointWon(onPointWon);
             });
         }
     }

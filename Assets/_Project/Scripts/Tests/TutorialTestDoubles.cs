@@ -10,13 +10,16 @@ namespace PingPong.Tests
 
         public TestSignal()
         {
-            Condition = new EventCondition(satisfy =>
-            {
-                Raised += satisfy;
-                return () => Raised -= satisfy;
-            });
+            Condition = new EventCondition(
+                satisfy =>
+                {
+                    Raised += satisfy;
+                    return () => Raised -= satisfy;
+                },
+                () => AlreadySatisfied);
         }
 
+        public bool AlreadySatisfied { get; set; }
         public EventCondition Condition { get; }
         public int ListenerCount => Raised?.GetInvocationList().Length ?? 0;
 
@@ -38,15 +41,17 @@ namespace PingPong.Tests
         {
             PaddleHeld = new TestSignal();
             MenuOpened = new TestSignal();
+            MatchRunning = new TestSignal();
             BallHit = new TestSignal();
             PointWon = new TestSignal();
             Cues = new RecordingCues();
-            Signals = new TutorialSignals(PaddleHeld.Condition, MenuOpened.Condition, BallHit.Condition, PointWon.Condition);
+            Signals = new TutorialSignals(PaddleHeld.Condition, MenuOpened.Condition, MatchRunning.Condition, BallHit.Condition, PointWon.Condition);
             Timing = new TutorialTiming(1f, 2f, 3f);
         }
 
         public TestSignal PaddleHeld { get; }
         public TestSignal MenuOpened { get; }
+        public TestSignal MatchRunning { get; }
         public TestSignal BallHit { get; }
         public TestSignal PointWon { get; }
         public RecordingCues Cues { get; }
