@@ -20,6 +20,7 @@ namespace PingPong.Tutorial
 
         private SequentialTask _task;
         private SequenceRunner _tutorial;
+        private TutorialLaunchPolicy _launchPolicy;
 
         private void OnValidate()
         {
@@ -36,6 +37,7 @@ namespace PingPong.Tutorial
         private void Awake()
         {
             _task = GetComponent<SequentialTask>();
+            _launchPolicy = new TutorialLaunchPolicy(new PlayerPrefsTutorialCompletionStore());
             var signals = TutorialSignalFactory.Create(_paddle, _commands.Value, _menuGesture.Value, _match, _modes, _modes.LocalPlayer);
             _tutorial = TutorialPlan.Build(signals, _prompt, _profile.Timing);
         }
@@ -54,7 +56,7 @@ namespace PingPong.Tutorial
 
         private void Start()
         {
-            if (_playOnStart)
+            if (_launchPolicy.ShouldPlayOnLaunch(_playOnStart))
             {
                 Play();
             }
@@ -80,6 +82,7 @@ namespace PingPong.Tutorial
 
         private void OpenMenuAfterTutorial()
         {
+            _launchPolicy.RecordCompletion();
             _match.StopMatch();
             _menu.Open();
         }
