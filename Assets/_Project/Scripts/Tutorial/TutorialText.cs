@@ -7,7 +7,7 @@ namespace PingPong.Tutorial
         public const string GrabPaddle = "Press the grab button next to the paddle handle to pick it up";
         public const string GrabPaddleByHand = "Close your hand around the paddle handle to pick it up";
         public const string OpenMenu = "Press the menu button to open the menu";
-        public const string OpenMenuByHand = "Turn your left wrist toward you to open the menu";
+        public const string OpenMenuByHand = "Look at the back of your left wrist, like checking a watch, to open the menu";
         public const string StartGame = "Choose Solo in the menu to start a game";
         public const string StartGameByHand = "Poke Solo in the menu to start a game";
         public const string HitBall = "Serve and hit the ball";

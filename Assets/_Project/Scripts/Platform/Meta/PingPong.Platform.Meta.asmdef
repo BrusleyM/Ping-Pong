@@ -4,7 +4,8 @@
     "references": [
         "PingPong.Core",
         "PingPong.Gameplay",
-        "Oculus.VR"
+        "Oculus.VR",
+        "Oculus.Interaction"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -38,6 +38,7 @@ namespace PingPong.Gameplay
         Vector3 _prevHandPos;
         Vector3 _handVelocity;
         TrackingDebouncer _tracking;
+        bool _heldByHandGrab;
         Hand _returnTo = Hand.None; // set after a tracking-loss release: the hand the paddle goes back to
         float _nextReturnCheck;
         const float ReturnCheckInterval = 0.1f;
@@ -51,7 +52,7 @@ namespace PingPong.Gameplay
         public bool TryGetGripPose(out Pose pose)
         {
             Transform hand = HandTransform(HeldBy);
-            if (hand == null) { pose = default; return false; }
+            if (_heldByHandGrab || hand == null) { pose = default; return false; }
             pose = GripPose(hand);
             return true;
         }
@@ -96,6 +97,7 @@ namespace PingPong.Gameplay
 
         public void FollowHand(float now)
         {
+            if (_heldByHandGrab) return;
             if (HeldBy == Hand.None)
             {
                 WaitForTheControllerToReturn(now);
@@ -137,8 +139,27 @@ namespace PingPong.Gameplay
         /// <summary>Grabs with 'hand' if it's free and in reach; lets go if 'hand' is holding it.</summary>
         public void Toggle(Hand hand)
         {
+            if (_heldByHandGrab) return;
             if (HeldBy == hand) Release();
             else if (HeldBy == Hand.None && InReach(hand)) Grab(hand);
+        }
+
+        public void HandGrabbed(Hand hand)
+        {
+            if (HeldBy != Hand.None) return;
+            _heldByHandGrab = true;
+            _returnTo = Hand.None;
+            HeldBy = hand;
+            enabled = false;
+            HeldByChanged?.Invoke(hand);
+        }
+
+        public void HandReleased()
+        {
+            if (!_heldByHandGrab) return;
+            _heldByHandGrab = false;
+            HeldBy = Hand.None;
+            HeldByChanged?.Invoke(Hand.None);
         }
 
         bool InReach(Hand hand)

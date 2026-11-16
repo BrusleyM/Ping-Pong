@@ -163,6 +163,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8616892775881475973, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5039783484591893503}
+    - targetCorrespondingSourceObject: {fileID: 8616892775881475973, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7512004412558513282}
     - targetCorrespondingSourceObject: {fileID: 7020187288193156180, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2769601768665863888}
@@ -394,6 +397,21 @@ MonoBehaviour:
   _player: 0
   _bounciness: 0.85
   _friction: 0.6
+  _contactGrace: 0.12
+--- !u!114 &7512004412558513282
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4178389820277734470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5e938e9f72764a3e9ed68fc86bc6de6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PingPong.Platform.Meta::PingPong.Platform.Meta.MetaPaddleHandGrab
+  _grabbable: {fileID: 5407226932338113266}
+  _grip: {fileID: 4759419765657888614}
 --- !u!114 &7353783026042077538 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2910494720939637409, guid: e18a42438da584945bcfa3a8bad18b05, type: 3}

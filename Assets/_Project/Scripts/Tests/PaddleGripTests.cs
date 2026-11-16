@@ -88,6 +88,66 @@ namespace PingPong.Tests
             Assert.That(_paddle.GetComponent<Rigidbody>().isKinematic, Is.False);
         }
 
+        [Test]
+        public void A_hand_grab_makes_the_paddle_held_by_that_hand_and_announces_it()
+        {
+            Hand reported = Hand.None;
+            _grip.HeldByChanged += h => reported = h;
+
+            _grip.HandGrabbed(Hand.Left);
+
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Left));
+            Assert.That(reported, Is.EqualTo(Hand.Left));
+        }
+
+        [Test]
+        public void Releasing_a_hand_grab_frees_the_paddle_and_announces_it()
+        {
+            _grip.HandGrabbed(Hand.Left);
+            Hand reported = Hand.Left;
+            _grip.HeldByChanged += h => reported = h;
+
+            _grip.HandReleased();
+
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None));
+            Assert.That(reported, Is.EqualTo(Hand.None));
+        }
+
+        [Test]
+        public void A_hand_grab_leaves_the_paddle_where_the_hand_grab_put_it_instead_of_posing_it_on_the_controller_anchor()
+        {
+            _paddle.transform.position = new Vector3(3f, 1f, 2f);
+            _left.transform.position = Vector3.zero;
+
+            _grip.HandGrabbed(Hand.Left);
+            _grip.FollowHand(1f);
+
+            Assert.That(_paddle.transform.position, Is.EqualTo(new Vector3(3f, 1f, 2f)));
+            Assert.That(_grip.TryGetGripPose(out _), Is.False);
+        }
+
+        [Test]
+        public void Pressing_grab_on_a_controller_does_not_release_a_hand_grab()
+        {
+            _grip.HandGrabbed(Hand.Left);
+
+            _grip.Toggle(Hand.Left);
+
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Left));
+        }
+
+        [Test]
+        public void A_hand_grab_is_ignored_while_a_controller_holds_the_paddle()
+        {
+            _right.transform.position = Handle;
+            _grip.Toggle(Hand.Right);
+
+            _grip.HandGrabbed(Hand.Left);
+            _grip.HandReleased();
+
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Right));
+        }
+
         sealed class FakeCommands : MonoBehaviour, IPlayerCommands
         {
             public bool RightControllerActive = true;
