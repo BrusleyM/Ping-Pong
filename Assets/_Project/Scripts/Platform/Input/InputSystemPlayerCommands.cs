@@ -18,16 +18,7 @@ namespace PingPong.Platform.Input
         public event System.Action<Hand> GrabPerformed;
         public event System.Action MenuPerformed;
 
-        public bool ControllerActive(Hand hand)
-        {
-            UnityEngine.InputSystem.XR.XRController c = hand switch
-            {
-                Hand.Left => UnityEngine.InputSystem.XR.XRController.leftHand,
-                Hand.Right => UnityEngine.InputSystem.XR.XRController.rightHand,
-                _ => null,
-            };
-            return c == null || c.isTracked.isPressed;
-        }
+        public bool ControllerActive(Hand hand) => TrackedControllers.IsActive(hand);
 
         void OnEnable()
         {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PingPong.Gameplay;
 using PingPong.Tutorial;
 
 namespace PingPong.Tests
@@ -26,6 +27,21 @@ namespace PingPong.Tests
         public void Raise() => Raised?.Invoke();
     }
 
+    internal sealed class TestInputMode : IInputModeSource
+    {
+        public InputMode Current { get; private set; } = InputMode.Controllers;
+
+        public int ListenerCount => Changed?.GetInvocationList().Length ?? 0;
+
+        public event Action<InputMode> Changed;
+
+        public void Switch(InputMode mode)
+        {
+            Current = mode;
+            Changed?.Invoke(mode);
+        }
+    }
+
     internal sealed class RecordingCues : ITutorialCues
     {
         public List<string> Journal { get; } = new List<string>();
@@ -45,6 +61,7 @@ namespace PingPong.Tests
             BallHit = new TestSignal();
             PointWon = new TestSignal();
             Cues = new RecordingCues();
+            InputMode = new TestInputMode();
             Signals = new TutorialSignals(PaddleHeld.Condition, MenuOpened.Condition, MatchRunning.Condition, BallHit.Condition, PointWon.Condition);
             Timing = new TutorialTiming(1f, 2f, 3f);
         }
@@ -55,9 +72,10 @@ namespace PingPong.Tests
         public TestSignal BallHit { get; }
         public TestSignal PointWon { get; }
         public RecordingCues Cues { get; }
+        public TestInputMode InputMode { get; }
         public TutorialSignals Signals { get; }
         public TutorialTiming Timing { get; }
 
-        public Framework.Sequencing.SequenceRunner BuildRunner() => TutorialPlan.Build(Signals, Cues, Timing);
+        public Framework.Sequencing.SequenceRunner BuildRunner() => TutorialPlan.Build(Signals, InputMode, Cues, Timing);
     }
 }

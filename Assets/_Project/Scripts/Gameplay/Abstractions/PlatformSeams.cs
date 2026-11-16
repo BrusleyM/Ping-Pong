@@ -21,6 +21,14 @@ namespace PingPong.Gameplay
         event System.Action Performed;
     }
 
+    public enum InputMode { Controllers, Hands }
+
+    public interface IInputModeSource
+    {
+        InputMode Current { get; }
+        event System.Action<InputMode> Changed;
+    }
+
     /// <summary>Vibration on one controller.</summary>
     public interface IHaptics
     {

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Framework.Sequencing;
 using NUnit.Framework;
+using PingPong.Gameplay;
 using PingPong.Tutorial;
 
 namespace PingPong.Tests
@@ -201,6 +202,70 @@ namespace PingPong.Tests
             Assert.AreEqual(3f, profile.Timing.OverviewSeconds);
             Assert.AreEqual(3f, profile.Timing.FinishedSeconds);
             UnityEngine.Object.DestroyImmediate(profile);
+        }
+
+        [Test]
+        public void Starting_in_hands_mode_asks_for_the_paddle_in_the_hand_wording()
+        {
+            var scenario = new TutorialScenario();
+            scenario.InputMode.Switch(InputMode.Hands);
+            var tutorial = scenario.BuildRunner();
+            tutorial.Start();
+            tutorial.Advance(1f);
+            tutorial.Advance(2f);
+
+            Assert.AreEqual($"show {TutorialText.GrabPaddleByHand}", scenario.Cues.Journal[scenario.Cues.Journal.Count - 1]);
+        }
+
+        [Test]
+        public void Switching_to_hands_while_a_prompt_is_showing_replaces_it_with_the_hand_wording()
+        {
+            _tutorial.Start();
+            PlayThroughIntro();
+
+            _scenario.InputMode.Switch(InputMode.Hands);
+
+            Assert.AreEqual($"show {TutorialText.GrabPaddleByHand}", _scenario.Cues.Journal[_scenario.Cues.Journal.Count - 1]);
+        }
+
+        [Test]
+        public void Switching_back_to_controllers_restores_the_controller_wording()
+        {
+            _tutorial.Start();
+            PlayThroughIntro();
+            _scenario.InputMode.Switch(InputMode.Hands);
+
+            _scenario.InputMode.Switch(InputMode.Controllers);
+
+            Assert.AreEqual($"show {TutorialText.GrabPaddle}", _scenario.Cues.Journal[_scenario.Cues.Journal.Count - 1]);
+        }
+
+        [Test]
+        public void Switching_mode_during_a_prompt_that_reads_the_same_in_both_modes_does_not_show_it_again()
+        {
+            _tutorial.Start();
+            var journalLength = _scenario.Cues.Journal.Count;
+
+            _scenario.InputMode.Switch(InputMode.Hands);
+
+            Assert.AreEqual(journalLength, _scenario.Cues.Journal.Count);
+        }
+
+        [Test]
+        public void A_finished_prompt_stops_listening_for_mode_changes()
+        {
+            _tutorial.Start();
+            Assert.AreEqual(1, _scenario.InputMode.ListenerCount);
+
+            PlayThroughIntro();
+            _scenario.PaddleHeld.Raise();
+            _scenario.MenuOpened.Raise();
+            _scenario.MatchRunning.Raise();
+            _scenario.BallHit.Raise();
+            _scenario.PointWon.Raise();
+            _tutorial.Advance(3f);
+
+            Assert.AreEqual(0, _scenario.InputMode.ListenerCount);
         }
     }
 }

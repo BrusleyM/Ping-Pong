@@ -13,6 +13,7 @@ namespace PingPong.Tutorial
         [SerializeField] private PaddleGrip _paddle;
         [SerializeField] private Seam<IPlayerCommands> _commands;
         [SerializeField] private Seam<IMenuGesture> _menuGesture;
+        [SerializeField] private Seam<IInputModeSource> _inputMode;
         [SerializeField] private ModeMenuPresenter _menu;
         [SerializeField] private TutorialPromptView _prompt;
         [SerializeField] private TutorialProfile _profile;
@@ -31,13 +32,14 @@ namespace PingPong.Tutorial
             Validation.Require(_profile, "the tutorial profile", this);
             Validation.Seam(_commands, nameof(_commands), this);
             Validation.Seam(_menuGesture, nameof(_menuGesture), this);
+            Validation.Seam(_inputMode, nameof(_inputMode), this);
         }
 
         private void Awake()
         {
             _task = GetComponent<SequentialTask>();
             var signals = TutorialSignalFactory.Create(_paddle, _commands.Value, _menuGesture.Value, _match, _modes, _modes.LocalPlayer);
-            _tutorial = TutorialPlan.Build(signals, _prompt, _profile.Timing);
+            _tutorial = TutorialPlan.Build(signals, _inputMode.Value, _prompt, _profile.Timing);
         }
 
         private void OnEnable()

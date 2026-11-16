@@ -1,4 +1,5 @@
 using Framework.Sequencing;
+using PingPong.Gameplay;
 
 namespace PingPong.Tutorial
 {
@@ -9,20 +10,20 @@ namespace PingPong.Tutorial
         public const string ControllersStage = "Controllers";
         public const string PlayStage = "Play";
 
-        public static SequenceRunner Build(TutorialSignals signals, ITutorialCues cues, TutorialTiming timing)
+        public static SequenceRunner Build(TutorialSignals signals, IInputModeSource modes, ITutorialCues cues, TutorialTiming timing)
         {
             return Sequence.Named(Name)
                 .Stage(IntroStage, intro => intro
-                    .Then(PromptStep.ForSeconds(TutorialText.Welcome, cues, timing.WelcomeSeconds))
-                    .Then(PromptStep.ForSeconds(TutorialText.Overview, cues, timing.OverviewSeconds)))
+                    .Then(PromptStep.ForSeconds(PromptText.Same(TutorialText.Welcome), modes, cues, timing.WelcomeSeconds))
+                    .Then(PromptStep.ForSeconds(PromptText.Same(TutorialText.Overview), modes, cues, timing.OverviewSeconds)))
                 .Stage(ControllersStage, controllers => controllers
-                    .Then(PromptStep.UntilSatisfied(TutorialText.GrabPaddle, cues, signals.PaddleHeld))
-                    .Then(PromptStep.UntilSatisfied(TutorialText.OpenMenu, cues, signals.MenuOpened)))
+                    .Then(PromptStep.UntilSatisfied(PromptText.Differing(TutorialText.GrabPaddle, TutorialText.GrabPaddleByHand), modes, cues, signals.PaddleHeld))
+                    .Then(PromptStep.UntilSatisfied(PromptText.Differing(TutorialText.OpenMenu, TutorialText.OpenMenuByHand), modes, cues, signals.MenuOpened)))
                 .Stage(PlayStage, play => play
-                    .Then(PromptStep.UntilSatisfied(TutorialText.StartGame, cues, signals.MatchRunning))
-                    .Then(PromptStep.UntilSatisfied(TutorialText.HitBall, cues, signals.BallHit))
-                    .Then(PromptStep.UntilSatisfied(TutorialText.WinPoint, cues, signals.PointWon))
-                    .Then(PromptStep.ForSeconds(TutorialText.Finished, cues, timing.FinishedSeconds)))
+                    .Then(PromptStep.UntilSatisfied(PromptText.Differing(TutorialText.StartGame, TutorialText.StartGameByHand), modes, cues, signals.MatchRunning))
+                    .Then(PromptStep.UntilSatisfied(PromptText.Same(TutorialText.HitBall), modes, cues, signals.BallHit))
+                    .Then(PromptStep.UntilSatisfied(PromptText.Same(TutorialText.WinPoint), modes, cues, signals.PointWon))
+                    .Then(PromptStep.ForSeconds(PromptText.Same(TutorialText.Finished), modes, cues, timing.FinishedSeconds)))
                 .Build();
         }
     }

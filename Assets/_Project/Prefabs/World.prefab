@@ -2877,6 +2877,7 @@ GameObject:
   - component: {fileID: 8287592879108564249}
   - component: {fileID: 8657470686991712975}
   - component: {fileID: 2277396452568720518}
+  - component: {fileID: 4952203545367010743}
   m_Layer: 0
   m_Name: Platform
   m_TagString: Untagged
@@ -2997,6 +2998,52 @@ MonoBehaviour:
       m_Processors: 
       m_Groups: 
       m_Action: Menu
+      m_Flags: 0
+    m_Flags: 0
+--- !u!114 &4952203545367010743
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1968116658720217896}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8689d0507df02490286be4c8fd2d7d9e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PingPong.Platform.Input::PingPong.Platform.Input.InputSystemInputMode
+  _leftTracked:
+    m_Name: Left Controller Tracked
+    m_Type: 1
+    m_ExpectedControlType: 
+    m_Id: e44da770-c98a-4222-ad8c-bd283cd6ff79
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings:
+    - m_Name: 
+      m_Id: c611d746-606f-4ed0-8433-53cb2d121e96
+      m_Path: <XRController>{LeftHand}/isTracked
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Left Controller Tracked
+      m_Flags: 0
+    m_Flags: 0
+  _rightTracked:
+    m_Name: Right Controller Tracked
+    m_Type: 1
+    m_ExpectedControlType: 
+    m_Id: 45d3cca7-6978-46d4-aad3-615c09cf5350
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings:
+    - m_Name: 
+      m_Id: d591b4c2-9ba5-4f00-889e-fe2d4525c3c9
+      m_Path: <XRController>{RightHand}/isTracked
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Right Controller Tracked
       m_Flags: 0
     m_Flags: 0
 --- !u!1 &1978599540908458922
@@ -11896,6 +11943,10 @@ PrefabInstance:
       propertyPath: _commands._component
       value: 
       objectReference: {fileID: 2277396452568720518}
+    - target: {fileID: 9016677468724473304, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
+      propertyPath: _inputMode._component
+      value: 
+      objectReference: {fileID: 4952203545367010743}
     - target: {fileID: 9016677468724473304, guid: 031acf5e2f0d447a0a367e5daadd1e09, type: 3}
       propertyPath: _menuGesture._component
       value: 
