@@ -448,17 +448,28 @@
       },
       "url": "https://packages.unity.com"
     },
-    "com.vishnu.framework": {
-      "version": "https://github.com/BrusleyM/Framework-package.git#v2.0.0",
+    "com.vishnu.framework.core": {
+      "version": "https://github.com/BrusleyM/Framework-core.git#v1.0.0",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.modules.physics": "1.0.0",
+        "com.unity.render-pipelines.universal": "14.0.8"
+      },
+      "hash": "aa83101fef4c70b15ea471293865c670da193854"
+    },
+    "com.vishnu.framework.sequencer": {
+      "version": "https://github.com/BrusleyM/Framework-package.git#v3.0.1",
       "depth": 0,
       "source": "git",
       "dependencies": {
         "com.unity.modules.animation": "1.0.0",
         "com.unity.modules.audio": "1.0.0",
         "com.unity.modules.physics": "1.0.0",
-        "com.unity.render-pipelines.universal": "14.0.8"
+        "com.unity.render-pipelines.universal": "14.0.8",
+        "com.vishnu.framework.core": "1.0.0"
       },
-      "hash": "bd39962c46ea5a0fc0c90f944d0dfaa013617f02"
+      "hash": "91ec5d40b7037ce6f160098394ccfa1d6c0f4a48"
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",
