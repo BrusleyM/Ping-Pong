@@ -20,5 +20,14 @@ namespace PingPong.Tests
             Assert.That(UiTween.Pulse(1f), Is.EqualTo(0f).Within(1e-5f));
             Assert.That(UiTween.Pulse(0.5f), Is.EqualTo(1f).Within(1e-5f));
         }
+    
+        [Test]
+        public void Shake_StartsAndEndsAtRest_AndSwingsBothWaysBetween()
+        {
+            Assert.That(UiTween.Shake(0f, 10f), Is.EqualTo(0f).Within(1e-5f));
+            Assert.That(UiTween.Shake(1f, 10f), Is.EqualTo(0f).Within(1e-5f));
+            Assert.That(UiTween.Shake(0.08f, 10f), Is.GreaterThan(0f));
+            Assert.That(UiTween.Shake(0.25f, 10f), Is.LessThan(0f));
+        }
     }
 }
