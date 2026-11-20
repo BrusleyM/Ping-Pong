@@ -18,13 +18,19 @@ namespace PingPong.Presentation
         private void OnEnable()
         {
             var tracking = _tracking.Value;
+            if (tracking == null)
+            {
+                return;
+            }
+
             tracking.Acquired += _placer.Place;
             tracking.Recentered += _placer.Place;
         }
 
         private void Start()
         {
-            if (_tracking.Value.IsTracked)
+            var tracking = _tracking.Value;
+            if (tracking != null && tracking.IsTracked)
             {
                 _placer.Place();
             }
