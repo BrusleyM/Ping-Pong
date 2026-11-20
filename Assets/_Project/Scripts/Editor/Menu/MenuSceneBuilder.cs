@@ -96,10 +96,8 @@ namespace PingPong.EditorTools
             SetF(placer, "_distanceInFront", 1.2f);
             SetF(placer, "_heightOffset", -0.05f);
             SetEnum(placer, "_facing", (int)PlacementFacing.SameAsViewDirection);
-            SetBool(placer, "_placeOnEnable", false);
-            var waiter = GetOrAdd<PlaceWhenHeadTracked>(canvas.gameObject);
-            Set(waiter, "_placer", placer);
-            Set(waiter, "_eyes", head);
+            SetBool(placer, "_placeOnEnable", true);
+            SetF(placer, "_placeOnEnableDelaySeconds", 0f);
 
             var loader = GetOrAdd<UnitySceneLoader>(GetOrCreate("SceneLoader"));
             var difficulty = canvas.GetComponentInChildren<DifficultyScreenPresenter>(true);
