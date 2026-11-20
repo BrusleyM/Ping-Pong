@@ -5,7 +5,8 @@
         "PingPong.Core",
         "PingPong.Gameplay",
         "Unity.TextMeshPro",
-        "UnityEngine.UI"
+        "UnityEngine.UI",
+        "Framework.Tools"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

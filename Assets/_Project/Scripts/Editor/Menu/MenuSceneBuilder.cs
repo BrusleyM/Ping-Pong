@@ -1,6 +1,9 @@
 using System.Collections.Generic;
+using System.Linq;
+using Framework;
 using PingPong.Core;
 using PingPong.Gameplay;
+using PingPong.Platform.Meta;
 using PingPong.Presentation;
 using TMPro;
 using UnityEditor;
@@ -20,6 +23,7 @@ namespace PingPong.EditorTools
         internal const string MenuPath = "Assets/_Project/Scenes/Menu.unity";
         private const string OldMainPath = "Assets/_Project/Scenes/Main.unity";
         private const float CanvasMetres = 1.5f;
+        private static readonly string[] GameOnlyRoots = { "PauseMenu", "GameStarter", "TeamColouring", "SettingsApplier" };
 
         [MenuItem("Ping Pong/Build Menu Scene")]
         internal static void Build()
@@ -43,22 +47,29 @@ namespace PingPong.EditorTools
             {
                 AssetDatabase.CopyAsset(OldMainPath, MenuPath);
                 AssetDatabase.MoveAsset(OldMainPath, GamePath);
+                return;
             }
-            else if (AssetDatabase.LoadAssetAtPath<SceneAsset>(MenuPath) == null)
+
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(MenuPath) == null)
             {
                 AssetDatabase.CopyAsset(GamePath, MenuPath);
+                return;
             }
-            else
-            {
-                AssetDatabase.DeleteAsset(MenuPath);
-                AssetDatabase.CopyAsset(GamePath, MenuPath);
-            }
+
+            System.IO.File.Copy(GamePath, MenuPath, true);
+            AssetDatabase.ImportAsset(MenuPath, ImportAssetOptions.ForceUpdate);
         }
 
         private static void StripGameplay(Scene scene)
         {
             foreach (var root in scene.GetRootGameObjects())
             {
+                if (GameOnlyRoots.Contains(root.name))
+                {
+                    Object.DestroyImmediate(root);
+                    continue;
+                }
+
                 if (root.name != "World")
                 {
                     continue;
@@ -83,18 +94,23 @@ namespace PingPong.EditorTools
         private static void BuildMenu(Scene scene)
         {
             var head = FindInScene(scene, "CenterEyeAnchor");
-            var root = GetOrCreate("MenuRoot");
-            root.transform.position = new Vector3(0f, 1.5f, 1.2f);
-
             var stage = BuildPreviewStage(out var camera, out var preview);
-            var canvas = BuildCanvas(root.transform);
+            var canvas = BuildCanvas(null);
             var flow = BuildScreens(canvas, camera, preview);
 
             GetOrAdd<SettingsApplier>(GetOrCreate("SettingsApplier"));
 
-            var placer = GetOrAdd<MenuPlacer>(root);
-            Set(placer, "_head", head);
-            Set(placer, "_target", root.transform);
+            var placer = GetOrAdd<EyeHeightPlacer>(canvas.gameObject);
+            Set(placer, "_eyes", head);
+            Set(placer, "_target", canvas);
+            SetF(placer, "_distanceInFront", 1.2f);
+            SetF(placer, "_heightOffset", -0.05f);
+            SetEnum(placer, "_facing", (int)PlacementFacing.SameAsViewDirection);
+            SetBool(placer, "_placeOnEnable", false);
+            var tracking = GetOrAdd<MetaHeadTracking>(GetOrCreate("HeadTracking"));
+            var trigger = GetOrAdd<PlaceOnHeadTracking>(canvas.gameObject);
+            Set(trigger, "_placer", placer);
+            SetSeam(trigger, "_tracking", tracking);
 
             var loader = GetOrAdd<UnitySceneLoader>(GetOrCreate("SceneLoader"));
             var difficulty = canvas.GetComponentInChildren<DifficultyScreenPresenter>(true);
@@ -182,7 +198,7 @@ namespace PingPong.EditorTools
             GetOrAdd<GraphicRaycaster>(canvasObject);
             var rect = (RectTransform)canvasObject.transform;
             rect.sizeDelta = new Vector2(1600f, 900f);
-            rect.localPosition = Vector3.zero;
+            rect.position = new Vector3(0f, 1.5f, 1.2f);
             rect.localRotation = Quaternion.identity;
             rect.localScale = Vector3.one * (CanvasMetres / 1600f);
 
@@ -359,14 +375,14 @@ namespace PingPong.EditorTools
         {
             var panel = Panel(canvas, "Profile");
             var t = panel.transform;
-            Label(t, "Eyebrow", "YOUR PLAYER", 30f, false, Theme.Accent, new Vector2(0f, 340f), new Vector2(900f, 44f));
-            var heading = Label(t, "Title", "Create your player", 76f, true, Color.white, new Vector2(0f, 280f), new Vector2(1100f, 100f));
+            Label(t, "Eyebrow", "YOUR PLAYER", 30f, false, Theme.Accent, new Vector2(0f, 350f), new Vector2(900f, 44f));
+            var heading = Label(t, "Title", "Create your player", 76f, true, Color.white, new Vector2(0f, 290f), new Vector2(1100f, 96f));
             back = BackButton(t, "Cancel");
 
-            var field = Picture(t, "NameField", "ui_text_field", new Vector2(-230f, 180f), new Vector2(760f, 104f));
+            var field = Picture(t, "NameField", "ui_text_field", new Vector2(-230f, 165f), new Vector2(760f, 104f));
             var nickname = Label(field.transform, "Text", "Type your nickname", 52f, true, Theme.Ink, Vector2.zero, new Vector2(720f, 90f));
 
-            var grid = Rect(t, "Keyboard", new Vector2(-230f, 10f), new Vector2(860f, 270f));
+            var grid = Rect(t, "Keyboard", new Vector2(-230f, -62f), new Vector2(860f, 250f));
             var layout = GetOrAdd<GridLayoutGroup>(grid.gameObject);
             layout.cellSize = new Vector2(78f, 78f);
             layout.spacing = new Vector2(8f, 8f);
@@ -384,20 +400,20 @@ namespace PingPong.EditorTools
             var preview3d = GetOrCreate("CharacterImage", t);
             var rawRect = RectOf(preview3d);
             rawRect.anchorMin = rawRect.anchorMax = new Vector2(0.5f, 0.5f);
-            rawRect.anchoredPosition = new Vector2(540f, 60f);
-            rawRect.sizeDelta = new Vector2(300f, 450f);
+            rawRect.anchoredPosition = new Vector2(540f, 30f);
+            rawRect.sizeDelta = new Vector2(280f, 420f);
             rawRect.localScale = Vector3.one;
             var raw = GetOrAdd<RawImage>(preview3d);
             raw.texture = AssetDatabase.LoadAssetAtPath<RenderTexture>(MenuAssetsBuilder.PreviewTexturePath);
             raw.raycastTarget = false;
 
-            var red = Button(t, "TeamRed", "Red", "ui_button_danger", new Vector2(440f, -205f), new Vector2(180f, 76f), 38f, Color.white);
-            var blue = Button(t, "TeamBlue", "Blue", "ui_button_secondary", new Vector2(640f, -205f), new Vector2(180f, 76f), 38f, Color.white);
+            var red = Button(t, "TeamRed", "Red", "ui_button_danger", new Vector2(440f, -230f), new Vector2(180f, 76f), 38f, Color.white);
+            var blue = Button(t, "TeamBlue", "Blue", "ui_button_secondary", new Vector2(640f, -230f), new Vector2(180f, 76f), 38f, Color.white);
             var redRing = Picture(red.transform, "Selected", "ui_ring", Vector2.zero, new Vector2(200f, 96f));
             var blueRing = Picture(blue.transform, "Selected", "ui_ring", Vector2.zero, new Vector2(200f, 96f));
 
-            var save = Button(t, "Save", "Let's go!", "ui_button_primary", new Vector2(-230f, -300f), new Vector2(520f, 110f), 56f, Color.white);
-            var hint = Label(t, "Hint", string.Empty, 32f, false, Theme.Accent, new Vector2(-230f, -380f), new Vector2(700f, 44f));
+            var save = Button(t, "Save", "Let's go!", "ui_button_primary", new Vector2(-230f, -285f), new Vector2(520f, 104f), 56f, Color.white);
+            var hint = Label(t, "Hint", string.Empty, 30f, false, Theme.Accent, new Vector2(-230f, 84f), new Vector2(700f, 40f));
 
             presenter = GetOrAdd<ProfileScreenPresenter>(panel.gameObject);
             Set(presenter, "_keyboard", keyboard);

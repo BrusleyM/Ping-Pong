@@ -10,7 +10,8 @@
         "Oculus.VR",
         "Oculus.VR.Editor",
         "UnityEngine.UI",
-        "Oculus.Interaction"
+        "Oculus.Interaction",
+        "Framework.Tools"
     ],
     "includePlatforms": [
         "Editor"

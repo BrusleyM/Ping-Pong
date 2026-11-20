@@ -9,7 +9,8 @@
         "Framework.Sequencing.Core",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "PingPong.Editor.Build"
+        "PingPong.Editor.Build",
+        "Framework.Tools"
     ],
     "includePlatforms": [
         "Editor"

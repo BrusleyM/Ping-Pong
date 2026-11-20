@@ -21,6 +21,13 @@ namespace PingPong.Gameplay
         event System.Action Performed;
     }
 
+    public interface IHeadTracking
+    {
+        bool IsTracked { get; }
+        event System.Action Acquired;
+        event System.Action Recentered;
+    }
+
     /// <summary>Vibration on one controller.</summary>
     public interface IHaptics
     {
