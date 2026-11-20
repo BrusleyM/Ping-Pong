@@ -84,23 +84,22 @@ namespace PingPong.EditorTools
         private static void BuildMenu(Scene scene)
         {
             var head = FindInScene(scene, "CenterEyeAnchor");
-            var root = GetOrCreate("MenuRoot");
-            root.transform.position = new Vector3(0f, 1.5f, 1.2f);
-
             var stage = BuildPreviewStage(out var camera, out var preview);
-            var canvas = BuildCanvas(root.transform);
+            var canvas = BuildCanvas(null);
             var flow = BuildScreens(canvas, camera, preview);
 
             GetOrAdd<SettingsApplier>(GetOrCreate("SettingsApplier"));
 
-            var placer = GetOrAdd<EyeHeightPlacer>(root);
+            var placer = GetOrAdd<EyeHeightPlacer>(canvas.gameObject);
             Set(placer, "_eyes", head);
-            Set(placer, "_target", root.transform);
+            Set(placer, "_target", canvas);
             SetF(placer, "_distanceInFront", 1.2f);
             SetF(placer, "_heightOffset", -0.05f);
             SetEnum(placer, "_facing", (int)PlacementFacing.SameAsViewDirection);
-            SetBool(placer, "_placeOnEnable", true);
-            SetF(placer, "_placeOnEnableDelaySeconds", 1.5f);
+            SetBool(placer, "_placeOnEnable", false);
+            var waiter = GetOrAdd<PlaceWhenHeadTracked>(canvas.gameObject);
+            Set(waiter, "_placer", placer);
+            Set(waiter, "_eyes", head);
 
             var loader = GetOrAdd<UnitySceneLoader>(GetOrCreate("SceneLoader"));
             var difficulty = canvas.GetComponentInChildren<DifficultyScreenPresenter>(true);
@@ -188,7 +187,7 @@ namespace PingPong.EditorTools
             GetOrAdd<GraphicRaycaster>(canvasObject);
             var rect = (RectTransform)canvasObject.transform;
             rect.sizeDelta = new Vector2(1600f, 900f);
-            rect.localPosition = Vector3.zero;
+            rect.position = new Vector3(0f, 1.5f, 1.2f);
             rect.localRotation = Quaternion.identity;
             rect.localScale = Vector3.one * (CanvasMetres / 1600f);
 
