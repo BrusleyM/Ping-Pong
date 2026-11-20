@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Framework;
 using PingPong.Core;
 using PingPong.Gameplay;
 using PingPong.Presentation;
@@ -92,9 +93,14 @@ namespace PingPong.EditorTools
 
             GetOrAdd<SettingsApplier>(GetOrCreate("SettingsApplier"));
 
-            var placer = GetOrAdd<MenuPlacer>(root);
-            Set(placer, "_head", head);
+            var placer = GetOrAdd<EyeHeightPlacer>(root);
+            Set(placer, "_eyes", head);
             Set(placer, "_target", root.transform);
+            SetF(placer, "_distanceInFront", 1.2f);
+            SetF(placer, "_heightOffset", -0.05f);
+            SetEnum(placer, "_facing", (int)PlacementFacing.SameAsViewDirection);
+            SetBool(placer, "_placeOnEnable", true);
+            SetF(placer, "_placeOnEnableDelaySeconds", 1.5f);
 
             var loader = GetOrAdd<UnitySceneLoader>(GetOrCreate("SceneLoader"));
             var difficulty = canvas.GetComponentInChildren<DifficultyScreenPresenter>(true);

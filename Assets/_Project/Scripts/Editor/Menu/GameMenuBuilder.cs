@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Framework;
 using PingPong.Core;
 using PingPong.Gameplay;
 using PingPong.Presentation;
@@ -145,7 +146,13 @@ namespace PingPong.EditorTools
             Set(presenter, "_modes", modes);
             Set(presenter, "_switcher", switcher);
             Set(presenter, "_root", canvasObject);
-            Set(presenter, "_head", head);
+            var placer = root.AddComponent<EyeHeightPlacer>();
+            Set(placer, "_eyes", head);
+            Set(placer, "_target", root.transform);
+            SetF(placer, "_distanceInFront", 0.75f);
+            SetF(placer, "_heightOffset", -0.05f);
+            SetEnum(placer, "_facing", (int)PlacementFacing.SameAsViewDirection);
+            Set(presenter, "_placer", placer);
             Set(presenter, "_resume", resume);
             Set(presenter, "_restart", restart);
             Set(presenter, "_passthrough", passthrough);

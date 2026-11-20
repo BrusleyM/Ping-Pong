@@ -1,4 +1,5 @@
 using System.Collections;
+using Framework;
 using PingPong.Core;
 using PingPong.Gameplay;
 using TMPro;
@@ -11,7 +12,7 @@ namespace PingPong.Presentation
         [SerializeField] private GameModeController _modes;
         [SerializeField] private MenuScreenSwitcher _switcher;
         [SerializeField] private GameObject _root;
-        [SerializeField] private Transform _head;
+        [SerializeField] private EyeHeightPlacer _placer;
         [SerializeField] private PopButton _resume;
         [SerializeField] private PopButton _restart;
         [SerializeField] private PopButton _passthrough;
@@ -24,8 +25,6 @@ namespace PingPong.Presentation
         [SerializeField] private TMP_Text _resultScore;
         [SerializeField] private ConfirmDialog _confirm;
         [SerializeField] private Seam<ISceneLoader> _loader;
-        [SerializeField, Min(0.3f)] private float _distance = 0.75f;
-        [SerializeField, Min(0f)] private float _belowEyes = 0.05f;
         [SerializeField, Min(0f)] private float _gameOverDelay = 2.5f;
 
         private Coroutine _gameOverOpen;
@@ -81,12 +80,7 @@ namespace PingPong.Presentation
 
         public void Open(MenuScreen screen)
         {
-            if (_head != null)
-            {
-                var pose = HeadPlacement.InFrontOf(_head, _distance, _belowEyes);
-                transform.SetPositionAndRotation(pose.position, pose.rotation);
-            }
-
+            _placer.TryPlace();
             _root.SetActive(true);
             _switcher.Navigator.ResetTo(screen);
             RefreshPassthrough();
