@@ -33,6 +33,7 @@ namespace PingPong.Presentation
 
         private void OnValidate()
         {
+            Validation.Require(_placer, "the eye height placer", this);
             Validation.Seam(_loader, nameof(_loader), this);
         }
 
@@ -80,7 +81,7 @@ namespace PingPong.Presentation
 
         public void Open(MenuScreen screen)
         {
-            _placer.TryPlace();
+            _placer.Place();
             _root.SetActive(true);
             _switcher.Navigator.ResetTo(screen);
             RefreshPassthrough();

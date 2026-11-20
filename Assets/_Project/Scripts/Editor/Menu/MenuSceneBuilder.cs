@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Framework;
 using PingPong.Core;
 using PingPong.Gameplay;
@@ -21,6 +22,7 @@ namespace PingPong.EditorTools
         internal const string MenuPath = "Assets/_Project/Scenes/Menu.unity";
         private const string OldMainPath = "Assets/_Project/Scenes/Main.unity";
         private const float CanvasMetres = 1.5f;
+        private static readonly string[] GameOnlyRoots = { "PauseMenu", "GameStarter", "TeamColouring", "SettingsApplier" };
 
         [MenuItem("Ping Pong/Build Menu Scene")]
         internal static void Build()
@@ -44,22 +46,29 @@ namespace PingPong.EditorTools
             {
                 AssetDatabase.CopyAsset(OldMainPath, MenuPath);
                 AssetDatabase.MoveAsset(OldMainPath, GamePath);
+                return;
             }
-            else if (AssetDatabase.LoadAssetAtPath<SceneAsset>(MenuPath) == null)
+
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(MenuPath) == null)
             {
                 AssetDatabase.CopyAsset(GamePath, MenuPath);
+                return;
             }
-            else
-            {
-                AssetDatabase.DeleteAsset(MenuPath);
-                AssetDatabase.CopyAsset(GamePath, MenuPath);
-            }
+
+            System.IO.File.Copy(GamePath, MenuPath, true);
+            AssetDatabase.ImportAsset(MenuPath, ImportAssetOptions.ForceUpdate);
         }
 
         private static void StripGameplay(Scene scene)
         {
             foreach (var root in scene.GetRootGameObjects())
             {
+                if (GameOnlyRoots.Contains(root.name))
+                {
+                    Object.DestroyImmediate(root);
+                    continue;
+                }
+
                 if (root.name != "World")
                 {
                     continue;
