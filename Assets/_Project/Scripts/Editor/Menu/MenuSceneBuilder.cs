@@ -424,7 +424,7 @@ namespace PingPong.EditorTools
             Set(presenter, "_redSelected", redRing.gameObject);
             Set(presenter, "_blueSelected", blueRing.gameObject);
             Set(presenter, "_save", save);
-            Set(presenter, "_saveLabel", save.GetComponentInChildren<TMP_Text>());
+            Set(presenter, "_saveLabel", save.GetComponentInChildren<TMP_Text>(true));
             Set(presenter, "_heading", heading);
             Set(presenter, "_preview", preview);
             Set(presenter, "_cancelButton", back.gameObject);
@@ -454,7 +454,7 @@ namespace PingPong.EditorTools
             Set(dialog, "_panel", panel);
             Set(dialog, "_title", title);
             Set(dialog, "_body", body);
-            Set(dialog, "_confirmLabel", confirm.GetComponentInChildren<TMP_Text>());
+            Set(dialog, "_confirmLabel", confirm.GetComponentInChildren<TMP_Text>(true));
             Set(dialog, "_confirm", confirm);
             Set(dialog, "_cancel", stay);
             return dialog;
@@ -500,6 +500,7 @@ namespace PingPong.EditorTools
                 var element = array.GetArrayElementAtIndex(i);
                 element.FindPropertyRelative("Screen").enumValueIndex = (int)panels[i].screen;
                 element.FindPropertyRelative("Panel").objectReferenceValue = panels[i].panel;
+                panels[i].panel.gameObject.SetActive(false);
             }
 
             so.ApplyModifiedPropertiesWithoutUndo();
