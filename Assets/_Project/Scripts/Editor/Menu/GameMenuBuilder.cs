@@ -156,7 +156,7 @@ namespace PingPong.EditorTools
             Set(presenter, "_resume", resume);
             Set(presenter, "_restart", restart);
             Set(presenter, "_passthrough", passthrough);
-            Set(presenter, "_passthroughState", passthrough.GetComponentInChildren<TMP_Text>());
+            Set(presenter, "_passthroughState", passthrough.GetComponentInChildren<TMP_Text>(true));
             Set(presenter, "_quitToMenu", quit);
             Set(presenter, "_playAgain", again);
             Set(presenter, "_changeDifficulty", change);
@@ -165,6 +165,7 @@ namespace PingPong.EditorTools
             Set(presenter, "_resultScore", resultScore);
             Set(presenter, "_confirm", confirm);
             SetSeam(presenter, "_loader", loader);
+            canvasObject.SetActive(false);
         }
     }
 }
