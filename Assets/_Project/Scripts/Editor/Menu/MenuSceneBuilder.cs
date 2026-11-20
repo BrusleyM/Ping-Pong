@@ -3,6 +3,7 @@ using System.Linq;
 using Framework;
 using PingPong.Core;
 using PingPong.Gameplay;
+using PingPong.Platform.Meta;
 using PingPong.Presentation;
 using TMPro;
 using UnityEditor;
@@ -105,8 +106,11 @@ namespace PingPong.EditorTools
             SetF(placer, "_distanceInFront", 1.2f);
             SetF(placer, "_heightOffset", -0.05f);
             SetEnum(placer, "_facing", (int)PlacementFacing.SameAsViewDirection);
-            SetBool(placer, "_placeOnEnable", true);
-            SetF(placer, "_placeOnEnableDelaySeconds", 0f);
+            SetBool(placer, "_placeOnEnable", false);
+            var tracking = GetOrAdd<MetaHeadTracking>(GetOrCreate("HeadTracking"));
+            var trigger = GetOrAdd<PlaceOnHeadTracking>(canvas.gameObject);
+            Set(trigger, "_placer", placer);
+            SetSeam(trigger, "_tracking", tracking);
 
             var loader = GetOrAdd<UnitySceneLoader>(GetOrCreate("SceneLoader"));
             var difficulty = canvas.GetComponentInChildren<DifficultyScreenPresenter>(true);
