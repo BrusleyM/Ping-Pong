@@ -69,5 +69,25 @@ namespace PingPong.Tests
 
             Assert.IsNull(_store.Load());
         }
+    
+        [Test]
+        public void A_save_that_was_interrupted_before_the_final_move_is_still_loaded_from_the_temporary_file()
+        {
+            Directory.CreateDirectory(_directory);
+            File.WriteAllText(Path.Combine(_directory, "profile.json.tmp"), UnityEngine.JsonUtility.ToJson(new PlayerProfile("Vishnu", TeamColour.Blue)));
+
+            Assert.AreEqual("Vishnu", _store.Load().Nickname);
+        }
+
+        [Test]
+        public void Clearing_also_removes_a_leftover_temporary_file()
+        {
+            Directory.CreateDirectory(_directory);
+            File.WriteAllText(Path.Combine(_directory, "profile.json.tmp"), "{}");
+
+            _store.Clear();
+
+            Assert.IsFalse(File.Exists(Path.Combine(_directory, "profile.json.tmp")));
+        }
     }
 }

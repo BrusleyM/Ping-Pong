@@ -7,17 +7,20 @@ namespace PingPong.Gameplay
     public sealed class JsonFileStore<T> : IKeyedStore<T> where T : class
     {
         private readonly string _path;
+        private readonly string _temporaryPath;
 
         public JsonFileStore(string directory, string fileName)
         {
             _path = Path.Combine(directory, fileName);
+            _temporaryPath = _path + ".tmp";
         }
 
         public T Load()
         {
             try
             {
-                return File.Exists(_path) ? JsonUtility.FromJson<T>(File.ReadAllText(_path)) : null;
+                var source = File.Exists(_path) ? _path : File.Exists(_temporaryPath) ? _temporaryPath : null;
+                return source != null ? JsonUtility.FromJson<T>(File.ReadAllText(source)) : null;
             }
             catch (Exception)
             {
@@ -28,21 +31,25 @@ namespace PingPong.Gameplay
         public void Save(T value)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_path));
-            var temporary = _path + ".tmp";
-            File.WriteAllText(temporary, JsonUtility.ToJson(value));
+            File.WriteAllText(_temporaryPath, JsonUtility.ToJson(value));
             if (File.Exists(_path))
             {
-                File.Delete(_path);
+                File.Replace(_temporaryPath, _path, null);
             }
-
-            File.Move(temporary, _path);
+            else
+            {
+                File.Move(_temporaryPath, _path);
+            }
         }
 
         public void Clear()
         {
-            if (File.Exists(_path))
+            foreach (var path in new[] { _path, _temporaryPath })
             {
-                File.Delete(_path);
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
             }
         }
     }

@@ -10,7 +10,7 @@ namespace PingPong.Gameplay
         {
             var defaultLevel = _modes.AI != null ? _modes.AI.Level : 0;
             var request = MatchRequests.Resolve(AppServices.PendingMatch, defaultLevel, AppServices.Profile.Current);
-            AppServices.PendingMatch = request;
+            AppServices.PendingMatch = null;
             _modes.StartSolo(request.AiLevel);
         }
     }

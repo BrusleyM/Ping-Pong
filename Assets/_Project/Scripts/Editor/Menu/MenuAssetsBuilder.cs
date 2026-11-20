@@ -25,6 +25,8 @@ namespace PingPong.EditorTools
             Theme = BuildTheme();
             BuildFont("Assets/_Project/Fonts/Fredoka-Bold.ttf", TitleFontPath);
             BuildFont("Assets/_Project/Fonts/Nunito-ExtraBold.ttf", BodyFontPath);
+            KeepGlyphsInBuild(TitleFontPath);
+            KeepGlyphsInBuild(BodyFontPath);
             BuildSprites(Theme);
             BuildPreviewTexture();
             BuildTeamMaterial(RedMaterialPath, Theme.TeamRed);
@@ -74,6 +76,18 @@ namespace PingPong.EditorTools
             characters.Append("…’✓");
             asset.TryAddCharacters(characters.ToString(), out _);
             EditorUtility.SetDirty(asset);
+        }
+
+        private static void KeepGlyphsInBuild(string assetPath)
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath);
+            var serialized = new SerializedObject(asset);
+            var property = serialized.FindProperty("m_ClearDynamicDataOnBuild");
+            if (property != null)
+            {
+                property.boolValue = false;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            }
         }
 
         private static void BuildSprites(UiTheme t)

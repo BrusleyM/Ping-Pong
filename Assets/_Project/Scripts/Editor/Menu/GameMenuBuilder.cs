@@ -37,6 +37,11 @@ namespace PingPong.EditorTools
             var applier = GetOrAdd<SettingsApplier>(GetOrCreate("SettingsApplier"));
             Set(applier, "_paddleGrip", grip);
 
+            var colouring = GetOrAdd<TeamColouring>(GetOrCreate("TeamColouring"));
+            Set(colouring, "_theme", Theme);
+            Set(colouring, "_playerHandle", HandleOf(world, "Player/Paddle"));
+            Set(colouring, "_opponentHandle", HandleOf(world, "Match/AIPaddle"));
+
             var existing = GameObject.Find("PauseMenu");
             if (existing != null)
             {
@@ -46,6 +51,19 @@ namespace PingPong.EditorTools
             BuildPauseMenu(modes, head, loader);
             EditorSceneManager.SaveScene(scene, MenuSceneBuilder.GamePath);
             Debug.Log("Ping Pong: Game menus built.");
+        }
+
+        private static Renderer HandleOf(GameObject world, string paddlePath)
+        {
+            foreach (var renderer in world.transform.Find(paddlePath).GetComponentsInChildren<Renderer>(true))
+            {
+                if (renderer.name == "HandleMesh")
+                {
+                    return renderer;
+                }
+            }
+
+            return null;
         }
 
         private static GameObject FindRoot(Scene scene, string name)
