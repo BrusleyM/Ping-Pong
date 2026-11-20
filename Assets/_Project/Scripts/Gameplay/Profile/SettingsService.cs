@@ -28,16 +28,12 @@ namespace PingPong.Gameplay
 
         private static GameSettings Copy(GameSettings source) => new GameSettings
         {
-            MusicVolume = source.MusicVolume,
             EffectsVolume = source.EffectsVolume,
-            DominantHand = source.DominantHand,
-            ComfortMode = source.ComfortMode,
-            PassthroughOn = source.PassthroughOn
+            DominantHand = source.DominantHand
         };
 
         private static GameSettings Sanitised(GameSettings settings)
         {
-            settings.MusicVolume = Mathf.Clamp01(settings.MusicVolume);
             settings.EffectsVolume = Mathf.Clamp01(settings.EffectsVolume);
             if (settings.DominantHand == Hand.None)
             {

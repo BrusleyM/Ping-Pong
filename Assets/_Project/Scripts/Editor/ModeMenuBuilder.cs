@@ -130,8 +130,8 @@ namespace PingPong.EditorTools
         }
 
         // Meta's "Add Ray / Poke Interaction to Canvas" wizard templates (Interaction SDK quick actions).
-        const string RayCanvasTemplateGuid = "8369d93f7b6b99742bbea0649a41b7b1";
-        const string PokeCanvasTemplateGuid = "4db41829582c7d24f80ee9603868dd67";
+        internal const string RayCanvasTemplateGuid = "8369d93f7b6b99742bbea0649a41b7b1";
+        internal const string PokeCanvasTemplateGuid = "4db41829582c7d24f80ee9603868dd67";
 
         /// <summary>
         /// Makes the canvas pointable and pokeable exactly as Meta's canvas wizard does: its ray and poke
@@ -152,7 +152,7 @@ namespace PingPong.EditorTools
             AddCanvasTemplate(canvas, "ISDK_PokeCanvasInteraction", PokeCanvasTemplateGuid);
         }
 
-        static void AddCanvasTemplate(Canvas canvas, string name, string templateGuid)
+        internal static void AddCanvasTemplate(Canvas canvas, string name, string templateGuid)
         {
             var existing = canvas.transform.Find(name);
             GameObject go;

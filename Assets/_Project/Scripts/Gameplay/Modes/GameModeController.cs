@@ -25,6 +25,8 @@ namespace PingPong.Gameplay
 
         public GameMode Mode { get; private set; } = GameMode.Solo;
         public Side LocalPlayer => _localPlayer;
+        public Side? LastWinner { get; private set; }
+        public int ScoreOf(Side side) => _match.Score(side);
         public AIOpponent AI => _ai;
         public bool PassthroughOn => _passthrough.Value != null && _passthrough.Value.IsOn;
         /// <summary>Online play needs the Fusion network layer, which isn't in the build yet.</summary>
@@ -67,7 +69,11 @@ namespace PingPong.Gameplay
 
         void OnMenuPerformed() => MenuRequested?.Invoke();
 
-        void OnGameWon(Side winner) => GameEnded?.Invoke();
+        void OnGameWon(Side winner)
+        {
+            LastWinner = winner;
+            GameEnded?.Invoke();
+        }
 
         public void StartSolo(int level)
         {

@@ -79,5 +79,29 @@ namespace PingPong.Tests
             Assert.AreEqual(MenuScreen.Main, _navigator.Current);
             Assert.IsFalse(_navigator.CanGoBack);
         }
+    
+        [Test]
+        public void Entering_the_difficulty_screen_keeps_the_whole_way_back_to_the_main_menu()
+        {
+            var navigator = MenuNavigator.Entering(MenuScreen.ChooseDifficulty);
+
+            Assert.AreEqual(MenuScreen.ChooseDifficulty, navigator.Current);
+            navigator.Back();
+            Assert.AreEqual(MenuScreen.ChooseWho, navigator.Current);
+            navigator.Back();
+            Assert.AreEqual(MenuScreen.ChooseWhere, navigator.Current);
+            navigator.Back();
+            Assert.AreEqual(MenuScreen.Main, navigator.Current);
+            Assert.IsFalse(navigator.CanGoBack);
+        }
+
+        [Test]
+        public void Entering_the_main_menu_starts_with_nothing_to_go_back_to()
+        {
+            var navigator = MenuNavigator.Entering(MenuScreen.Main);
+
+            Assert.AreEqual(MenuScreen.Main, navigator.Current);
+            Assert.IsFalse(navigator.CanGoBack);
+        }
     }
 }

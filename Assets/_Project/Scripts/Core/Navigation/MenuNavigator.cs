@@ -12,6 +12,34 @@ namespace PingPong.Core
             _trail.Add(start);
         }
 
+        public static MenuNavigator Entering(MenuScreen target)
+        {
+            var navigator = new MenuNavigator(MenuScreen.Main);
+            foreach (var screen in TrailTo(target))
+            {
+                navigator._trail.Add(screen);
+            }
+
+            return navigator;
+        }
+
+        private static MenuScreen[] TrailTo(MenuScreen target)
+        {
+            switch (target)
+            {
+                case MenuScreen.ChooseWhere:
+                    return new[] { MenuScreen.ChooseWhere };
+                case MenuScreen.ChooseWho:
+                    return new[] { MenuScreen.ChooseWhere, MenuScreen.ChooseWho };
+                case MenuScreen.ChooseDifficulty:
+                    return new[] { MenuScreen.ChooseWhere, MenuScreen.ChooseWho, MenuScreen.ChooseDifficulty };
+                case MenuScreen.Settings:
+                    return new[] { MenuScreen.Settings };
+                default:
+                    return new MenuScreen[0];
+            }
+        }
+
         public MenuScreen Current => _trail[_trail.Count - 1];
 
         public bool CanGoBack => _trail.Count > 1;

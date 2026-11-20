@@ -33,5 +33,11 @@ namespace PingPong.Presentation
 
         /// <summary>0 -> 1 -> 0, peaking mid-way: a quick punch.</summary>
         public static float Pulse(float t) => Mathf.Sin(Mathf.Clamp01(t) * Mathf.PI);
+
+        public static float Shake(float t, float distance, float wiggles = 3f)
+        {
+            var progress = Mathf.Clamp01(t);
+            return Mathf.Sin(progress * Mathf.PI * 2f * wiggles) * (1f - progress) * distance;
+        }
     }
 }

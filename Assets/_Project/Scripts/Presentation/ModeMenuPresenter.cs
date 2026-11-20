@@ -125,8 +125,7 @@ namespace PingPong.Presentation
             if (!_openOnStart) yield break;
             // Head tracking needs more than a frame to deliver the first pose. Opening before that put the menu
             // at the origin, below the floor: wait for a plausible eye height, with a time limit.
-            for (float waited = 0f; _head != null && _head.position.y < _minEyeHeight && waited < _maxHeadWait; waited += Time.unscaledDeltaTime)
-                yield return null;
+            yield return HeadPlacement.WaitForTracking(_head, _minEyeHeight, _maxHeadWait);
             Open();
         }
 
@@ -155,11 +154,8 @@ namespace PingPong.Presentation
         void PlaceInFrontOfHead()
         {
             if (_head == null) return;
-            Vector3 forward = Vector3.ProjectOnPlane(_head.forward, Vector3.up);
-            if (forward.sqrMagnitude < 1e-4f) forward = Vector3.ProjectOnPlane(_head.up, Vector3.up); // looking straight down
-            forward.Normalize();
-            Vector3 position = _head.position + forward * _distance + Vector3.down * _belowEyes;
-            _panel.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, Vector3.up));
+            Pose pose = HeadPlacement.InFrontOf(_head, _distance, _belowEyes);
+            _panel.transform.SetPositionAndRotation(pose.position, pose.rotation);
         }
 
         void Refresh()

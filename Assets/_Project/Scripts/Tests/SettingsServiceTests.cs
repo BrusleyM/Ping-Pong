@@ -19,7 +19,7 @@ namespace PingPong.Tests
         public void Defaults_are_used_when_nothing_was_saved()
         {
             Assert.AreEqual(Hand.Right, _service.Current.DominantHand);
-            Assert.IsFalse(_service.Current.ComfortMode);
+            Assert.AreEqual(1f, _service.Current.EffectsVolume);
         }
 
         [Test]
@@ -35,15 +35,12 @@ namespace PingPong.Tests
         }
 
         [Test]
-        public void Volumes_are_kept_between_zero_and_one()
+        public void The_effects_volume_is_kept_between_zero_and_one()
         {
-            _service.Update(settings =>
-            {
-                settings.MusicVolume = 3f;
-                settings.EffectsVolume = -1f;
-            });
+            _service.Update(settings => settings.EffectsVolume = 3f);
+            Assert.AreEqual(1f, _service.Current.EffectsVolume);
 
-            Assert.AreEqual(1f, _service.Current.MusicVolume);
+            _service.Update(settings => settings.EffectsVolume = -1f);
             Assert.AreEqual(0f, _service.Current.EffectsVolume);
         }
 

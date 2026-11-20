@@ -13,11 +13,14 @@ namespace PingPong.Gameplay
 
         public static MatchRequest? PendingMatch { get; set; }
 
+        public static PingPong.Core.MenuScreen? MenuEntry { get; set; }
+
         public static void Replace(ProfileService profile, SettingsService settings)
         {
             _profile = profile;
             _settings = settings;
             PendingMatch = null;
+            MenuEntry = null;
         }
     }
 }

@@ -7,6 +7,8 @@ namespace PingPong.Core
         ChooseWhere,
         ChooseWho,
         ChooseDifficulty,
-        Settings
+        Settings,
+        Pause,
+        GameOver
     }
 }
