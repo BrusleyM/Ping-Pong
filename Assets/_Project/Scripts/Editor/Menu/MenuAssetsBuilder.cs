@@ -14,8 +14,10 @@ namespace PingPong.EditorTools
         internal const string TitleFontPath = Root + "/Fredoka-Bold SDF.asset";
         internal const string BodyFontPath = Root + "/Nunito-ExtraBold SDF.asset";
         internal const string PreviewTexturePath = Root + "/CharacterPreview.renderTexture";
-        internal const string RedMaterialPath = "Assets/_Project/Art/Character/Materials/PlayerRed.mat";
-        internal const string BlueMaterialPath = "Assets/_Project/Art/Character/Materials/PlayerBlue.mat";
+        internal const string CharacterRoot = "Assets/Models/Character";
+        internal const string CharacterPrefabPath = CharacterRoot + "/Prefabs/Character.prefab";
+        internal const string RedMaterialPath = CharacterRoot + "/Materials/PlayerRed.mat";
+        internal const string BlueMaterialPath = CharacterRoot + "/Materials/PlayerBlue.mat";
 
         internal static UiTheme Theme { get; private set; }
 
@@ -133,7 +135,7 @@ namespace PingPong.EditorTools
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (material == null)
             {
-                AssetDatabase.CopyAsset("Assets/_Project/Art/Character/Materials/Home.mat", path);
+                AssetDatabase.CopyAsset(CharacterRoot + "/Materials/Home.mat", path);
                 material = AssetDatabase.LoadAssetAtPath<Material>(path);
             }
 
