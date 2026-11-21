@@ -15,7 +15,6 @@ namespace PingPong.Gameplay
 
     public enum InputMode { Controllers, Hands }
 
-    /// <summary>Which input the player is using. Exactly one mode is live at a time; Changed is raised once when it flips.</summary>
     public interface IInputMode
     {
         InputMode Current { get; }

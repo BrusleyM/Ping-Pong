@@ -9,30 +9,29 @@ namespace PingPong.Platform.Meta
     {
         [SerializeField, Min(0f)] private float _settleSeconds = 0.2f;
 
-        private TrackingDebouncer _controllersLive;
+        private InputModeTracker _tracker;
 
-        public InputMode Current { get; private set; } = InputMode.Controllers;
+        public InputMode Current => _tracker.ControllersLive ? InputMode.Controllers : InputMode.Hands;
 
         public event Action<InputMode> Changed;
 
         private void Awake()
         {
-            _controllersLive = new TrackingDebouncer(true, _settleSeconds, _settleSeconds);
+            OVRInput.Controller active = OVRInput.GetActiveController();
+            _tracker = new InputModeTracker(AnyHand(active), AnyController(active), _settleSeconds);
         }
 
         private void Update()
         {
             OVRInput.Controller active = OVRInput.GetActiveController();
-            bool handsOnly = (active & OVRInput.Controller.Hands) != 0 && (active & OVRInput.Controller.Touch) == 0;
-            bool controllersLive = _controllersLive.Update(Time.unscaledTime, !handsOnly);
-            InputMode mode = controllersLive ? InputMode.Controllers : InputMode.Hands;
-            if (mode == Current)
+            if (_tracker.Update(Time.unscaledTime, AnyHand(active), AnyController(active)))
             {
-                return;
+                Changed?.Invoke(Current);
             }
-
-            Current = mode;
-            Changed?.Invoke(mode);
         }
+
+        private static bool AnyHand(OVRInput.Controller active) => (active & OVRInput.Controller.Hands) != 0;
+
+        private static bool AnyController(OVRInput.Controller active) => (active & OVRInput.Controller.Touch) != 0;
     }
 }

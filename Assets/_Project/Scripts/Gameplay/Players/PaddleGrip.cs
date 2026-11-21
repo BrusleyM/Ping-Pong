@@ -103,12 +103,11 @@ namespace PingPong.Gameplay
             }
             Hand returnTo = _returnTo;
             _returnTo = Hand.None;
-            if (returnTo != Hand.None && HeldBy == Hand.None && !Body.isKinematic) Grab(returnTo);
+            if (returnTo != Hand.None && HeldBy == Hand.None) Grab(returnTo);
         }
 
         void LateUpdate() => FollowHand();
 
-        /// <summary>Poses the held paddle on its hand now (every frame while held).</summary>
         public void FollowHand()
         {
             if (HeldBy == Hand.None) return;

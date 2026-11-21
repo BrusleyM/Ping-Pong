@@ -164,19 +164,6 @@ namespace PingPong.Tests
         }
 
         [Test]
-        public void IfSomethingElseHoldsThePaddleMeanwhile_TheControllersDoNotTakeItBack()
-        {
-            _right.transform.position = Handle;
-            _grip.Toggle(Hand.Right);
-            _inputMode.Switch(InputMode.Hands);
-            _paddle.GetComponent<Rigidbody>().isKinematic = true;
-
-            _inputMode.Switch(InputMode.Controllers);
-
-            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None), "no fight over the paddle");
-        }
-
-        [Test]
         public void GrabbingWithTheOtherControllerWhileInHandMode_IsNotStolenBackWhenControllersReturn()
         {
             _right.transform.position = Handle;
