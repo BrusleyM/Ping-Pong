@@ -11,8 +11,15 @@ namespace PingPong.Gameplay
         event System.Action<Hand> GrabPerformed;
         /// <summary>The menu button went down.</summary>
         event System.Action MenuPerformed;
-        /// <summary>That hand's controller is tracked, or there is no controller to judge by (keyboard). False once hand tracking takes over.</summary>
-        bool ControllerActive(Hand hand);
+    }
+
+    public enum InputMode { Controllers, Hands }
+
+    /// <summary>Which input the player is using. Exactly one mode is live at a time; Changed is raised once when it flips.</summary>
+    public interface IInputMode
+    {
+        InputMode Current { get; }
+        event System.Action<InputMode> Changed;
     }
 
     /// <summary>A hand gesture that asks for the menu (the hand-tracking counterpart of the controller menu button).</summary>
