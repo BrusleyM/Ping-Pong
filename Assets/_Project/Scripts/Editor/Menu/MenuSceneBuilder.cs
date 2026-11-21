@@ -143,7 +143,7 @@ namespace PingPong.EditorTools
             var character = stage.transform.Find("Character");
             if (character == null)
             {
-                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Art/Character/Prefabs/Character.prefab");
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(MenuAssetsBuilder.CharacterPrefabPath);
                 var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, stage.transform);
                 instance.name = "Character";
                 character = instance.transform;
