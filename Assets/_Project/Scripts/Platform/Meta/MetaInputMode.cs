@@ -9,7 +9,7 @@ namespace PingPong.Platform.Meta
     {
         [SerializeField, Min(0f)] private float _settleSeconds = 0.2f;
 
-        private InputModeTracker _tracker;
+        private InputModeTracker _tracker = new InputModeTracker(false, false, 0.2f);
 
         public InputMode Current => _tracker.ControllersLive ? InputMode.Controllers : InputMode.Hands;
 
