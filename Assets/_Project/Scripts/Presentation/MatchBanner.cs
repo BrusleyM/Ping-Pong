@@ -3,39 +3,43 @@ using PingPong.Core;
 using PingPong.Gameplay;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace PingPong.Presentation
 {
-    /// <summary>
-    /// A banner that pops in for moments that deserve a cue (a point, a let, the game result) and pops out again.
-    /// The game result stays until the next match starts. Static object placed by the setup tool; inactive and
-    /// free while idle. Wording comes from <see cref="MatchText"/>.
-    /// </summary>
     public sealed class MatchBanner : MonoBehaviour
     {
         [SerializeField] MatchController _match;
         [SerializeField] GameModeController _modes;
-        [Tooltip("Everything that pops: the banner's panel and text.")]
+        [SerializeField] UiTheme _theme;
         [SerializeField] Transform _visual;
-        [SerializeField] TMP_Text _text;
+        [SerializeField] Image _fill;
+        [SerializeField] Image _border;
+        [SerializeField] Image _icon;
+        [SerializeField] TMP_Text _title;
+        [SerializeField] TMP_Text _reason;
+        [SerializeField] GameObject _confetti;
+        [Tooltip("One icon per banner kind, in BannerKind order: point won, point lost, let, game won, game lost.")]
+        [SerializeField] Sprite[] _icons;
+        [SerializeField, Range(0.1f, 1f)] float _popFrom = 0.6f;
         [SerializeField, Min(0.05f)] float _popIn = 0.28f;
         [SerializeField, Min(0.05f)] float _popOut = 0.2f;
-        [Tooltip("How long a point message stays, seconds.")]
         [SerializeField, Min(0.1f)] float _hold = 1.4f;
 
         Coroutine _running;
 
         Side Local => _modes != null ? _modes.LocalPlayer : Side.Near;
 
-        string OpponentName => _modes != null
-            ? MatchText.OpponentName(_modes.Mode, _modes.AI != null ? _modes.AI.LevelName : null)
-            : MatchText.OpponentName(GameMode.Online, null);
+        GameMode Mode => _modes != null ? _modes.Mode : GameMode.Online;
+
+        string OpponentName => MatchText.OpponentName(Mode, HudNames.OpponentLevel(_theme, _modes));
 
         void OnValidate()
         {
             Validation.Require(_match, "the Match Controller", this);
+            Validation.Require(_theme, "the UI theme", this);
             Validation.Require(_visual, "the visual root", this);
-            Validation.Require(_text, "the text", this);
+            Validation.Require(_title, "the title", this);
         }
 
         void OnEnable()
@@ -55,16 +59,15 @@ namespace PingPong.Presentation
             if (_modes != null) _modes.MatchStarted -= Hide;
         }
 
-        // The game's last point also fires PointWon; the game result replaces it, so skip that one.
         void OnPointWon(Side winner, PointReason reason)
         {
             if (_match.Phase == MatchPhase.GameOver) return;
-            Show(MatchText.Point(winner, reason, Local, OpponentName), stay: false);
+            Show(BannerKinds.ForPoint(winner, Local), MatchText.PointTitle(winner, Local, Mode), MatchText.Describe(reason));
         }
 
-        void OnGameWon(Side winner) => Show(MatchText.Game(winner, Local, OpponentName), stay: true);
+        void OnGameWon(Side winner) => Show(BannerKinds.ForGame(winner, Local), MatchText.Game(winner, Local, OpponentName), string.Empty);
 
-        void OnLet() => Show(MatchText.Let, stay: false);
+        void OnLet() => Show(BannerKind.Let, MatchText.Let, string.Empty);
 
         void Hide()
         {
@@ -72,12 +75,26 @@ namespace PingPong.Presentation
             _visual.gameObject.SetActive(false);
         }
 
-        void Show(string message, bool stay)
+        void Show(BannerKind kind, string title, string reason)
         {
             Stop();
-            _text.text = message;
+            Dress(kind, title, reason);
             _visual.gameObject.SetActive(true);
-            _running = StartCoroutine(Animate(stay));
+            _running = StartCoroutine(Animate(BannerKinds.StaysOnScreen(kind)));
+        }
+
+        void Dress(BannerKind kind, string title, string reason)
+        {
+            BannerLook look = BannerLooks.For(_theme, kind);
+            _fill.color = look.Fill;
+            _border.color = look.Border;
+            _title.color = look.Text;
+            _reason.color = look.Text;
+            _title.text = title;
+            _reason.text = reason;
+            _reason.gameObject.SetActive(reason.Length > 0);
+            _icon.sprite = _icons[(int)kind];
+            _confetti.SetActive(kind == BannerKind.GameWon);
         }
 
         void Stop()
@@ -89,7 +106,7 @@ namespace PingPong.Presentation
 
         IEnumerator Animate(bool stay)
         {
-            yield return UiTween.Run(_popIn, t => _visual.localScale = Vector3.one * UiTween.EaseOutBack(t));
+            yield return UiTween.Run(_popIn, t => _visual.localScale = Vector3.one * Mathf.LerpUnclamped(_popFrom, 1f, UiTween.EaseOutBack(t)));
             if (stay) { _running = null; yield break; }
             yield return new WaitForSecondsRealtime(_hold);
             yield return UiTween.Run(_popOut, t => _visual.localScale = Vector3.one * (1f - UiTween.EaseInCubic(t)));

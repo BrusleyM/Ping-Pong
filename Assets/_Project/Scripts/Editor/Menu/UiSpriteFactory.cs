@@ -34,7 +34,12 @@ namespace PingPong.EditorTools
 
         internal static Sprite Create(string path, Style style)
         {
-            var texture = Render(style);
+            var border = Mathf.Ceil(style.Radius + style.OutlineWidth);
+            return Import(path, Render(style), new Vector4(border, border + style.Lip, border, border));
+        }
+
+        internal static Sprite Import(string path, Texture2D texture, Vector4 border)
+        {
             var directory = Path.GetDirectoryName(path);
             Directory.CreateDirectory(directory);
             File.WriteAllBytes(path, texture.EncodeToPNG());
@@ -48,9 +53,8 @@ namespace PingPong.EditorTools
             importer.mipmapEnabled = false;
             importer.filterMode = FilterMode.Bilinear;
             importer.textureCompression = TextureImporterCompression.Uncompressed;
-            importer.maxTextureSize = 1024;
-            var border = Mathf.Ceil(style.Radius + style.OutlineWidth);
-            importer.spriteBorder = new Vector4(border, border + style.Lip, border, border);
+            importer.maxTextureSize = 2048;
+            importer.spriteBorder = border;
             importer.SaveAndReimport();
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }

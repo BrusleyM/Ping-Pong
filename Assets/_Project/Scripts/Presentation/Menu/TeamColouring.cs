@@ -13,8 +13,7 @@ namespace PingPong.Presentation
 
         private void Start()
         {
-            var profile = AppServices.Profile.Current;
-            var team = profile != null ? profile.Team : TeamColour.Red;
+            var team = AppServices.LocalTeam;
             Tint(_playerHandle, _theme.ColourOf(team));
             Tint(_opponentHandle, _theme.ColourOf(TeamColours.Opposite(team)));
         }

@@ -3,31 +3,33 @@ using PingPong.Core;
 using PingPong.Gameplay;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace PingPong.Presentation
 {
-    /// <summary>
-    /// The text of a venue-style scoreboard that shows both scores: the local player on the left, the opponent
-    /// on the right, each with its name and a SERVE marker while it serves. The board is a static object placed
-    /// in the scene by the setup tool (this does no positioning). Wording comes from <see cref="MatchText"/>.
-    /// </summary>
     public sealed class MatchScoreboard : MonoBehaviour
     {
         [SerializeField] MatchController _match;
         [SerializeField] GameModeController _modes;
+        [SerializeField] UiTheme _theme;
+        [SerializeField] Image _localFill;
+        [SerializeField] Image _localBorder;
         [SerializeField] TMP_Text _localName;
         [SerializeField] TMP_Text _localScore;
-        [SerializeField] TMP_Text _localServe;
+        [SerializeField] GameObject _localServe;
+        [SerializeField] Image _opponentFill;
+        [SerializeField] Image _opponentBorder;
         [SerializeField] TMP_Text _opponentName;
+        [SerializeField] TMP_Text _opponentLevel;
         [SerializeField] TMP_Text _opponentScore;
-        [SerializeField] TMP_Text _opponentServe;
+        [SerializeField] GameObject _opponentServe;
 
         [Tooltip("How far a score swells when it goes up (1 = no punch).")]
         [SerializeField, Min(1f)] float _punchScale = 1.45f;
         [SerializeField, Min(0.05f)] float _punchSeconds = 0.35f;
 
         int _shownLocal = -1, _shownOpponent = -1;
-        string _shownLocalName, _shownOpponentName;
+        string _shownLocalName, _shownOpponentName, _shownOpponentLevel;
         Coroutine _localPunch, _opponentPunch;
 
         Side Local => _modes != null ? _modes.LocalPlayer : Side.Near;
@@ -35,6 +37,7 @@ namespace PingPong.Presentation
         void OnValidate()
         {
             Validation.Require(_match, "the Match Controller", this);
+            Validation.Require(_theme, "the UI theme", this);
             Validation.Require(_localScore, "the local score text", this);
             Validation.Require(_opponentScore, "the opponent score text", this);
         }
@@ -51,7 +54,25 @@ namespace PingPong.Presentation
             if (_modes != null) _modes.Changed -= Refresh;
         }
 
-        void Start() => Refresh();
+        void Start()
+        {
+            ApplyTeamColours();
+            Refresh();
+        }
+
+        void ApplyTeamColours()
+        {
+            Color local = _theme.ColourOf(AppServices.LocalTeam);
+            Color opponent = _theme.ColourOf(TeamColours.Opposite(AppServices.LocalTeam));
+            Paint(_localFill, _localBorder, local);
+            Paint(_opponentFill, _opponentBorder, opponent);
+        }
+
+        static void Paint(Image fill, Image border, Color colour)
+        {
+            if (fill != null) fill.color = colour;
+            if (border != null) border.color = PlateLooks.BorderOf(colour);
+        }
 
         void Refresh()
         {
@@ -60,6 +81,7 @@ namespace PingPong.Presentation
             int l = _match.Score(local), o = _match.Score(other);
             SetName(_localName, MatchText.BoardName(local, local, mode), ref _shownLocalName);
             SetName(_opponentName, MatchText.BoardName(other, local, mode), ref _shownOpponentName);
+            SetName(_opponentLevel, mode == GameMode.Solo ? HudNames.OpponentLevel(_theme, _modes) : string.Empty, ref _shownOpponentLevel);
             ShowScore(_localScore, l, ref _shownLocal, ref _localPunch);
             ShowScore(_opponentScore, o, ref _shownOpponent, ref _opponentPunch);
             ShowServe(_localServe, local);
@@ -92,11 +114,11 @@ namespace PingPong.Presentation
             t.localScale = Vector3.one;
         }
 
-        void ShowServe(TMP_Text serve, Side side)
+        void ShowServe(GameObject serve, Side side)
         {
             if (serve == null) return;
             bool on = _match.Phase != MatchPhase.FreePlay && _match.Phase != MatchPhase.GameOver && _match.Server == side;
-            if (serve.gameObject.activeSelf != on) serve.gameObject.SetActive(on);
+            if (serve.activeSelf != on) serve.SetActive(on);
         }
     }
 }
