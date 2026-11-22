@@ -15,7 +15,6 @@ namespace PingPong.Tests
 
             public int MenuListenerCount => MenuPerformed?.GetInvocationList().Length ?? 0;
 
-            public bool ControllerActive(Hand hand) => true;
 
             public void PressMenu() => MenuPerformed?.Invoke();
         }

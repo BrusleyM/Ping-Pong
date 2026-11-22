@@ -7,9 +7,10 @@ namespace PingPong.Tests
 {
     public sealed class PaddleGripTests
     {
-        GameObject _paddle, _left, _right, _commandsHost;
+        GameObject _paddle, _left, _right, _commandsHost, _inputModeHost;
         PaddleGrip _grip;
         FakeCommands _commands;
+        FakeInputMode _inputMode;
 
         [SetUp]
         public void SetUp()
@@ -26,11 +27,14 @@ namespace PingPong.Tests
             _right = new GameObject("Right");
             _commandsHost = new GameObject("Commands", typeof(FakeCommands));
             _commands = _commandsHost.GetComponent<FakeCommands>();
+            _inputModeHost = new GameObject("InputMode", typeof(FakeInputMode));
+            _inputMode = _inputModeHost.GetComponent<FakeInputMode>();
             _grip = _paddle.AddComponent<PaddleGrip>();
             Set(_grip, "_model", model);
             Set(_grip, "_leftHand", _left.transform);
             Set(_grip, "_rightHand", _right.transform);
             Set(_grip, "_commands._component", _commands);
+            Set(_grip, "_inputMode._component", _inputMode);
             _paddle.SetActive(true);
             // Edit-mode tests don't run Awake on their own (the component isn't ExecuteAlways): run it as Unity would.
             RunLifecycle("Awake");
@@ -47,6 +51,7 @@ namespace PingPong.Tests
             Object.DestroyImmediate(_left);
             Object.DestroyImmediate(_right);
             Object.DestroyImmediate(_commandsHost);
+            Object.DestroyImmediate(_inputModeHost);
         }
 
         static void Set(Object target, string field, Object value)
@@ -90,98 +95,101 @@ namespace PingPong.Tests
 
         sealed class FakeCommands : MonoBehaviour, IPlayerCommands
         {
-            public bool RightControllerActive = true;
             public event System.Action<Hand> GrabPerformed;
             public event System.Action MenuPerformed;
-            public bool ControllerActive(Hand hand) => hand != Hand.Right || RightControllerActive;
             public void PressGrab(Hand hand) => GrabPerformed?.Invoke(hand);
             public void PressMenu() => MenuPerformed?.Invoke();
             public bool HasGrabListeners => GrabPerformed != null;
         }
 
+        sealed class FakeInputMode : MonoBehaviour, IInputMode
+        {
+            public InputMode Current { get; private set; } = InputMode.Controllers;
+            public event System.Action<InputMode> Changed;
+            public bool HasListeners => Changed != null;
+            public void Switch(InputMode mode) { Current = mode; Changed?.Invoke(mode); }
+        }
+
         [Test]
-        public void LosingTheControllerReleasesThePaddle_AfterTheDebounce_WithoutAFling()
+        public void SwitchingToHandTracking_ReleasesThePaddleWhereItIs_WithoutAFling()
         {
             _right.transform.position = Handle;
             _grip.Toggle(Hand.Right);
             Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Right));
 
-            _commands.RightControllerActive = false; // hand tracking took over
-            _grip.FollowHand(0.00f);
-            _grip.FollowHand(0.10f);
-            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Right), "a short loss is ridden out");
-            _grip.FollowHand(0.25f);
+            _inputMode.Switch(InputMode.Hands);
+
             Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None));
             var body = _paddle.GetComponent<Rigidbody>();
             Assert.That(body.isKinematic, Is.False);
             Assert.That(body.linearVelocity, Is.EqualTo(Vector3.zero));
+            Assert.That(_grip.enabled, Is.False, "idle again: no per-frame work");
         }
 
         [Test]
-        public void AFlickerOfTrackingDoesNotDropThePaddle()
+        public void SwitchingToHandTracking_WhileNotHolding_ChangesNothing()
         {
-            _right.transform.position = Handle;
-            _grip.Toggle(Hand.Right);
-            _commands.RightControllerActive = false;
-            _grip.FollowHand(0.00f);
-            _commands.RightControllerActive = true;
-            _grip.FollowHand(0.05f);
-            _commands.RightControllerActive = false;
-            _grip.FollowHand(0.15f);
-            _grip.FollowHand(0.30f); // only 0.15 s since the last good reading
-            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Right));
-        }
-
-        [Test]
-        public void WhenTheControllerReturns_ThePaddleComesBackToThatHand()
-        {
-            _right.transform.position = Handle;
-            _grip.Toggle(Hand.Right);
-            _commands.RightControllerActive = false;
-            _grip.FollowHand(0f);
-            _grip.FollowHand(0.3f);
+            _inputMode.Switch(InputMode.Hands);
             Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None));
-            Assert.That(_grip.enabled, Is.True, "still watching for the controller");
+            Assert.That(_paddle.GetComponent<Rigidbody>().isKinematic, Is.False);
+        }
 
-            _commands.RightControllerActive = true;
-            _grip.FollowHand(1.0f);
-            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None), "tracked, but not long enough yet");
-            _grip.FollowHand(1.3f);
+        [Test]
+        public void WhenTheControllersReturn_ThePaddleComesBackToTheHandThatHeldIt()
+        {
+            _right.transform.position = Handle;
+            _grip.Toggle(Hand.Right);
+            _inputMode.Switch(InputMode.Hands);
+
+            _inputMode.Switch(InputMode.Controllers);
+
             Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Right));
             Assert.That(_paddle.GetComponent<Rigidbody>().isKinematic, Is.True);
         }
 
         [Test]
-        public void IfSomethingElseHoldsThePaddleMeanwhile_TheControllerDoesNotTakeItBack()
+        public void ThePaddleComesBackOnlyOnce_NotOnEveryLaterSwitch()
         {
             _right.transform.position = Handle;
             _grip.Toggle(Hand.Right);
-            _commands.RightControllerActive = false;
-            _grip.FollowHand(0f);
-            _grip.FollowHand(0.3f);
-            _paddle.GetComponent<Rigidbody>().isKinematic = true; // Meta's hand grab took it
-            _commands.RightControllerActive = true;
-            _grip.FollowHand(1.0f);
-            _grip.FollowHand(1.5f);
-            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None), "no fight over the paddle");
-            Assert.That(_grip.enabled, Is.False, "the wait is over");
+            _inputMode.Switch(InputMode.Hands);
+            _inputMode.Switch(InputMode.Controllers);
+            _grip.Toggle(Hand.Right);
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None));
+
+            _inputMode.Switch(InputMode.Hands);
+            _inputMode.Switch(InputMode.Controllers);
+
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None), "it was let go on purpose");
         }
 
         [Test]
-        public void ManuallyGrabbingWhileWaiting_StopsTheWait()
+        public void GrabbingWithTheOtherControllerWhileInHandMode_IsNotStolenBackWhenControllersReturn()
         {
             _right.transform.position = Handle;
             _grip.Toggle(Hand.Right);
-            _commands.RightControllerActive = false;
-            _grip.FollowHand(0f);
-            _grip.FollowHand(0.3f);
+            _inputMode.Switch(InputMode.Hands);
             _left.transform.position = Handle;
-            _grip.Toggle(Hand.Left); // grabbed with the other controller
+            _grip.Toggle(Hand.Left);
             Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Left));
-            _commands.RightControllerActive = true;
-            _grip.FollowHand(2f);
-            _grip.FollowHand(2.5f);
-            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Left), "the right controller returning does not steal it");
+
+            _inputMode.Switch(InputMode.Controllers);
+
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Left));
+        }
+
+        [Test]
+        public void StartingAMatch_PutsThePaddleInTheHandOnlyWithControllers()
+        {
+            var onMatchStarted = typeof(PaddleGrip).GetMethod("OnMatchStarted", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            _inputMode.Switch(InputMode.Hands);
+
+            onMatchStarted.Invoke(_grip, null);
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.None), "hands: it waits on the table");
+
+            _inputMode.Switch(InputMode.Controllers);
+            onMatchStarted.Invoke(_grip, null);
+            Assert.That(_grip.HeldBy, Is.EqualTo(Hand.Right));
         }
 
         [Test]
@@ -211,6 +219,7 @@ namespace PingPong.Tests
             Assert.That(_commands.HasGrabListeners, Is.True);
             RunLifecycle("OnDestroy"); // edit-mode destruction doesn't call it; run it as Unity would
             Assert.That(_commands.HasGrabListeners, Is.False);
+            Assert.That(_inputMode.HasListeners, Is.False);
         }
     }
 }

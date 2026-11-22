@@ -29,20 +29,17 @@ namespace PingPong.Gameplay
         [Tooltip("Optional: when a match starts, the paddle goes into this hand (None to leave it where it is).")]
         [SerializeField] GameModeController _modes;
         [SerializeField] Hand _handOnMatchStart = Hand.Right;
-        [Tooltip("The controller must read untracked this long before the paddle is let go, seconds.")]
-        [SerializeField, Min(0f)] float _lostAfter = 0.2f;
-        [Tooltip("After tracking loss, the controller must read tracked this long before the paddle comes back to it, seconds.")]
-        [SerializeField, Min(0f)] float _regainAfter = 0.2f;
+        [Tooltip("Which input is live. Hands: the paddle is let go and Meta's hand grab owns it. Controllers: it goes back to the hand that held it.")]
+        [SerializeField] Seam<IInputMode> _inputMode;
 
         Rigidbody _body;
         Vector3 _prevHandPos;
         Vector3 _handVelocity;
-        TrackingDebouncer _tracking;
-        Hand _returnTo = Hand.None; // set after a tracking-loss release: the hand the paddle goes back to
-        float _nextReturnCheck;
-        const float ReturnCheckInterval = 0.1f;
+        Hand _returnTo = Hand.None;
 
         public Hand HeldBy { get; private set; } = Hand.None;
+
+        public bool IsHeldByAnything => HeldBy != Hand.None || Body.isKinematic;
 
         public Hand HandOnMatchStart { get => _handOnMatchStart; set => _handOnMatchStart = value; }
 
@@ -65,6 +62,7 @@ namespace PingPong.Gameplay
         {
             Validation.Require(_model, "the Paddle Model", this);
             Validation.Seam(_commands, nameof(_commands), this);
+            Validation.Seam(_inputMode, nameof(_inputMode), this);
         }
 
         Rigidbody Body => _body != null ? _body : _body = GetComponent<Rigidbody>();
@@ -75,45 +73,46 @@ namespace PingPong.Gameplay
         {
             enabled = false;
             if (_commands.Value != null) _commands.Value.GrabPerformed += Toggle;
+            if (_inputMode.Value != null) _inputMode.Value.Changed += OnInputModeChanged;
             if (_modes != null) _modes.MatchStarted += OnMatchStarted;
         }
 
         void OnDestroy()
         {
             if (_commands.Value != null) _commands.Value.GrabPerformed -= Toggle;
+            if (_inputMode.Value != null) _inputMode.Value.Changed -= OnInputModeChanged;
             if (_modes != null) _modes.MatchStarted -= OnMatchStarted;
         }
+
+        bool UsingControllers => _inputMode.Value == null || _inputMode.Value.Current == InputMode.Controllers;
 
         // Starting a match puts the paddle in the player's hand, so nobody has to find it first.
         void OnMatchStarted()
         {
-            if (HeldBy != Hand.None || HandTransform(_handOnMatchStart) == null || !ControllerActive(_handOnMatchStart)) return;
+            if (HeldBy != Hand.None || HandTransform(_handOnMatchStart) == null || !UsingControllers) return;
             Grab(_handOnMatchStart);
         }
 
-        void LateUpdate() => FollowHand(Time.unscaledTime); // unscaled: a pause must not freeze the debounce
-
-        /// <summary>Poses the held paddle on its hand now (every frame while held), lets go when the controller has lost tracking, and takes the paddle back when it returns.</summary>
-        public void FollowHand() => FollowHand(Time.unscaledTime);
-
-        public void FollowHand(float now)
+        void OnInputModeChanged(InputMode mode)
         {
-            if (HeldBy == Hand.None)
+            if (mode == InputMode.Hands)
             {
-                WaitForTheControllerToReturn(now);
-                return;
-            }
-            // Hand tracking took over (the anchor is stale): after the debounce, let go and wait for the controller to come back.
-            if (!_tracking.Update(now, ControllerActive(HeldBy)))
-            {
+                if (HeldBy == Hand.None) return;
                 Hand lost = HeldBy;
                 Release(withHandMotion: false);
                 _returnTo = lost;
-                _tracking = new TrackingDebouncer(false, _lostAfter, _regainAfter);
-                _nextReturnCheck = now;
-                enabled = true; // keep watching for the return
                 return;
             }
+            Hand returnTo = _returnTo;
+            _returnTo = Hand.None;
+            if (returnTo != Hand.None && HeldBy == Hand.None) Grab(returnTo);
+        }
+
+        void LateUpdate() => FollowHand();
+
+        public void FollowHand()
+        {
+            if (HeldBy == Hand.None) return;
             Transform hand = HandTransform(HeldBy);
             if (!DrivenByPhysics)
             {
@@ -123,18 +122,6 @@ namespace PingPong.Gameplay
             if (Time.deltaTime > 0f) _handVelocity = (hand.position - _prevHandPos) / Time.deltaTime;
             _prevHandPos = hand.position;
         }
-
-        void WaitForTheControllerToReturn(float now)
-        {
-            if (_returnTo == Hand.None) { enabled = false; return; }
-            // Something else picked the paddle up meanwhile (Meta's hand grab holds it kinematic): don't fight it.
-            if (Body.isKinematic) { _returnTo = Hand.None; enabled = false; return; }
-            if (now < _nextReturnCheck) return; // ten checks a second are plenty
-            _nextReturnCheck = now + ReturnCheckInterval;
-            if (_tracking.Update(now, ControllerActive(_returnTo))) Grab(_returnTo); // snaps the paddle back into the hand
-        }
-
-        bool ControllerActive(Hand hand) { IPlayerCommands c = _commands.Value; return c == null || c.ControllerActive(hand); }
 
         /// <summary>Grabs with 'hand' if it's free and in reach; lets go if 'hand' is holding it.</summary>
         public void Toggle(Hand hand)
@@ -165,7 +152,6 @@ namespace PingPong.Gameplay
         {
             HeldBy = hand;
             _returnTo = Hand.None;
-            _tracking = new TrackingDebouncer(true, _lostAfter, _regainAfter);
             enabled = true; // LateUpdate follows the hand while held
             Body.isKinematic = true;
             _prevHandPos = HandTransform(hand).position;
