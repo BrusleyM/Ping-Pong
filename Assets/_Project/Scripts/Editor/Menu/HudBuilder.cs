@@ -166,6 +166,8 @@ namespace PingPong.EditorTools
             var go = GetOrCreate(name, parent);
             var canvas = GetOrAdd<Canvas>(go);
             canvas.renderMode = RenderMode.WorldSpace;
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = HudLayout.DrawOverRoomGlassOrder;
             canvas.additionalShaderChannels = AdditionalCanvasShaderChannels.TexCoord1 | AdditionalCanvasShaderChannels.Normal | AdditionalCanvasShaderChannels.Tangent;
             var rect = (RectTransform)go.transform;
             rect.localPosition = Vector3.zero;
