@@ -1,85 +1,207 @@
-name: Unity VR Android Build and Upload
+name: Unity VR Android Build and Deploy
+
+# Release build: push a commit (or merge a PR whose title) contains [Develop], [Staging] or [Production].
+#   The matching BuildScript method moves the version in ProjectSettings (x.y.z: Develop bumps z,
+#   Staging bumps y and resets z, Production bumps x and resets y and z; every build bumps the bundle
+#   code), builds, uploads to Meta ALPHA, tags vX.Y.Z, and commits ProjectSettings back to the pushed
+#   branch ([skip ci]). The version is the same file locally and in CI: no second source.
+#   Only develop and main release; a keyword pushed to any other branch does nothing. Release runs go
+#   one at a time (one workflow-level queue), build the branch's latest commit, and the bundle code is always above every code
+#   already released (read from the release tags), so Meta never sees a duplicate. The version is
+#   committed back and tagged before the upload: a failed upload only leaves a gap in the codes.
+#   Merge PRs with a merge commit (not squash), so [skip ci] lines and old keywords don't carry over.
+#   Local Build > Develop/Staging/Production also moves the version: commit ProjectSettings after it.
+# main push without a keyword: promote the ALPHA build to BETA, tag vX.Y.Z-beta (no rebuild). The tag
+#   uses main's version, which matches the ALPHA build once develop's version commit is merged to main.
+# PR: check build (compiles, tests, signs) without touching the version.
 
 on:
   push:
-    branches:
-      - main
-      - develop
+    paths-ignore: ['**.md', '.github/workflows/PR_Declined_Cleanup.yml']
   pull_request:
-    branches:
-      - main
-      - develop
+    branches: [main, develop]
+    paths-ignore: ['**.md']
+  # Run a release or promotion by hand (Actions > Run workflow, or: gh workflow run main.yml --ref develop -f kind=Develop).
+  # Needed because a push that changes no files (e.g. merging an empty release PR) never starts a push run
+  # (paths-ignore), and as a way to retry a failed release. Only develop and main release.
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: 'What to run'
+        type: choice
+        options: [Develop, Staging, Production, Promote]
+        default: Develop
 
+# develop/main pushes (releases and promotions) form one queue: a whole run finishes, version commit and
+# tag included, before the next starts. GitHub keeps one *pending* run per group, so a third quick push
+# replaces a second that hasn't started. Superseded PR checks are cancelled.
 concurrency:
-  group: unity-android-build-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && 'release' || format('ci-{0}', github.ref) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: write
 
 jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      kind: ${{ steps.kind.outputs.kind }}
+    steps:
+      - name: Work out what this run does
+        id: kind
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          MESSAGE: ${{ github.event.head_commit.message }}
+          DISPATCH_KIND: ${{ github.event.inputs.kind }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then kind=Check
+          elif [ "$EVENT" = "workflow_dispatch" ]; then
+            kind="$DISPATCH_KIND"
+            if [ "$REF" != "refs/heads/develop" ] && [ "$REF" != "refs/heads/main" ]; then
+              echo "::notice::Manual $kind ignored: only develop and main release."
+              kind=None
+            fi
+          else
+            kind=$(printf '%s' "$MESSAGE" | grep -oiE '\[(develop|staging|production)\]' | head -1 | tr -d '[]' | tr '[:upper:]' '[:lower:]')
+            case "$kind" in
+              develop) kind=Develop ;; staging) kind=Staging ;; production) kind=Production ;;
+              *) if [ "$REF" = "refs/heads/main" ]; then kind=Promote; else kind=None; fi ;;
+            esac
+            case "$kind" in Develop|Staging|Production)
+              if [ "$REF" != "refs/heads/develop" ] && [ "$REF" != "refs/heads/main" ]; then
+                echo "::notice::$kind keyword ignored: only develop and main release."
+                kind=None
+              fi ;;
+            esac
+          fi
+          echo "This run: $kind"
+          echo "kind=$kind" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build Unity Android
+    needs: plan
+    if: needs.plan.outputs.kind != 'None' && needs.plan.outputs.kind != 'Promote'
     runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      checks: write   # unity-test-runner publishes the test results as a check
+    outputs:
+      version: ${{ steps.built.outputs.version }}
+      code: ${{ steps.built.outputs.code }}
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           lfs: true
+          # A release builds the branch's latest commit, which includes the previous release's version commit.
+          ref: ${{ needs.plan.outputs.kind != 'Check' && github.ref_name || '' }}
 
-      - name: Cache Git LFS
-        uses: actions/cache@v4
-        with:
-          path: .git/lfs/objects
-          key: ${{ runner.os }}-lfs-${{ hashFiles('**/Assets/**') }}
+      # Fails the build if any LFS-tracked file was left as pointer text (the checkout fetched the objects but did not
+      # replace the pointers, e.g. an attribute pattern that does not match on Linux): such a build would silently
+      # miss models (the table was missing from the 0.0.9 build this way).
+      - name: Check that LFS files are real files
+        run: |
+          git lfs ls-files --name-only > /tmp/lfs-files.txt
+          echo "LFS files in this checkout: $(wc -l < /tmp/lfs-files.txt)"
+          bad=$(while IFS= read -r f; do if head -c 80 "$f" | grep -q 'git-lfs.github.com/spec'; then echo "$f"; fi; done < /tmp/lfs-files.txt)
+          if [ -n "$bad" ]; then
+            echo "::error::These LFS files are still pointer text, not content (check .gitattributes patterns, they are case-sensitive on Linux):"
+            echo "$bad"
+            exit 1
+          fi
 
-      - name: Cache Unity Library
-        uses: actions/cache@v4
+      - name: Highest code already released
+        id: released
+        run: |
+          git fetch --tags --quiet
+          # Release tags are annotated v* tags whose subject is "<Kind> build X.Y.Z (CODE)".
+          code=$(git for-each-ref 'refs/tags/v*' --format='%(objecttype) %(contents:subject)' | sed -nE 's/^tag .* \(([0-9]+)\)$/\1/p' | sort -n | tail -1)
+          echo "Highest released code: ${code:-none}"
+          echo "code=${code:-0}" >> "$GITHUB_OUTPUT"
+
+      - name: Drop editor-only packages from the manifests
+        run: |
+          package=com.coplaydev.unity-mcp
+          jq --arg p "$package" 'del(.dependencies[$p])' Packages/manifest.json > manifest.tmp && mv manifest.tmp Packages/manifest.json
+          jq --arg p "$package" 'del(.dependencies[$p])' Packages/packages-lock.json > lock.tmp && mv lock.tmp Packages/packages-lock.json
+
+      # One source for the editor version: tests and build run in the same Android image.
+      - name: Read Unity version
+        run: |
+          version=$(sed -n 's/^m_EditorVersion: //p' ProjectSettings/ProjectVersion.txt)
+          if [ -z "$version" ]; then echo "::error::No m_EditorVersion in ProjectSettings/ProjectVersion.txt"; exit 1; fi
+          echo "Unity $version"
+          echo "UNITY_VERSION=$version" >> "$GITHUB_ENV"
+
+      # Restore the newest Library for this Unity version + packages. Only develop pushes save it
+      # (see the end of this job), so PR runs don't fill the 10 GB cache limit and evict it.
+      - name: Restore Unity Library
+        uses: actions/cache/restore@v4
         with:
           path: Library
-          key: Library-Android-${{ hashFiles('Assets/**', 'ProjectSettings/**') }}
+          key: Library-Android-${{ hashFiles('ProjectSettings/ProjectVersion.txt', 'Packages/packages-lock.json') }}-${{ github.sha }}
           restore-keys: |
+            Library-Android-${{ hashFiles('ProjectSettings/ProjectVersion.txt', 'Packages/packages-lock.json') }}-
             Library-Android-
-
-      - name: Cache Gradle packages and build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            ~/.android/build-cache
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle-wrapper.properties', '**/build.gradle') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Ensure build folder
-        run: mkdir -p Builds/Android/
-
-      - name: Apply CI manifests
-        run: |
-          cp Packages/manifest.ci.json Packages/manifest.json
-          cp Packages/packages-lock.ci.json Packages/packages-lock.json
-
-      - name: Set ENV variables
-        run: |
-         if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-          echo "BranchName=${GITHUB_HEAD_REF##*/}" >> $GITHUB_ENV
-          echo "IsPR=true" >> $GITHUB_ENV
-         else
-          echo "BranchName=${GITHUB_REF##*/}" >> $GITHUB_ENV
-          echo "IsPR=false" >> $GITHUB_ENV
-         fi
 
       - name: Free disk space
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
           tool-cache: true
-          android: true
+          android: true   # the Unity image brings its own Android SDK
           dotnet: true
           haskell: true
-          large-packages: true
+          large-packages: false   # slowest step; the others free enough space
           docker-images: true
+
+      # Rules and ball-flight unit tests (PingPong.Tests). Unity sometimes crashes while shutting down
+      # after a successful run (exit 139), so this step may "fail"; the next step decides from the results.
+      - name: Run EditMode tests
+        id: tests
+        continue-on-error: true
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          testMode: editmode
+          # Same image as the build: no second image pull, and no switch away from the Android
+          # build target (the default Linux image re-imports ~2000 assets for StandaloneLinux64).
+          customImage: unityci/editor:ubuntu-${{ env.UNITY_VERSION }}-android-3
+          # Coverage can't be switched off through this action version (its CLI rejects --no-coverageEnabled),
+          # so keep it minimal: only our assemblies, no HTML, badge or extra-metric reports.
+          coverageOptions: 'assemblyFilters:+PingPong.*'
+          artifactsPath: test-results
+          checkName: EditMode test results
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      # Fails the job unless the results file exists, at least one test ran and none failed.
+      - name: Check test results
+        env:
+          RESULTS: test-results/editmode-results.xml
+          RUNNER_OUTCOME: ${{ steps.tests.outcome }}
+        run: |
+          if [ ! -f "$RESULTS" ]; then
+            echo "::error::No test results ($RESULTS); the test runner failed with: $RUNNER_OUTCOME"
+            exit 1
+          fi
+          run=$(grep -m1 -o '<test-run [^>]*>' "$RESULTS")
+          total=$(echo "$run" | sed -n 's/.* total="\([0-9]*\)".*/\1/p')
+          failed=$(echo "$run" | sed -n 's/.* failed="\([0-9]*\)".*/\1/p')
+          echo "EditMode tests: total=${total:-?} failed=${failed:-?} (runner step: $RUNNER_OUTCOME)"
+          if [ -z "$total" ] || [ "$total" -eq 0 ] || [ "${failed:-1}" -ne 0 ]; then
+            echo "::error::EditMode tests failed or did not run."
+            exit 1
+          fi
+          if [ "$RUNNER_OUTCOME" != "success" ]; then
+            echo "::warning::All tests passed, but Unity exited abnormally afterwards (known shutdown crash); continuing."
+          fi
 
       - name: Build Unity Project
         uses: game-ci/unity-builder@v4
@@ -87,55 +209,116 @@ jobs:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          CI: true
         with:
           targetPlatform: Android
-          buildMethod: BuildScript.Execute
+          # Check -> CheckBuild (version untouched); Develop/Staging/Production -> BuildDevelop/...
+          buildMethod: PingPong.EditorTools.Build.BuildScript.${{ needs.plan.outputs.kind == 'Check' && 'CheckBuild' || format('Build{0}', needs.plan.outputs.kind) }}
+          customParameters: ReleasedCode=${{ steps.released.outputs.code }}
           buildsPath: Builds/Android
           allowDirtyBuild: true
-          customParameters: |
-            BranchName=${{ env.BranchName }}
-            IsPR=${{ env.IsPR }}
+          androidKeystoreName: .keystore.keystore
+          androidKeystoreBase64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          androidKeystorePass: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          androidKeyaliasName: ping pong
+          androidKeyaliasPass: ${{ secrets.ANDROID_KEYALIAS_PASS }}
 
-      - name: Upload Unity Build Artifact
+      - name: Read the built version
+        id: built
+        run: |
+          version=$(sed -n 's/^  bundleVersion: //p' ProjectSettings/ProjectSettings.asset)
+          code=$(sed -n 's/^  AndroidBundleVersionCode: //p' ProjectSettings/ProjectSettings.asset)
+          echo "Built $version ($code)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: Unity-Build
-          path: Builds/Android/
+          path: Builds/Android/*.apk
           retention-days: 30
+          if-no-files-found: error
 
-      - name: Commit ProjectSettings.asset
-        if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+      - name: Save Unity Library
+        if: github.event_name != 'pull_request'
+        uses: actions/cache/save@v4
+        with:
+          path: Library
+          key: Library-Android-${{ hashFiles('ProjectSettings/ProjectVersion.txt', 'Packages/packages-lock.json') }}-${{ github.sha }}
+
+  release:
+    name: Deploy to Meta ALPHA
+    needs: [plan, build]
+    if: needs.plan.outputs.kind == 'Develop' || needs.plan.outputs.kind == 'Staging' || needs.plan.outputs.kind == 'Production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+      CODE: ${{ needs.build.outputs.code }}
+      BRANCH: ${{ github.ref_name }}
+    steps:
+      # Checked first: without it the version can't be committed back.
+      - name: Check the push token
         env:
-          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+          TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Add a RELEASE_PUSH_TOKEN secret (a fine-grained token from an admin account, this repo only, Contents: read and write) so CI can commit the version back."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.RELEASE_PUSH_TOKEN }}
+
+      # Saved before the upload, so a code is never uploaded without being recorded. Only the two version
+      # lines are written, into the branch's current file, so other settings changed meanwhile are kept.
+      - name: Commit the version back
+        env:
+          GIT_LFS_SKIP_SMUDGE: "1"   # never download LFS files here: only a text file is edited
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
-          git add ProjectSettings/ProjectSettings.asset
-          git commit -m "Update ProjectSettings.asset from CI version bump" || echo "No changes to commit"
-          git push origin HEAD:${{ github.head_ref }}
+          # Files can show as modified in this checkout (it has no LFS data) and a rebase-pull refuses to run then.
+          # Nothing else is needed from the working tree: point the index at the branch tip (a mixed reset leaves
+          # other files alone) and take only ProjectSettings from it, then write the two version lines.
+          git status --short | head -5 || true
+          pushed=0
+          for _ in 1 2 3; do
+            git fetch --quiet origin "$BRANCH"
+            git reset --quiet "origin/$BRANCH"
+            git checkout --quiet "origin/$BRANCH" -- ProjectSettings/ProjectSettings.asset
+            sed -i -e "s/^  bundleVersion: .*/  bundleVersion: $VERSION/" \
+                   -e "s/^  AndroidBundleVersionCode: .*/  AndroidBundleVersionCode: $CODE/" ProjectSettings/ProjectSettings.asset
+            git add ProjectSettings/ProjectSettings.asset
+            if git diff --cached --quiet; then echo "Version already committed."; pushed=1; break; fi
+            git commit --quiet -m "Version $VERSION ($CODE) [skip ci]"
+            if git push --quiet origin "HEAD:$BRANCH"; then pushed=1; break; fi
+          done
+          if [ "$pushed" != 1 ]; then echo "::error::Could not commit version $VERSION ($CODE) to $BRANCH; not uploading."; exit 1; fi
 
-  upload-meta:
-    if: github.event_name == 'push'
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Tag the release
+        run: |
+          TAG="v$VERSION"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            TAG="v$VERSION+$CODE" # the same name released again (e.g. main and develop): keep the code unique
+          fi
+          git tag -a "$TAG" -m "${{ needs.plan.outputs.kind }} build $VERSION ($CODE)"
+          git push --quiet origin "$TAG"
 
-      - name: Download Unity Build Artifact
-        if: github.ref == 'refs/heads/develop'
+      - name: Download APK
         uses: actions/download-artifact@v4
         with:
           name: Unity-Build
           path: Builds/Android/
 
       - name: Setup ovr-platform-util
-        uses: RageAgainstThePixel/setup-ovr-platform-util@v1
+        uses: RageAgainstThePixel/setup-ovr-platform-util@v2
 
-      - name: Upload Meta Quest Build to ALPHA
-        if: github.ref == 'refs/heads/develop'
+      - name: Upload to ALPHA
         uses: RageAgainstThePixel/upload-meta-quest-build@v2
         with:
           appId: ${{ secrets.META_APP_ID }}
@@ -144,31 +327,65 @@ jobs:
           releaseChannel: 'ALPHA'
           ageGroup: 'MIXED_AGES'
           draft: false
-          releaseNotes: 'Automated CI upload after PR merge'
+          releaseNotes: '${{ needs.plan.outputs.kind }} build ${{ needs.build.outputs.version }} (${{ needs.build.outputs.code }}) from ${{ github.ref_name }} @ ${{ github.sha }}'
 
-      - name: Promote ALPHA build to BETA
-        if: github.ref == 'refs/heads/main'
+  promote:
+    name: Promote ALPHA to BETA
+    needs: plan
+    if: needs.plan.outputs.kind == 'Promote'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the gate below walks history
+
+      # ALPHA holds the last released build. Promote only if this commit contains exactly that build:
+      # the latest release tag must be in this commit's history, and the game content (Assets, Packages,
+      # ProjectSettings) must be unchanged since it. Otherwise a hotfix or revert merged to main, or
+      # develop work that was never released, would silently be promoted as if it were in the build.
+      - name: Check that ALPHA matches this commit
+        run: |
+          git fetch --tags --quiet
+          tag=$(git for-each-ref 'refs/tags/v*' --format='%(objecttype) %(refname:short) %(contents:subject)' \
+                | sed -nE 's/^tag ([^ ]+) .* \(([0-9]+)\)$/\2 \1/p' | sort -n | tail -1 | cut -d' ' -f2)
+          if [ -z "$tag" ]; then echo "::error::No release tag found; nothing on ALPHA came from this pipeline."; exit 1; fi
+          commit=$(git rev-list -n 1 "$tag")
+          if ! git merge-base --is-ancestor "$commit" HEAD; then
+            echo "::error::The latest release ($tag) is not in this commit's history: merge the released develop commit into main first."
+            exit 1
+          fi
+          if ! git diff --quiet "$commit" HEAD -- Assets Packages ProjectSettings; then
+            echo "::error::Game content changed since the latest release ($tag): ALPHA does not contain it. Release it from develop first."
+            git diff --stat "$commit" HEAD -- Assets Packages ProjectSettings | tail -5
+            exit 1
+          fi
+          echo "ALPHA is $tag; this commit has the same game content."
+
+      - name: Setup ovr-platform-util
+        uses: RageAgainstThePixel/setup-ovr-platform-util@v2
+
+      - name: Promote ALPHA to BETA
+        env:
+          META_APP_ID: ${{ secrets.META_APP_ID }}
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
         run: |
           ovr-platform-util set-release-channel-build \
             --age-group MIXED_AGES \
-            --app-id ${{ secrets.META_APP_ID }} \
-            --app-secret ${{ secrets.META_APP_SECRET }} \
+            --app-id "$META_APP_ID" \
+            --app-secret "$META_APP_SECRET" \
             --source-channel ALPHA \
             --destination-channel BETA
 
-      - name: Create Git Tag
-        env:
-          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+      - name: Tag the promotion
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
-          git fetch --tags
-          VERSION=$(grep 'bundleVersion:' ProjectSettings/ProjectSettings.asset | awk '{print $2}')
-          if [ "${GITHUB_REF##*/}" = "main" ]; then
-            TAG="v${VERSION}-beta"
+          TAG="v$(sed -n 's/^  bundleVersion: //p' ProjectSettings/ProjectSettings.asset)-beta.${GITHUB_RUN_NUMBER}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "Tag $TAG already exists; skipping."
           else
-            TAG="v${VERSION}-alpha"
+            git tag -a "$TAG" -m "Promoted to BETA: $TAG"
+            git push --quiet origin "$TAG"
           fi
-          git tag -a "$TAG" -m "Automated CI tag for $TAG"
-          git push origin "$TAG"

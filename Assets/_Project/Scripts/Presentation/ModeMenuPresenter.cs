@@ -1,0 +1,197 @@
+using System.Collections;
+using System.Collections.Generic;
+using PingPong.Gameplay;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace PingPong.Presentation
+{
+    /// <summary>
+    /// The mode menu: solo at each AI level, online, passthrough and restart. Opens in front of the
+    /// player on the menu button (and at launch), closes once a mode is picked. Builds one difficulty
+    /// button per AI level from a template, so the menu follows the AI profile. Wording comes from
+    /// <see cref="MenuText"/>, the title is the product name. How the panel is pointed at (rays, poke) is the
+    /// platform's business: a platform prefab variant adds it. The menu only opens between points.
+    /// </summary>
+    public sealed class ModeMenuPresenter : MonoBehaviour
+    {
+        [SerializeField] GameModeController _modes;
+        [Tooltip("The panel shown and hidden (the world-space canvas).")]
+        [SerializeField] GameObject _panel;
+        [Tooltip("Shows the product name (Player Settings).")]
+        [SerializeField] TMP_Text _title;
+        [Tooltip("The player's head (centre eye); the menu opens in front of it.")]
+        [SerializeField] Transform _head;
+        [Tooltip("Inactive template copied once per AI level, under its parent.")]
+        [SerializeField] Button _levelTemplate;
+        [SerializeField] Button _online;
+        [SerializeField] Button _passthrough;
+        [Tooltip("Optional: switches between scripted and physics paddle hits.")]
+        [SerializeField] Button _hitMode;
+        [SerializeField] Button _restart;
+        [Tooltip("Optional: asks for the tutorial to play again.")]
+        [SerializeField] Button _replayTutorial;
+        [SerializeField] Button _close;
+        [Tooltip("Distance from the head to the panel, metres.")]
+        [SerializeField] float _distance = 0.55f; // within arm's reach, so buttons can be poked as well as pointed at
+        [Tooltip("How far below eye level the panel's centre sits, metres.")]
+        [SerializeField] float _belowEyes = 0f;
+        [Tooltip("At launch the menu waits until the head is at least this high above the floor (tracking has settled), metres.")]
+        [SerializeField, Min(0f)] float _minEyeHeight = 0.6f;
+        [Tooltip("...but never longer than this, seconds (no headset, or tracking lost).")]
+        [SerializeField, Min(0f)] float _maxHeadWait = 3f;
+        [SerializeField] bool _openOnStart = true;
+        [Tooltip("After a game is won, the menu opens this many seconds later so Restart is in reach, seconds.")]
+        [SerializeField, Min(0f)] float _gameOverDelay = 2.5f;
+
+        readonly List<Button> _levels = new List<Button>();
+
+        public bool IsOpen => _panel.activeSelf;
+
+        /// <summary>Raised when the player picks Replay tutorial; the menu has closed by then.</summary>
+        public event System.Action TutorialRequested;
+
+        void OnValidate()
+        {
+            Validation.Require(_modes, "the Game Mode Controller", this);
+            Validation.Require(_panel, "the menu panel", this);
+            Validation.Require(_levelTemplate, "a difficulty button template", this);
+        }
+
+        void Awake()
+        {
+            if (_title != null) _title.text = Application.productName;
+            _levelTemplate.gameObject.SetActive(false);
+            int levelCount = _modes.AI != null ? _modes.AI.LevelCount : 0;
+            for (int i = 0; i < levelCount; i++)
+            {
+                int level = i;
+                Button b = Instantiate(_levelTemplate, _levelTemplate.transform.parent);
+                b.name = $"Level {_modes.AI.NameOf(level)}";
+                b.gameObject.SetActive(true);
+                b.onClick.AddListener(() => Pick(() => _modes.StartSolo(level)));
+                _levels.Add(b);
+            }
+            Bind(_online, null); // no online yet: the button stays disabled
+            Bind(_passthrough, _modes.TogglePassthrough);
+            Bind(_hitMode, _modes.TogglePhysicsHits);
+            Bind(_restart, () => Pick(_modes.Restart));
+            Bind(_replayTutorial, () => Pick(() => TutorialRequested?.Invoke()));
+            Bind(_close, Close);
+        }
+
+        Coroutine _gameOverOpen;
+
+        void OnEnable()
+        {
+            _modes.Changed += Refresh;
+            _modes.MenuRequested += Toggle;
+            _modes.GameEnded += OnGameEnded;
+            _modes.MatchStarted += CancelGameOverOpen;
+        }
+
+        void OnDisable()
+        {
+            _modes.Changed -= Refresh;
+            _modes.MenuRequested -= Toggle;
+            _modes.GameEnded -= OnGameEnded;
+            _modes.MatchStarted -= CancelGameOverOpen;
+        }
+
+        void OnGameEnded()
+        {
+            CancelGameOverOpen();
+            _gameOverOpen = StartCoroutine(OpenAfterGameOver());
+        }
+
+        IEnumerator OpenAfterGameOver()
+        {
+            yield return new WaitForSecondsRealtime(_gameOverDelay);
+            _gameOverOpen = null;
+            if (!IsOpen) Open();
+        }
+
+        void CancelGameOverOpen()
+        {
+            if (_gameOverOpen == null) return;
+            StopCoroutine(_gameOverOpen);
+            _gameOverOpen = null;
+        }
+
+        IEnumerator Start()
+        {
+            Close();
+            if (!_openOnStart) yield break;
+            // Head tracking needs more than a frame to deliver the first pose. Opening before that put the menu
+            // at the origin, below the floor: wait for a plausible eye height, with a time limit.
+            for (float waited = 0f; _head != null && _head.position.y < _minEyeHeight && waited < _maxHeadWait; waited += Time.unscaledDeltaTime)
+                yield return null;
+            Open();
+        }
+
+        /// <summary>The menu button: closes the menu, or opens it at any time so a restart is always reachable.</summary>
+        public void Toggle()
+        {
+            if (IsOpen) Close();
+            else Open();
+        }
+
+        public void Open()
+        {
+            PlaceInFrontOfHead();
+            _panel.SetActive(true);
+            Refresh();
+        }
+
+        public void Close() => _panel.SetActive(false);
+
+        void Pick(System.Action choice)
+        {
+            choice();
+            Close();
+        }
+
+        void PlaceInFrontOfHead()
+        {
+            if (_head == null) return;
+            Pose pose = Framework.EyeHeightPlacement.InFrontOfEyes(_head.position, _head.forward, _distance, -_belowEyes, Framework.PlacementFacing.SameAsViewDirection, _panel.transform.rotation);
+            _panel.transform.SetPositionAndRotation(pose.position, pose.rotation);
+        }
+
+        void Refresh()
+        {
+            if (!IsOpen) return;
+            for (int i = 0; i < _levels.Count; i++) // only built when there is an AI
+                Label(_levels[i], MenuText.Level(_modes.AI.NameOf(i), _modes.Mode == GameMode.Solo && _modes.AI.Level == i));
+            _online.interactable = _modes.OnlineAvailable;
+            Label(_online, MenuText.OnlineButton(_modes.OnlineAvailable));
+            Label(_passthrough, MenuText.Passthrough(_modes.PassthroughOn));
+            Label(_hitMode, MenuText.HitMode(_modes.PhysicsHits));
+            Label(_restart, MenuText.Restart);
+            Label(_replayTutorial, MenuText.ReplayTutorial);
+            Label(_close, MenuText.Close);
+        }
+
+        static void Bind(Button button, UnityEngine.Events.UnityAction action)
+        {
+            if (button == null) return;
+            button.onClick.RemoveAllListeners();
+            if (action != null) button.onClick.AddListener(action);
+        }
+
+        // Each button's label is looked up once, then kept.
+        readonly Dictionary<Button, TMP_Text> _labels = new Dictionary<Button, TMP_Text>();
+
+        void Label(Button button, string text)
+        {
+            if (button == null) return;
+            if (!_labels.TryGetValue(button, out TMP_Text label))
+            {
+                label = button.GetComponentInChildren<TMP_Text>(true);
+                _labels[button] = label;
+            }
+            if (label != null) label.text = text;
+        }
+    }
+}

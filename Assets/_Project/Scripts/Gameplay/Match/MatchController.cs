@@ -1,0 +1,232 @@
+using System;
+using PingPong.Core;
+using UnityEngine;
+
+namespace PingPong.Gameplay
+{
+    /// <summary>
+    /// Scene adapter around <see cref="MatchRulesEngine"/>: feeds it what the ball does, owns the clock
+    /// (rally timeout, pause between points) and places the ball for serves. Only the authority (solo, or
+    /// the network state authority) runs the rules; other peers apply snapshots.
+    /// </summary>
+    public sealed class MatchController : MonoBehaviour
+    {
+        [SerializeField] PingPongBall _ball;
+        [SerializeField] MatchRulesProfile _profile;
+
+        MatchRulesEngine _engine;
+        Countdown _nextServe; // the pause after a point, then the next serve
+
+        /// <summary>The table the ball plays on (the ball owns the reference).</summary>
+        public PingPongTable Table => _ball.Table;
+        public PingPongBall Ball => _ball;
+        public MatchSnapshot Snapshot => Engine.State;
+        public MatchPhase Phase => Engine.State.Phase;
+        public Side Server => Engine.State.Server;
+        public Side LastHitter => Engine.State.LastHitter;
+        public int Score(Side side) => Engine.State.Score(side);
+        /// <summary>Time.time of the last paddle hit (local, not part of the snapshot).</summary>
+        public float LastHitTime { get; private set; }
+        /// <summary>Increments on every paddle hit, so listeners can tell hits apart.</summary>
+        public int HitCount { get; private set; }
+
+        /// <summary>False on network clients: rules run on the state authority only.</summary>
+        public bool IsAuthority
+        {
+            get => _isAuthority;
+            set
+            {
+                _isAuthority = value;
+                SyncWatching();
+                // Only the authority runs the pause. Losing authority drops a pending one, so a stale due time can't
+                // fire later with no pause; becoming the authority in PointOver starts a fresh one.
+                if (!value) CancelPendingServe();
+                else if (Phase == MatchPhase.PointOver && !_nextServe.IsPending) ScheduleNextServe();
+            }
+        }
+
+        bool _isAuthority = true;
+
+        /// <summary>
+        /// Physical paddle contacts: the ball's reaction comes from the physics engine and <see cref="RegisterContact"/> only
+        /// tells the rules about the touch (they judge volleys and double hits). Off: hits are scripted through <see cref="Strike"/>.
+        /// </summary>
+        public bool PhysicalContacts
+        {
+            get => _physicalContacts;
+            set
+            {
+                if (_physicalContacts == value) return;
+                _physicalContacts = value;
+                if (Phase == MatchPhase.WaitingForServe) PlaceServeBall(); // re-hold the ball the right way
+            }
+        }
+
+        bool _physicalContacts;
+        PaddleContactJudge _judge = new PaddleContactJudge(0.12f);
+
+        /// <summary>Seconds after a counted paddle contact during which the same player's further contacts are the same swing.</summary>
+        public float ContactGrace { set => _judge = new PaddleContactJudge(value); }
+
+        public event Action Changed;
+        public event Action<Side, PointReason> PointWon;
+        public event Action<Side> GameWon;
+        /// <summary>A serve touched the net and landed legally: replayed, no point.</summary>
+        public event Action Let;
+        public event Action<Side> PaddleHit;
+
+        MatchRulesEngine Engine => _engine ??= CreateEngine();
+        MatchPacing Pacing => _profile.Pacing;
+
+        MatchRulesEngine CreateEngine()
+        {
+            var engine = new MatchRulesEngine(_profile.Rules);
+            engine.Changed += () => { SyncWatching(); Changed?.Invoke(); };
+            engine.PointAwarded += OnPointAwarded;
+            engine.GameWon += w => GameWon?.Invoke(w);
+            engine.Let += OnLet;
+            return engine;
+        }
+
+        // Update (ball lost, rally timeout, dropped serve, the pause before the next serve) matters only in these
+        // phases, so the component is enabled just then. It listens from Awake to OnDestroy for that reason. The
+        // pause is a timer here, not a coroutine: it survives the object being deactivated and reactivated.
+        void Awake()
+        {
+            _ball.TableBounce += OnTableBounce;
+            _ball.OtherContact += OnOtherContact;
+            SyncWatching();
+        }
+
+        void OnDestroy()
+        {
+            _ball.TableBounce -= OnTableBounce;
+            _ball.OtherContact -= OnOtherContact;
+        }
+
+        void SyncWatching() => enabled = IsAuthority && Phase.NeedsWatching();
+
+        void OnValidate()
+        {
+            Validation.Require(_profile, "a Match Rules Profile", this);
+            Validation.Require(_ball, "the Ball", this);
+        }
+
+        public void StartMatch(Side firstServer)
+        {
+            CancelPendingServe();
+            _judge.Reset();
+            Engine.StartMatch(firstServer);
+            PlaceServeBall();
+        }
+
+        public void StopMatch()
+        {
+            CancelPendingServe();
+            Engine.Stop();
+        }
+
+        public Vector3 ServePosition(Side side)
+        {
+            TableFrame f = Table.Frame;
+            return f.PointOnSide(side, 0f, f.HalfLength + Pacing.ServeBehind, Pacing.ServeHeight);
+        }
+
+        public bool CanHit(Side player) => Engine.CanHit(player);
+
+        /// <summary>
+        /// The one way a player strikes the ball (local paddle, AI, and later the network). On the authority the rules
+        /// judge first: if the player may not hit now (wrong server, point over, game over) nothing happens and it returns
+        /// false. Otherwise it launches the ball from 'from' with 'velocity', raises <see cref="PaddleHit"/> and registers
+        /// the hit. Clients predict the hit locally and follow the authority's snapshots.
+        /// </summary>
+        public bool Strike(Side player, Vector3 from, Vector3 velocity)
+        {
+            if (IsAuthority && !Engine.CanHit(player)) return false;
+            _ball.Launch(from, velocity);
+            LastHitTime = Time.time;
+            HitCount++;
+            PaddleHit?.Invoke(player);
+            if (IsAuthority) Engine.RegisterHit(player, Table.Frame.IsOverTable(from));
+            return true;
+        }
+
+        /// <summary>
+        /// A physical paddle touched the ball (physical contacts only). The physics engine has already moved the ball;
+        /// this lets the rules judge the touch. Only the first contact of a swing counts.
+        /// </summary>
+        public void RegisterContact(Side player, Vector3 at)
+        {
+            // Touches the rules do not care about (point over, game over, the receiver touching the held serve ball) neither
+            // count nor use up the swing's grace.
+            if (!IsAuthority || !Phase.ContactMatters(Server, player) || !_judge.ShouldCount(player, Time.time)) return;
+            LastHitTime = Time.time;
+            HitCount++;
+            PaddleHit?.Invoke(player);
+            Engine.RegisterHit(player, Table.Frame.IsOverTable(at));
+            if (Phase == MatchPhase.Rally) _ball.EndHover(); // a legal serve: let the ball fly with the velocity it was given
+        }
+
+        /// <summary>Network clients mirror the authority's rules state through this; point and game events fire as on the authority.</summary>
+        public void ApplySnapshot(MatchSnapshot snapshot) => Engine.Restore(snapshot);
+
+        void OnTableBounce(Side side)
+        {
+            if (IsAuthority) Engine.RegisterTableBounce(side);
+        }
+
+        void OnOtherContact(BallContact contact)
+        {
+            if (!IsAuthority) return;
+            if (contact == BallContact.Net) { Engine.RegisterNetTouch(); return; }
+            if (Phase == MatchPhase.WaitingForServe) PlaceServeBall(); // dropped while serving
+            else Engine.RegisterBallDead();
+        }
+
+        void Update()
+        {
+            if (!IsAuthority) return;
+            Vector3 local = Table.Frame.ToLocal(_ball.transform.position);
+            switch (Phase)
+            {
+                case MatchPhase.Rally:
+                    bool lost = local.y < Pacing.DeadBelow || local.sqrMagnitude > Pacing.DeadBeyond * Pacing.DeadBeyond;
+                    if (lost || Time.time - LastHitTime > Pacing.RallyTimeout) Engine.RegisterBallDead();
+                    break;
+                case MatchPhase.WaitingForServe when !_ball.Body.isKinematic && local.y < Pacing.ServeResetBelow:
+                    PlaceServeBall(); // a tossed serve fell without being hit
+                    break;
+                case MatchPhase.PointOver when _nextServe.TryFinish(Time.time):
+                    Engine.BeginServe();
+                    PlaceServeBall();
+                    break;
+            }
+        }
+
+        void OnPointAwarded(Side winner, PointReason reason)
+        {
+            PointWon?.Invoke(winner, reason);
+            ScheduleNextServe();
+        }
+
+        void OnLet()
+        {
+            Let?.Invoke();
+            ScheduleNextServe();
+        }
+
+        // The engine's state is final here. Only the authority schedules serves; clients follow snapshots.
+        void ScheduleNextServe()
+        {
+            if (IsAuthority && Phase == MatchPhase.PointOver) _nextServe.Start(Time.time, Pacing.PointPause);
+        }
+
+        void PlaceServeBall()
+        {
+            if (Phase != MatchPhase.WaitingForServe) Engine.BeginServe();
+            _ball.Hold(ServePosition(Server), hover: _physicalContacts);
+        }
+
+        void CancelPendingServe() => _nextServe.Cancel();
+    }
+}

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dfdd9431d638742f888701b288c48c9d, type: 3}
+  m_Name: MatchRules
+  m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.MatchRulesProfile
+  _rules:
+    PointsToWin: 11
+    WinBy: 2
+    ServesPerTurn: 2
+    DeuceServesPerTurn: 1
+  _pacing:
+    PointPause: 1.5
+    RallyTimeout: 4
+    ServeHeight: 0.3
+    ServeBehind: 0.1
+    DeadBelow: -1.2
+    DeadBeyond: 8
+    ServeResetBelow: -0.5

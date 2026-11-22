@@ -1,0 +1,21 @@
+{
+    "name": "PingPong.Tutorial",
+    "rootNamespace": "PingPong.Tutorial",
+    "references": [
+        "PingPong.Core",
+        "PingPong.Gameplay",
+        "PingPong.Presentation",
+        "Framework.Sequencing.Core",
+        "Framework.Sequencing.Unity",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -86,3 +86,31 @@ crashlytics-build.properties
 
 # Ignore HDR environment files
 *.hdr
+# Tracked on purpose: the skybox HDRI.
+!Assets/_Project/Materials/Skybox/*.hdr
+# Secrets: never commit (CI uses GitHub secrets)
+.env
+password.txt
+*.keystore
+*.jks
+
+# Stray build output
+*.log
+TempAssembly.dll
+.DS_Store
+
+# Meta Immersive Debugger DevAgent: holds an access token and LAN address
+Assets/Resources/DevAgentSettings.asset
+Assets/Resources/DevAgentSettings.asset.meta
+
+# Written by the Meta XR SDK when entering play mode
+RuntimeActionBindings.json
+Assets/StreamingAssets/RuntimeActionBindings.json*
+
+# Local build intermediates and Unity recovery (not source)
+/.utmp/
+/Assets/_Recovery/
+/Assets/_Recovery.meta
+
+# JetBrains Rider IDE settings (per developer)
+/.idea/

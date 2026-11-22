@@ -1,0 +1,20 @@
+{
+    "name": "PingPong.Presentation",
+    "rootNamespace": "PingPong.Presentation",
+    "references": [
+        "PingPong.Core",
+        "PingPong.Gameplay",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI",
+        "Framework.Tools"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
