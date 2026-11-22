@@ -39,6 +39,8 @@ namespace PingPong.Gameplay
 
         public Hand HeldBy { get; private set; } = Hand.None;
 
+        public bool IsHeldByAnything => HeldBy != Hand.None || Body.isKinematic;
+
         public Hand HandOnMatchStart { get => _handOnMatchStart; set => _handOnMatchStart = value; }
 
         /// <summary>True with physical paddle contacts: the paddle's Rigidbody follows the hand through MovePosition, so the grip does not set the transform.</summary>

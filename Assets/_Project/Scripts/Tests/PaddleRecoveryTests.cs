@@ -10,6 +10,8 @@ namespace PingPong.Tests
     {
         GameObject _paddle, _table, _floor, _tableLeg;
         PaddleRecovery _recovery;
+        PaddleHitter _hitter;
+        Transform _blade;
         PaddleRecoveryProfile _profile;
         Rigidbody _body;
 
@@ -30,11 +32,12 @@ namespace PingPong.Tests
 
             _paddle = new GameObject("Paddle", typeof(Rigidbody));
             _paddle.SetActive(false);
-            var blade = new GameObject("Blade").transform;
-            blade.SetParent(_paddle.transform, false);
-            blade.localPosition = new Vector3(0f, 0.15f, 0f);
+            _blade = new GameObject("Blade").transform;
+            _blade.SetParent(_paddle.transform, false);
+            _blade.localPosition = new Vector3(0f, 0.15f, 0f);
             var model = _paddle.AddComponent<PaddleModel>();
-            SetObject(model, "_blade", blade);
+            SetObject(model, "_blade", _blade);
+            _hitter = _paddle.AddComponent<PaddleHitter>();
             var grip = _paddle.AddComponent<PaddleGrip>();
             _profile = ScriptableObject.CreateInstance<PaddleRecoveryProfile>();
             _recovery = _paddle.AddComponent<PaddleRecovery>();
@@ -43,6 +46,7 @@ namespace PingPong.Tests
             SetObject(_recovery, "_tableRoot", _table.transform);
             SetObject(_recovery, "_model", model);
             SetObject(_recovery, "_grip", grip);
+            SetObject(_recovery, "_hitter", _hitter);
             _paddle.SetActive(true);
             typeof(PaddleRecovery).GetMethod("Awake", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(_recovery, null);
             _body = _paddle.GetComponent<Rigidbody>();
@@ -100,15 +104,15 @@ namespace PingPong.Tests
         }
 
         [Test]
-        public void ThePaddleStaysWhereItFellUntilTheSettleTimeIsUp()
+        public void DuringTheSettleTime_NothingIsSwitchedOff_SoThePaddleJustLiesThere()
         {
-            Vector3 fell = _body.position;
             _recovery.NoticeContact(_floor.GetComponent<Collider>());
 
             RunFor(_profile.Feel.SettleSeconds - 0.1f);
 
-            Assert.That(_body.position, Is.EqualTo(fell).Using(NearlyEqual.Instance));
             Assert.That(_body.useGravity, Is.True);
+            Assert.That(_body.detectCollisions, Is.True);
+            Assert.That(_hitter.Suspended, Is.False);
         }
 
         [Test]
@@ -120,6 +124,17 @@ namespace PingPong.Tests
 
             Assert.That(_body.useGravity, Is.False);
             Assert.That(_recovery.IsRecovering, Is.True);
+        }
+
+        [Test]
+        public void WhileGliding_ThePaddleCannotScoreAHitOrBumpTheBallOrTheTable()
+        {
+            _recovery.NoticeContact(_floor.GetComponent<Collider>());
+
+            RunFor(_profile.Feel.SettleSeconds + 0.2f);
+
+            Assert.That(_hitter.Suspended, Is.True, "no stroke is judged from the glide");
+            Assert.That(_body.detectCollisions, Is.False, "it passes through the table edge and the ball");
         }
 
         [Test]
@@ -135,6 +150,21 @@ namespace PingPong.Tests
             Assert.That(_body.position.z, Is.LessThan(0f), "the player's end");
             Assert.That(_body.position.y, Is.GreaterThan(0.76f), "above the table surface");
             Assert.That(Mathf.Abs(_body.position.x), Is.LessThan(0.8f), "over the table, not past its side");
+            Assert.That(_hitter.Suspended, Is.False);
+            Assert.That(_body.detectCollisions, Is.True);
+        }
+
+        [Test]
+        public void AfterTheGlide_TheBladeLiesFaceUp_WithTheHandleTowardsThePlayer_ClearOfTheTable()
+        {
+            _recovery.NoticeContact(_floor.GetComponent<Collider>());
+
+            RunFor(_profile.Feel.SettleSeconds + _profile.Feel.GlideSeconds + 0.2f);
+
+            Assert.That(Vector3.Angle(_body.rotation * Vector3.forward, Vector3.up), Is.LessThan(1f), "the blade face points up");
+            Assert.That(Vector3.Angle(_body.rotation * Vector3.up, Vector3.forward), Is.LessThan(1f), "the blade points away from the player, the handle towards them");
+            Vector3 bladeCentre = _body.position + _body.rotation * _blade.localPosition;
+            Assert.That(bladeCentre.y, Is.GreaterThanOrEqualTo(0.76f + 0.006f), "the blade is above the table surface");
         }
 
         [Test]

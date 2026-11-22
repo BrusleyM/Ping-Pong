@@ -569,6 +569,7 @@ MonoBehaviour:
   _tableRoot: {fileID: 0}
   _model: {fileID: 7353783026042077538}
   _grip: {fileID: 4759419765657888614}
+  _hitter: {fileID: 4243428944041099987}
   _trail: {fileID: 4221817450002825831}
   _player: 0
 --- !u!114 &7353783026042077538 stripped

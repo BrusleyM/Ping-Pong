@@ -13,6 +13,7 @@ namespace PingPong.Gameplay
         [SerializeField] Transform _tableRoot;
         [SerializeField] PaddleModel _model;
         [SerializeField] PaddleGrip _grip;
+        [SerializeField] PaddleHitter _hitter;
         [SerializeField] TrailRenderer _trail;
         [SerializeField] Side _player = Side.Near;
 
@@ -31,6 +32,7 @@ namespace PingPong.Gameplay
             Validation.Require(_tableRoot, "the Table Root", this);
             Validation.Require(_model, "the Paddle Model", this);
             Validation.Require(_grip, "the Paddle Grip", this);
+            Validation.Require(_hitter, "the Paddle Hitter", this);
         }
 
         Rigidbody Body => _body != null ? _body : _body = GetComponent<Rigidbody>();
@@ -46,7 +48,7 @@ namespace PingPong.Gameplay
 
         public void NoticeContact(Collider other)
         {
-            if (_phase != Phase.Idle || IsHeld || !_surfaces.IsDeadBallSurface(other)) return;
+            if (_phase != Phase.Idle || _grip.IsHeldByAnything || !_surfaces.IsDeadBallSurface(other)) return;
             _phase = Phase.Settling;
             _phaseElapsed = 0f;
             enabled = true;
@@ -57,7 +59,7 @@ namespace PingPong.Gameplay
         public void Tick(float deltaTime)
         {
             if (_phase == Phase.Idle) return;
-            if (IsHeld) { Stop(); return; }
+            if (_grip.IsHeldByAnything) { Stop(); return; }
             _phaseElapsed += deltaTime;
             if (_phase == Phase.Settling)
             {
@@ -66,8 +68,6 @@ namespace PingPong.Gameplay
             }
             Follow(deltaTime);
         }
-
-        bool IsHeld => Body.isKinematic || _grip.HeldBy != Hand.None;
 
         void BeginGlide()
         {
@@ -79,6 +79,8 @@ namespace PingPong.Gameplay
             _phase = Phase.Gliding;
             _phaseElapsed = 0f;
             Body.useGravity = false;
+            Body.detectCollisions = false;
+            _hitter.Suspended = true;
             if (_trail != null)
             {
                 _trail.Clear();
@@ -91,6 +93,7 @@ namespace PingPong.Gameplay
             if (_path.IsFinished(_phaseElapsed))
             {
                 Body.position = _path.End;
+                Body.rotation = _path.EndRotation;
                 Stop();
                 return;
             }
@@ -105,6 +108,8 @@ namespace PingPong.Gameplay
             _phase = Phase.Idle;
             enabled = false;
             Body.useGravity = true;
+            Body.detectCollisions = true;
+            _hitter.Suspended = false;
             if (wasGliding && !Body.isKinematic)
             {
                 Body.linearVelocity = Vector3.zero;

@@ -23,6 +23,8 @@ namespace PingPong.Core
 
         public Vector3 End => _to;
 
+        public Quaternion EndRotation => _toRotation;
+
         public bool IsFinished(float elapsed) => elapsed >= _duration;
 
         public Vector3 PositionAt(float elapsed)
