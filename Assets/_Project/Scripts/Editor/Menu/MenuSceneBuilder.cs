@@ -23,7 +23,7 @@ namespace PingPong.EditorTools
         internal const string MenuPath = "Assets/_Project/Scenes/Menu.unity";
         private const string OldMainPath = "Assets/_Project/Scenes/Main.unity";
         private const float CanvasMetres = 1.5f;
-        private static readonly string[] GameOnlyRoots = { "PauseMenu", "GameStarter", "TeamColouring", "SettingsApplier" };
+        private static readonly string[] GameOnlyRoots = { GameMenuBuilder.PauseMenuRoot, GameMenuBuilder.PauseMenuCanvasRoot, "GameStarter", "TeamColouring", "SettingsApplier" };
 
         [MenuItem("Ping Pong/Build Menu Scene")]
         internal static void Build()
