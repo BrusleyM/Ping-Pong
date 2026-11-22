@@ -1,3 +1,4 @@
+using PingPong.Presentation;
 using UnityEngine;
 
 namespace PingPong.EditorTools
@@ -19,32 +20,31 @@ namespace PingPong.EditorTools
             "ui_banner_icon_dot",
         };
 
-        private const int IconSize = 144;
+        private const int IconSize = HudLayout.IconSize;
         private const int Samples = 4;
-        private static readonly Color Ink = new Color32(0x23, 0x11, 0x3F, 0xFF);
-        private static readonly Color PlateEdge = new Color32(0x27, 0x13, 0x41, 0xFF);
         private static readonly Color IconRing = new Color32(0xBB, 0xBB, 0xBB, 0xFF);
 
-        internal static void Build()
+        internal static void Build(UiTheme theme)
         {
             var root = MenuAssetsBuilder.Root;
-            UiSpriteFactory.Create($"{root}/{PlateFill}.png", new UiSpriteFactory.Style(566, 340, 44, Color.white, Color.white, 0, 0, Color.clear, 0f));
-            UiSpriteFactory.Create($"{root}/{PlateOutline}.png", new UiSpriteFactory.Style(566, 340, 44, Color.clear, Color.white, 8, 0, Color.clear, 0f));
-            UiSpriteFactory.Create($"{root}/{BannerFill}.png", new UiSpriteFactory.Style(1480, 260, 48, Color.white, Color.white, 0, 0, Color.clear, 0f));
-            UiSpriteFactory.Create($"{root}/{BannerOutline}.png", new UiSpriteFactory.Style(1480, 260, 48, Color.clear, Color.white, 10, 0, Color.clear, 0f));
-            UiSpriteFactory.Create($"{root}/{ServePill}.png", new UiSpriteFactory.Style(170, 52, 22, Color.white, PlateEdge, 4, 5, PlateEdge, 0f));
-            UiSpriteFactory.Import($"{root}/{ScoreNet}.png", RenderNet(), Vector4.zero);
+            const int sliced = HudLayout.SlicedSourceSize;
+            UiSpriteFactory.Create($"{root}/{PlateFill}.png", new UiSpriteFactory.Style(sliced, sliced, HudLayout.PlateRadius, Color.white, Color.white, 0, 0, Color.clear, 0f));
+            UiSpriteFactory.Create($"{root}/{PlateOutline}.png", new UiSpriteFactory.Style(sliced, sliced, HudLayout.PlateRadius, Color.clear, Color.white, HudLayout.PlateEdge, 0, Color.clear, 0f));
+            UiSpriteFactory.Create($"{root}/{BannerFill}.png", new UiSpriteFactory.Style(sliced, sliced, HudLayout.BannerRadius, Color.white, Color.white, 0, 0, Color.clear, 0f));
+            UiSpriteFactory.Create($"{root}/{BannerOutline}.png", new UiSpriteFactory.Style(sliced, sliced, HudLayout.BannerRadius, Color.clear, Color.white, HudLayout.BannerEdge, 0, Color.clear, 0f));
+            UiSpriteFactory.Create($"{root}/{ServePill}.png", new UiSpriteFactory.Style((int)HudLayout.ServePillSize.x, (int)HudLayout.ServePillSize.y, 22, Color.white, theme.Ink, 4, 5, theme.Ink, 0f));
+            UiSpriteFactory.Import($"{root}/{ScoreNet}.png", RenderNet(theme.Ink), Vector4.zero);
             var glyphs = new[] { Star(), Cross(), Zigzag(), Crown(), Dot() };
             for (var i = 0; i < glyphs.Length; i++)
             {
-                UiSpriteFactory.Import($"{root}/{BannerIcons[i]}.png", RenderIcon(glyphs[i]), Vector4.zero);
+                UiSpriteFactory.Import($"{root}/{BannerIcons[i]}.png", RenderIcon(glyphs[i], theme.Ink), Vector4.zero);
             }
         }
 
-        private static Texture2D RenderNet()
+        private static Texture2D RenderNet(Color ink)
         {
-            const int width = 52;
-            const int height = 230;
+            var width = (int)HudLayout.NetSize.x;
+            var height = (int)HudLayout.NetSize.y;
             const int edge = 7;
             var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
             var pixels = new Color[width * height];
@@ -54,7 +54,7 @@ namespace PingPong.EditorTools
                 {
                     var onEdge = x < edge || x >= width - edge || y < edge || y >= height - edge;
                     var stripe = (y - edge) % 18 >= 14;
-                    pixels[y * width + x] = onEdge || stripe ? new Color32(0x24, 0x11, 0x3F, 0xFF) : Color.white;
+                    pixels[y * width + x] = onEdge || stripe ? ink : Color.white;
                 }
             }
 
@@ -63,7 +63,7 @@ namespace PingPong.EditorTools
             return texture;
         }
 
-        private static Texture2D RenderIcon(Vector2[][] glyph)
+        private static Texture2D RenderIcon(Vector2[][] glyph, Color ink)
         {
             var texture = new Texture2D(IconSize, IconSize, TextureFormat.RGBA32, false);
             var pixels = new Color[IconSize * IconSize];
@@ -84,7 +84,7 @@ namespace PingPong.EditorTools
                                 continue;
                             }
 
-                            var colour = radius > innerRadius ? IconRing : Inside(glyph, point) ? Ink : Color.white;
+                            var colour = radius > innerRadius ? IconRing : Inside(glyph, point) ? ink : Color.white;
                             sum += new Vector4(colour.r, colour.g, colour.b, 1f);
                         }
                     }

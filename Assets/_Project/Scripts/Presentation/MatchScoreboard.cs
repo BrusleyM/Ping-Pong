@@ -62,6 +62,7 @@ namespace PingPong.Presentation
 
         void ApplyTeamColours()
         {
+            if (_theme == null) return;
             Color local = _theme.ColourOf(AppServices.LocalTeam);
             Color opponent = _theme.ColourOf(TeamColours.Opposite(AppServices.LocalTeam));
             Paint(_localFill, _localBorder, local);

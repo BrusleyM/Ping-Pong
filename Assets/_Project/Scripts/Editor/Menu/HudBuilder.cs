@@ -16,14 +16,12 @@ namespace PingPong.EditorTools
         private const float BoardMetres = 1.8f;
         private const float BoardPixels = 1200f;
         private const float BannerMetres = 2.4f;
-        private const float BannerPixels = 1480f;
-        private static readonly Vector2 PlateSize = new Vector2(566f, 340f);
 
         [MenuItem("Ping Pong/Build HUD")]
         internal static void Build()
         {
             Theme = AssetDatabase.LoadAssetAtPath<UiTheme>(MenuAssetsBuilder.ThemePath);
-            HudSprites.Build();
+            HudSprites.Build(Theme);
             EditPrefab(ScoreboardPrefabPath, BuildScoreboard);
             EditPrefab(MatchPrefabPath, root => BuildBanner(root.GetComponentInChildren<MatchBanner>(true)));
             AssetDatabase.SaveAssets();
@@ -39,7 +37,7 @@ namespace PingPong.EditorTools
 
             var local = BuildPlate(canvas, "LocalPlate", new Vector2(-310f, 0f), false);
             var opponent = BuildPlate(canvas, "OpponentPlate", new Vector2(310f, 0f), true);
-            var net = Picture(canvas, "Net", null, Vector2.zero, new Vector2(52f, 230f));
+            var net = Picture(canvas, "Net", null, Vector2.zero, HudLayout.NetSize);
             net.sprite = MenuAssetsBuilder.SpriteAt(HudSprites.ScoreNet);
             net.type = Image.Type.Simple;
             Round(canvas, "NetBall", new Vector2(-6f, 138f), 26f, Theme.Accent);
@@ -61,9 +59,9 @@ namespace PingPong.EditorTools
 
         private static (Image fill, Image border, TMP_Text name, TMP_Text level, TMP_Text score, GameObject serve) BuildPlate(Transform canvas, string name, Vector2 position, bool withLevel)
         {
-            var plate = Rect(canvas, name, position, PlateSize);
-            var fill = Picture(plate, "Fill", HudSprites.PlateFill, Vector2.zero, PlateSize);
-            var border = Picture(plate, "Border", HudSprites.PlateOutline, Vector2.zero, PlateSize);
+            var plate = Rect(canvas, name, position, HudLayout.PlateSize);
+            var fill = Picture(plate, "Fill", HudSprites.PlateFill, Vector2.zero, HudLayout.PlateSize);
+            var border = Picture(plate, "Border", HudSprites.PlateOutline, Vector2.zero, HudLayout.PlateSize);
 
             var row = Rect(plate, "NameRow", new Vector2(-283f + 34f + 150f, 121f), new Vector2(300f, 50f));
             var layout = GetOrAdd<HorizontalLayoutGroup>(row.gameObject);
@@ -84,7 +82,7 @@ namespace PingPong.EditorTools
             score.characterSpacing = -6f;
             score.textWrappingMode = TextWrappingModes.NoWrap;
 
-            var serve = Picture(plate, "Serve", HudSprites.ServePill, new Vector2(283f - 34f - 85f, 121f), new Vector2(170f, 52f));
+            var serve = Picture(plate, "Serve", HudSprites.ServePill, new Vector2(283f - 34f - 85f, 121f), HudLayout.ServePillSize);
             Round(serve.transform, "Ball", new Vector2(-52f, 3f), 24f, Color.white);
             Label(serve.transform, "Label", "SERVE", 22f, false, Theme.Ink, new Vector2(14f, 3f), new Vector2(100f, 34f));
             return (fill, border, title, level, score, serve.gameObject);
@@ -93,12 +91,12 @@ namespace PingPong.EditorTools
         private static void BuildBanner(MatchBanner banner)
         {
             Clear(banner.transform);
-            var canvas = WorldCanvas(banner.transform, "Canvas", new Vector2(1600f, 300f), BannerMetres / BannerPixels);
-            var visual = Rect(canvas, "Visual", Vector2.zero, new Vector2(BannerPixels, 260f));
-            var fill = Picture(visual, "Fill", HudSprites.BannerFill, Vector2.zero, new Vector2(BannerPixels, 260f));
-            var border = Picture(visual, "Border", HudSprites.BannerOutline, Vector2.zero, new Vector2(BannerPixels, 260f));
+            var canvas = WorldCanvas(banner.transform, "Canvas", new Vector2(1600f, 300f), BannerMetres / HudLayout.BannerSize.x);
+            var visual = Rect(canvas, "Visual", Vector2.zero, HudLayout.BannerSize);
+            var fill = Picture(visual, "Fill", HudSprites.BannerFill, Vector2.zero, HudLayout.BannerSize);
+            var border = Picture(visual, "Border", HudSprites.BannerOutline, Vector2.zero, HudLayout.BannerSize);
 
-            var group = Rect(visual, "Group", Vector2.zero, new Vector2(BannerPixels, 260f));
+            var group = Rect(visual, "Group", Vector2.zero, HudLayout.BannerSize);
             var horizontal = GetOrAdd<HorizontalLayoutGroup>(group.gameObject);
             horizontal.childAlignment = TextAnchor.MiddleCenter;
             horizontal.spacing = 40f;
@@ -106,11 +104,11 @@ namespace PingPong.EditorTools
             horizontal.childControlWidth = horizontal.childControlHeight = true;
             horizontal.childForceExpandWidth = horizontal.childForceExpandHeight = false;
 
-            var icon = Picture(group, "Icon", null, Vector2.zero, new Vector2(144f, 144f));
+            var icon = Picture(group, "Icon", null, Vector2.zero, new Vector2(HudLayout.IconSize, HudLayout.IconSize));
             icon.type = Image.Type.Simple;
             icon.preserveAspect = true;
             var iconSize = GetOrAdd<LayoutElement>(icon.gameObject);
-            iconSize.preferredWidth = iconSize.preferredHeight = 144f;
+            iconSize.preferredWidth = iconSize.preferredHeight = HudLayout.IconSize;
 
             var copy = Rect(group, "Copy", Vector2.zero, new Vector2(400f, 160f));
             var vertical = GetOrAdd<VerticalLayoutGroup>(copy.gameObject);
@@ -123,13 +121,18 @@ namespace PingPong.EditorTools
             var reason = Label(copy, "Reason", "not returned", 48f, false, Theme.Ink, Vector2.zero, new Vector2(400f, 52f), TextAlignmentOptions.Left);
             reason.textWrappingMode = TextWrappingModes.NoWrap;
 
-            var confetti = Rect(visual, "Confetti", Vector2.zero, new Vector2(BannerPixels, 260f));
+            var confetti = Rect(visual, "Confetti", Vector2.zero, HudLayout.BannerSize);
             Dot(confetti, "Dot1", new Vector2(-690f, 90f), 28f, Theme.Primary);
             Dot(confetti, "Dot2", new Vector2(-560f, -95f), 22f, Theme.Secondary);
             Dot(confetti, "Dot3", new Vector2(660f, 95f), 30f, new Color32(0xFF, 0x75, 0x3D, 0xFF));
             Dot(confetti, "Dot4", new Vector2(540f, -100f), 24f, Theme.Primary);
             Dot(confetti, "Dot5", new Vector2(-220f, 112f), 22f, new Color32(0x8F, 0x62, 0xD7, 0xFF));
-            Dot(confetti, "Dot6", new Vector2(230f, -112f), 26f, new Color32(0x16, 0x89, 0x6C, 0xFF));
+            Dot(confetti, "Dot6", new Vector2(230f, -112f), 26f, Theme.SuccessDark);
+
+            if (HudSprites.BannerIcons.Length != System.Enum.GetValues(typeof(PingPong.Core.BannerKind)).Length)
+            {
+                throw new System.InvalidOperationException("There must be one banner icon per banner kind, in the same order.");
+            }
 
             var icons = new Sprite[HudSprites.BannerIcons.Length];
             for (var i = 0; i < icons.Length; i++)

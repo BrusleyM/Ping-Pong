@@ -21,6 +21,9 @@ namespace PingPong.Presentation
         [SerializeField] GameObject _confetti;
         [Tooltip("One icon per banner kind, in BannerKind order: point won, point lost, let, game won, game lost.")]
         [SerializeField] Sprite[] _icons;
+        [SerializeField, Min(1f)] float _titleSize = 96f;
+        [SerializeField, Min(1f)] float _reasonSize = 48f;
+        [SerializeField, Min(100f)] float _maxTextWidth = 1100f;
         [SerializeField, Range(0.1f, 1f)] float _popFrom = 0.6f;
         [SerializeField, Min(0.05f)] float _popIn = 0.28f;
         [SerializeField, Min(0.05f)] float _popOut = 0.2f;
@@ -39,7 +42,12 @@ namespace PingPong.Presentation
             Validation.Require(_match, "the Match Controller", this);
             Validation.Require(_theme, "the UI theme", this);
             Validation.Require(_visual, "the visual root", this);
+            Validation.Require(_fill, "the fill", this);
+            Validation.Require(_border, "the border", this);
+            Validation.Require(_icon, "the icon", this);
             Validation.Require(_title, "the title", this);
+            Validation.Require(_reason, "the reason", this);
+            Validation.Require(_confetti, "the confetti", this);
         }
 
         void OnEnable()
@@ -90,11 +98,18 @@ namespace PingPong.Presentation
             _border.color = look.Border;
             _title.color = look.Text;
             _reason.color = look.Text;
-            _title.text = title;
-            _reason.text = reason;
+            Fit(_title, title, _titleSize);
+            Fit(_reason, reason, _reasonSize);
             _reason.gameObject.SetActive(reason.Length > 0);
-            _icon.sprite = _icons[(int)kind];
+            _icon.sprite = (int)kind < _icons.Length ? _icons[(int)kind] : null;
             _confetti.SetActive(kind == BannerKind.GameWon);
+        }
+
+        void Fit(TMP_Text text, string value, float baseSize)
+        {
+            text.fontSize = baseSize;
+            text.text = value;
+            text.fontSize = TextFit.Size(baseSize, text.GetPreferredValues(value).x, _maxTextWidth);
         }
 
         void Stop()

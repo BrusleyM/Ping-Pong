@@ -59,6 +59,13 @@ namespace PingPong.Tests
         }
 
         [Test]
+        public void Game_NamesTheOpponentByModeWhenTheyWin()
+        {
+            Assert.That(MatchText.Game(Side.Far, Side.Near, MatchText.OpponentName(GameMode.Solo, "Chill Rally")), Is.EqualTo("AI (Chill Rally) wins!"));
+            Assert.That(MatchText.Game(Side.Far, Side.Near, MatchText.OpponentName(GameMode.Online, "Chill Rally")), Is.EqualTo("Opponent wins!"));
+        }
+
+        [Test]
         public void Game_CongratulatesTheLocalWinner()
         {
             Assert.That(MatchText.Game(Side.Near, Side.Near, Ai), Is.EqualTo("You win!"));
