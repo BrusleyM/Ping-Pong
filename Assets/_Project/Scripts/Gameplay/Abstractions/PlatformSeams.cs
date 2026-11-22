@@ -32,6 +32,7 @@ namespace PingPong.Gameplay
         bool IsTracked { get; }
         event System.Action Acquired;
         event System.Action Recentered;
+        event System.Action PoseUpdated;
     }
 
     /// <summary>Vibration on one controller.</summary>

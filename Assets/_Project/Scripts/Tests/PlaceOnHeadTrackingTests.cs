@@ -16,6 +16,10 @@ namespace PingPong.Tests
 
             public event System.Action Recentered;
 
+            public event System.Action PoseUpdated;
+
+            public void RaisePoseUpdated() => PoseUpdated?.Invoke();
+
             public void RaiseAcquired() => Acquired?.Invoke();
 
             public void RaiseRecentered() => Recentered?.Invoke();
@@ -90,6 +94,32 @@ namespace PingPong.Tests
             _tracking.RaiseRecentered();
 
             Assert.AreEqual(1.2f, _canvas.transform.position.x, 1e-4f);
+        }
+
+        [Test]
+        public void The_first_pose_after_a_scene_load_places_the_canvas_where_the_eyes_really_are()
+        {
+            _tracking.IsTracked = true;
+            _eyes.transform.position = Vector3.zero;
+            Enable();
+            _eyes.transform.position = new Vector3(0f, 1.7f, 0f);
+
+            _tracking.RaisePoseUpdated();
+
+            Assert.AreEqual(1.7f, _canvas.transform.position.y, 1e-4f);
+        }
+
+        [Test]
+        public void Only_the_first_pose_places_the_canvas_so_later_frames_never_move_it()
+        {
+            _tracking.IsTracked = true;
+            Enable();
+            _tracking.RaisePoseUpdated();
+            _canvas.transform.position = new Vector3(0f, 0.5f, 0f);
+
+            _tracking.RaisePoseUpdated();
+
+            Assert.AreEqual(0.5f, _canvas.transform.position.y, 1e-4f);
         }
 
         [Test]
