@@ -39,6 +39,8 @@ namespace PingPong.Gameplay
         /// <summary>Set false for a remote player's paddle: only the owner detects its hits.</summary>
         public bool DetectHits { get; set; } = true;
 
+        public bool Suspended { get; set; }
+
         /// <summary>Raised after this paddle hits the ball.</summary>
         public event Action<PaddleHit> Hit;
 
@@ -107,7 +109,7 @@ namespace PingPong.Gameplay
             Quaternion rot = b.rotation;
             Vector3 ballPos = _ball.Body.position;
 
-            if (_hasPrev && DetectHits && Time.time - _lastHit > Feel.Cooldown && _match.CanHit(_player))
+            if (_hasPrev && DetectHits && !Suspended && Time.time - _lastHit > Feel.Cooldown && _match.CanHit(_player))
                 TryHit(pos, rot, ballPos);
 
             _prevPos = pos; _prevRot = rot; _prevBall = _ball.Body.position;
