@@ -17,6 +17,9 @@ namespace PingPong.EditorTools
     {
         private const float CanvasMetres = 0.9f;
 
+        internal const string PauseMenuRoot = "PauseMenu";
+        internal const string PauseMenuCanvasRoot = "PauseMenuCanvas";
+
         [MenuItem("Ping Pong/Build Game Menus")]
         internal static void Build()
         {
@@ -43,7 +46,7 @@ namespace PingPong.EditorTools
             Set(colouring, "_playerHandle", HandleOf(world, "Player/Paddle"));
             Set(colouring, "_opponentHandle", HandleOf(world, "Match/AIPaddle"));
 
-            foreach (var name in new[] { "PauseMenu", "PauseMenuCanvas" })
+            foreach (var name in new[] { PauseMenuRoot, PauseMenuCanvasRoot })
             {
                 var existing = FindRoot(scene, name);
                 if (existing != null)
@@ -94,8 +97,8 @@ namespace PingPong.EditorTools
 
         private static void BuildPauseMenu(GameModeController modes, Transform head, UnitySceneLoader loader)
         {
-            var controller = new GameObject("PauseMenu");
-            var canvasObject = new GameObject("PauseMenuCanvas");
+            var controller = new GameObject(PauseMenuRoot);
+            var canvasObject = new GameObject(PauseMenuCanvasRoot);
             var canvas = canvasObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
             canvas.additionalShaderChannels = AdditionalCanvasShaderChannels.TexCoord1 | AdditionalCanvasShaderChannels.Normal | AdditionalCanvasShaderChannels.Tangent;
