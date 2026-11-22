@@ -43,10 +43,13 @@ namespace PingPong.EditorTools
             Set(colouring, "_playerHandle", HandleOf(world, "Player/Paddle"));
             Set(colouring, "_opponentHandle", HandleOf(world, "Match/AIPaddle"));
 
-            var existing = GameObject.Find("PauseMenu");
-            if (existing != null)
+            foreach (var name in new[] { "PauseMenu", "PauseMenuCanvas" })
             {
-                Object.DestroyImmediate(existing);
+                var existing = FindRoot(scene, name);
+                if (existing != null)
+                {
+                    Object.DestroyImmediate(existing);
+                }
             }
 
             BuildPauseMenu(modes, head, loader);
@@ -91,9 +94,8 @@ namespace PingPong.EditorTools
 
         private static void BuildPauseMenu(GameModeController modes, Transform head, UnitySceneLoader loader)
         {
-            var root = new GameObject("PauseMenu");
-            var canvasObject = new GameObject("Canvas");
-            canvasObject.transform.SetParent(root.transform, false);
+            var controller = new GameObject("PauseMenu");
+            var canvasObject = new GameObject("PauseMenuCanvas");
             var canvas = canvasObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
             canvas.additionalShaderChannels = AdditionalCanvasShaderChannels.TexCoord1 | AdditionalCanvasShaderChannels.Normal | AdditionalCanvasShaderChannels.Tangent;
@@ -138,17 +140,17 @@ namespace PingPong.EditorTools
 
             var confirm = MenuSceneBuilder.BuildConfirm(rect);
 
-            var switcher = root.AddComponent<MenuScreenSwitcher>();
+            var switcher = controller.AddComponent<MenuScreenSwitcher>();
             MenuSceneBuilder.WriteScreenPanels(switcher, panels);
             MenuSceneBuilder.WriteLinks(switcher, links);
 
-            var presenter = root.AddComponent<PauseMenuPresenter>();
+            var presenter = controller.AddComponent<PauseMenuPresenter>();
             Set(presenter, "_modes", modes);
             Set(presenter, "_switcher", switcher);
             Set(presenter, "_root", canvasObject);
-            var placer = root.AddComponent<EyeHeightPlacer>();
+            var placer = canvasObject.AddComponent<EyeHeightPlacer>();
             Set(placer, "_eyes", head);
-            Set(placer, "_target", root.transform);
+            Set(placer, "_target", canvasObject.transform);
             SetF(placer, "_distanceInFront", 0.75f);
             SetF(placer, "_heightOffset", -0.05f);
             SetEnum(placer, "_facing", (int)PlacementFacing.SameAsViewDirection);
