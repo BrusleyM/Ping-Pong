@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d612124518d544946bf0fe2cbfe01237, type: 3}
+  m_Name: PaddleRecovery
+  m_EditorClassIdentifier: PingPong.Gameplay::PingPong.Gameplay.PaddleRecoveryProfile
+  _feel:
+    SettleSeconds: 0.6
+    GlideSeconds: 0.8
+    ArcHeight: 0.25
+    AcrossFromCentre: 0.4
+    FromNet: 1
+    ClearanceAboveTable: 0.02
