@@ -34,12 +34,8 @@ namespace PingPong.Presentation
         public static string OpponentName(GameMode mode, string aiLevelName) =>
             mode == GameMode.Solo && !string.IsNullOrEmpty(aiLevelName) ? $"AI ({aiLevelName})" : "Opponent";
 
-        public static string Point(Side winner, PointReason reason, Side local, string opponentName)
-        {
-            string why = Describe(reason);
-            string scores = winner == local ? "You score" : $"{opponentName} scores";
-            return why.Length > 0 ? $"{scores} - {why}" : scores;
-        }
+        public static string PointTitle(Side winner, Side local, GameMode mode) =>
+            winner == local ? "You score" : $"{(mode == GameMode.Solo ? AiBoardName : "Opponent")} scores";
 
         public const string Let = "Let - serve again";
 

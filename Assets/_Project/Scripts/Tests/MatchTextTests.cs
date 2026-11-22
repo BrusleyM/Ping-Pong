@@ -29,10 +29,18 @@ namespace PingPong.Tests
         }
 
         [Test]
-        public void Point_NamesTheWinnerAndTheReason()
+        public void PointTitle_NamesTheWinner_AndLeavesTheReasonToItsOwnLine()
         {
-            Assert.That(MatchText.Point(Side.Far, PointReason.DoubleBounce, Side.Near, Ai), Is.EqualTo(Ai + " scores - double bounce"));
-            Assert.That(MatchText.Point(Side.Near, PointReason.None, Side.Near, Ai), Is.EqualTo("You score"), "no dangling dash without a reason");
+            Assert.That(MatchText.PointTitle(Side.Near, Side.Near, GameMode.Solo), Is.EqualTo("You score"));
+            Assert.That(MatchText.PointTitle(Side.Far, Side.Near, GameMode.Solo), Is.EqualTo("AI scores"));
+            Assert.That(MatchText.PointTitle(Side.Far, Side.Near, GameMode.Online), Is.EqualTo("Opponent scores"));
+        }
+
+        [Test]
+        public void DescribingNoReason_GivesNoReasonLine()
+        {
+            Assert.That(MatchText.Describe(PointReason.None), Is.Empty);
+            Assert.That(MatchText.Describe(PointReason.DoubleBounce), Is.EqualTo("double bounce"));
         }
 
         [Test]
@@ -48,6 +56,13 @@ namespace PingPong.Tests
             Assert.That(MatchText.OpponentName(GameMode.Solo, "Hard"), Is.EqualTo("AI (Hard)"));
             Assert.That(MatchText.OpponentName(GameMode.Online, "Hard"), Is.EqualTo("Opponent"));
             Assert.That(MatchText.OpponentName(GameMode.Solo, null), Is.EqualTo("Opponent"), "solo without an AI");
+        }
+
+        [Test]
+        public void Game_NamesTheOpponentByModeWhenTheyWin()
+        {
+            Assert.That(MatchText.Game(Side.Far, Side.Near, MatchText.OpponentName(GameMode.Solo, "Chill Rally")), Is.EqualTo("AI (Chill Rally) wins!"));
+            Assert.That(MatchText.Game(Side.Far, Side.Near, MatchText.OpponentName(GameMode.Online, "Chill Rally")), Is.EqualTo("Opponent wins!"));
         }
 
         [Test]

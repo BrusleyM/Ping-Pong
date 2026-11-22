@@ -11,6 +11,8 @@ namespace PingPong.Gameplay
 
         public static SettingsService Settings => _settings ?? (_settings = new SettingsService(new JsonFileStore<GameSettings>(Application.persistentDataPath, "settings.json")));
 
+        public static TeamColour LocalTeam => Profile.Current != null ? Profile.Current.Team : TeamColour.Red;
+
         public static MatchRequest? PendingMatch { get; set; }
 
         public static PingPong.Core.MenuScreen? MenuEntry { get; set; }
