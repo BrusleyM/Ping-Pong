@@ -25,6 +25,7 @@ namespace PingPong.Presentation
 
             tracking.Acquired += _placer.Place;
             tracking.Recentered += _placer.Place;
+            tracking.PoseUpdated += PlaceOnFirstPose;
         }
 
         private void Start()
@@ -46,6 +47,16 @@ namespace PingPong.Presentation
 
             tracking.Acquired -= _placer.Place;
             tracking.Recentered -= _placer.Place;
+            tracking.PoseUpdated -= PlaceOnFirstPose;
+        }
+
+        private void PlaceOnFirstPose()
+        {
+            _tracking.Value.PoseUpdated -= PlaceOnFirstPose;
+            if (_tracking.Value.IsTracked)
+            {
+                _placer.Place();
+            }
         }
     }
 }
