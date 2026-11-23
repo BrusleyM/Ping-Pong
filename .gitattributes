@@ -5,3 +5,7 @@ Assets/Models/**/*.fbx filter=lfs diff=lfs merge=lfs -text
 Assets/Models/**/*.FBX filter=lfs diff=lfs merge=lfs -text
 Assets/Models/**/*.glb filter=lfs diff=lfs merge=lfs -text
 Assets/Models/**/*.GLB filter=lfs diff=lfs merge=lfs -text
+
+# Scenes are large YAML files; ours live in Git LFS.
+Assets/_Project/Scenes/**/*.unity filter=lfs diff=lfs merge=lfs -text
+Assets/Game[[:space:]]Feel/Scenes/**/*.unity filter=lfs diff=lfs merge=lfs -text
