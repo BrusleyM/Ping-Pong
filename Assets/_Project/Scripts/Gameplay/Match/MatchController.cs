@@ -123,6 +123,7 @@ namespace PingPong.Gameplay
         public void StopMatch()
         {
             CancelPendingServe();
+            ServeHeld = false;
             Engine.Stop();
         }
 
@@ -132,7 +133,9 @@ namespace PingPong.Gameplay
             return f.PointOnSide(side, 0f, f.HalfLength + Pacing.ServeBehind, Pacing.ServeHeight);
         }
 
-        public bool CanHit(Side player) => Engine.CanHit(player);
+        public bool ServeHeld { get; set; }
+
+        public bool CanHit(Side player) => !Phase.HoldsServe(ServeHeld) && Engine.CanHit(player);
 
         /// <summary>
         /// The one way a player strikes the ball (local paddle, AI, and later the network). On the authority the rules
@@ -142,7 +145,7 @@ namespace PingPong.Gameplay
         /// </summary>
         public bool Strike(Side player, Vector3 from, Vector3 velocity)
         {
-            if (IsAuthority && !Engine.CanHit(player)) return false;
+            if (IsAuthority && !CanHit(player)) return false;
             _ball.Launch(from, velocity);
             LastHitTime = Time.time;
             HitCount++;
@@ -159,7 +162,7 @@ namespace PingPong.Gameplay
         {
             // Touches the rules do not care about (point over, game over, the receiver touching the held serve ball) neither
             // count nor use up the swing's grace.
-            if (!IsAuthority || !Phase.ContactMatters(Server, player) || !_judge.ShouldCount(player, Time.time)) return;
+            if (!IsAuthority || Phase.HoldsServe(ServeHeld) || !Phase.ContactMatters(Server, player) || !_judge.ShouldCount(player, Time.time)) return;
             LastHitTime = Time.time;
             HitCount++;
             PaddleHit?.Invoke(player);

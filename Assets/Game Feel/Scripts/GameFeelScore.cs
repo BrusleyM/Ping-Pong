@@ -79,6 +79,7 @@ namespace PingPong.GameFeel
         public bool PracticeMode { get; set; }
         public int PracticeStreak => _practiceStreak;
         public bool GameOver => _gameOver;
+        public bool GameBegun { get; private set; }
 
         bool _inPlay;
         bool _gameOver;
@@ -108,6 +109,7 @@ namespace PingPong.GameFeel
             ScoreNorth = scoreNorth;
             HitPointsSouth = HitPointsNorth = 0;
             _gameOver = false;
+            GameBegun = true;
             _inPlay = false;
             _rallyHits = 0;
             _practiceStreak = 0;

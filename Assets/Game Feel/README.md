@@ -40,6 +40,8 @@ Stations: 1 STREAK, 2 HIT, 3 HIT POINTS, 4 CROWD, 5 POINT, 6 WIN, 7 TARGETS, 8 P
 
 - Ball: sparks, hit impact flash and shockwave, squash, paddle flash, streak coloured by the last hitter,
   landing ring, table landing markers.
+- Start: GET READY, 3, 2, 1, GO! on the stadium screen, then the score. The first serve is held until GO
+  (`MatchController.ServeHeld`), for you and for the AI.
 - Match: crowd jumps on the start, every point and the win; lights and stadium screen flash in the winner's colour;
   score and announcements (SMASH, RALLY X5, NET, LET) on the stadium screen; confetti on a win.
 - Hit points: points for every hit, a rally combo and a landing bonus, shown as labels above the ball
