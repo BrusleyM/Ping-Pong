@@ -266,9 +266,11 @@ namespace PingPong.GameFeel.EditorTools
             if (adMats.Count == 0) adMats.Add(mSeatA);
             if (crowdMats.Count == 0) crowdMats.Add(mSeatB);
 
-            // ---- Ground & court (no colliders: the original floor keeps doing that job) ----
             var floorGroup = Group(root, "Ground");
-            Cube("Ground", floorGroup, new Vector3(0, -0.06f, 0), new Vector3(outerX * 2 + 10, 0.1f, outerZ * 2 + 10), mGround, false, false);
+            var ground = Cube("Ground", floorGroup, new Vector3(0, -0.06f, 0), new Vector3(outerX * 2 + 10, 0.1f, outerZ * 2 + 10), mGround, true, false);
+            var groundCollider = ground.GetComponent<BoxCollider>();
+            groundCollider.center = new Vector3(0f, -4.5f, 0f);
+            groundCollider.size = new Vector3(1f, 10f, 1f);
             Cube("Court", floorGroup, new Vector3(0, -0.025f, 0), new Vector3(b.courtSize.x, 0.04f, b.courtSize.y), mCourt, false, false);
             float lw = 0.07f, inset = 0.35f, ly = -0.003f;
             Cube("Line N", floorGroup, new Vector3(0, ly, hz - inset), new Vector3(b.courtSize.x - inset * 2, 0.01f, lw), mLine, false, false);
