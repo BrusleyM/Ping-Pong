@@ -47,14 +47,14 @@ namespace PingPong.GameFeel
         GameFeelBootstrap _cfg;
         GameFeelScore _score;
         MatchPresentation _show;
-        ScoreboardDisplay _board;
+        ScoreboardDisplay[] _boards;
 
         void Start()
         {
             _cfg = GetComponent<GameFeelBootstrap>();
             _score = GetComponent<GameFeelScore>();
             _show = GetComponent<MatchPresentation>();
-            _board = FindFirstObjectByType<ScoreboardDisplay>();
+            _boards = FindObjectsByType<ScoreboardDisplay>(FindObjectsSortMode.None);
             Load();
             if (_score != null) _score.GameWon += OnGameWon;
         }
@@ -90,11 +90,16 @@ namespace PingPong.GameFeel
         IEnumerator ShowRecords(bool newBest, bool newRally)
         {
             yield return new WaitForSeconds(2.5f);
-            if (_board == null) yield break;
-            if (newBest) { _board.SetText("NEW BEST!"); yield return new WaitForSeconds(1.5f); }
-            _board.SetText($"BEST {Best}");
+            if (_boards == null || _boards.Length == 0) yield break;
+            if (newBest) { SetBoards("NEW BEST!"); yield return new WaitForSeconds(1.5f); }
+            SetBoards($"BEST {Best}");
             yield return new WaitForSeconds(1.5f);
-            _board.SetText($"RALLY {Scores.longestRally}" + (newRally ? "!" : ""));
+            SetBoards($"RALLY {Scores.longestRally}" + (newRally ? "!" : ""));
+        }
+
+        void SetBoards(string text)
+        {
+            foreach (var b in _boards) if (b != null) b.SetText(text);
         }
 
         public void Load()

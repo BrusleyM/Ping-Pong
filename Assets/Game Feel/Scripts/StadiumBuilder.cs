@@ -4,7 +4,7 @@ namespace PingPong.GameFeel
 {
     /// <summary>
     /// Settings for the cube stadium. The stadium itself is generated in the Editor with the "Build / Rebuild Stadium"
-    /// button in this component's Inspector (see Assets/Game Feel/Editor/StadiumGenerator.cs), centred on the project's
+    /// button in this component's Inspector (or Tools > Game Feel > Show Table, Hide Room, Rebuild Stadium) (see Assets/Game Feel/Editor/StadiumGenerator.cs), centred on the project's
     /// table. At play time it only switches visibility: the stadium hides while passthrough is on (you see your real
     /// room), and the scene's own environment (neon room, floor) hides while the stadium is showing.
     /// </summary>
@@ -14,7 +14,7 @@ namespace PingPong.GameFeel
         [Header("Placement")]
         [Tooltip("Centre on the scene's PingPongTable. Off: centred on this object (the test scene's line of stations).")]
         public bool centerOnTable = true;
-        [Tooltip("Ground height is taken from the top of this object (falls back to the table height).")]
+        [Tooltip("Without a VR rig in the scene, the court goes at the table's feet, then at the top of this object. With a rig, it goes at the player's floor.")]
         public string floorObjectNamed = "Floor";
 
         [Header("Play time")]
@@ -23,7 +23,7 @@ namespace PingPong.GameFeel
         [Tooltip("Objects of the scene's own environment to hide while the stadium shows (renderers only; colliders stay).")]
         public string[] hideWhileShown = { "experimental_neon_room", "Floor" };
 
-        [Header("Court")]        [Header("Court")]
+        [Header("Court")]
         [Tooltip("X = width across the table, Y = length along the table (players stand at the Y ends).")]
         public Vector2 courtSize = new Vector2(14f, 18f);
         public float barrierHeight = 0.9f;
@@ -41,6 +41,8 @@ namespace PingPong.GameFeel
         public bool canopy = true;
         public bool lightTowers = true;
         public bool scoreboard = true;
+        [Tooltip("A second scoreboard at the near end, facing the other player.")]
+        public bool scoreboardBothEnds = true;
         public string scoreboardText = "PING PONG";
 
         [Header("Colours")]

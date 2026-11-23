@@ -12,8 +12,8 @@ namespace PingPong.GameFeel
     /// </summary>
     public class MatchPresentation : MonoBehaviour
     {
-        [Tooltip("Seconds 'PING PONG' stays on the board before the score appears.")]
-        public float introDuration = 2f;
+        [Tooltip("Seconds the board's idle text (e.g. PING PONG) stays up when a game starts before the score appears. 0 = show the score at once.")]
+        public float introDuration = 0f;
         public float pointFlashDuration = 1.2f;
         public float winFlashDuration = 5f;
         [Tooltip("Brightness of the lights at the peak of a flash.")]
@@ -26,7 +26,14 @@ namespace PingPong.GameFeel
 
         GameFeelBootstrap _cfg;
         GameFeelScore _score;
-        ScoreboardDisplay _board;
+        readonly List<ScoreboardDisplay> _boards = new List<ScoreboardDisplay>();
+        bool HasBoard => _boards.Count > 0;
+
+        /// <summary>Shows text on every stadium scoreboard (there can be one at each end).</summary>
+        void SetBoards(string text)
+        {
+            foreach (var b in _boards) if (b != null) b.SetText(text);
+        }
 
         Material _lightMat, _screenMat;
         Color _lightBase, _lightEmission, _screenBase, _screenEmission;
@@ -34,12 +41,12 @@ namespace PingPong.GameFeel
 
         static readonly string[] LightNames = { "Floodlight", "Lamp", "Wall Strip" };
 
-        IEnumerator Start()
+        // Subscribe as early as possible: the game scene starts its match in Start, and the board must not miss it.
+        void Awake()
         {
             _cfg = GetComponent<GameFeelBootstrap>();
             _score = GetComponent<GameFeelScore>();
-            _board = FindFirstObjectByType<ScoreboardDisplay>();
-            SetupMaterials();
+            _boards.AddRange(FindObjectsByType<ScoreboardDisplay>(FindObjectsSortMode.None));
 
             if (_score != null)
             {
@@ -52,10 +59,16 @@ namespace PingPong.GameFeel
                 _score.NetTouched += OnNetTouched;
                 _score.LetCalled += OnLet;
             }
-
-            // The score keeper starts the first game shortly after load; show the intro first.
-            yield return null;
         }
+
+        void Start()
+        {
+            SetupMaterials();
+            // A game that already started before we were ready: show its score straight away.
+            if (_score != null && _score.Started && HasBoard && Live) SetBoards(ScoreText);
+        }
+
+        string ScoreText => _score != null ? $"{_score.ScoreSouth} - {_score.ScoreNorth}" : "0 - 0";
 
         void OnDestroy()
         {
@@ -99,13 +112,18 @@ namespace PingPong.GameFeel
                 foreach (var r in lights) r.sharedMaterial = _lightMat;
             }
 
-            if (_board != null && _board.screen != null && _board.screen.sharedMaterial != null)
+            // One runtime screen material shared by every board, so they all flash together.
+            foreach (var board in _boards)
             {
-                _screenMat = new Material(_board.screen.sharedMaterial) { name = "Screen (runtime)" };
-                _screenMat.EnableKeyword("_EMISSION");
-                _screenBase = _screenMat.GetColor(BaseColorId);
-                _screenEmission = _screenMat.GetColor(EmissionId);
-                _board.screen.sharedMaterial = _screenMat;
+                if (board == null || board.screen == null || board.screen.sharedMaterial == null) continue;
+                if (_screenMat == null)
+                {
+                    _screenMat = new Material(board.screen.sharedMaterial) { name = "Screen (runtime)" };
+                    _screenMat.EnableKeyword("_EMISSION");
+                    _screenBase = _screenMat.GetColor(BaseColorId);
+                    _screenEmission = _screenMat.GetColor(EmissionId);
+                }
+                board.screen.sharedMaterial = _screenMat;
             }
         }
 
@@ -114,7 +132,9 @@ namespace PingPong.GameFeel
         void OnGameStarted()
         {
             _showingWinner = false;
-            if (_board != null && Live) StartCoroutine(ShowAfter(_board.idleText, $"{_score.ScoreSouth} - {_score.ScoreNorth}", introDuration));
+            if (!HasBoard || !Live) return;
+            if (introDuration > 0f) StartCoroutine(ShowAfter(_boards[0].idleText, ScoreText, introDuration));
+            else SetBoards(ScoreText);
         }
 
         bool _intro;
@@ -122,20 +142,20 @@ namespace PingPong.GameFeel
         IEnumerator ShowAfter(string first, string then, float delay)
         {
             _intro = true;
-            _board.SetText(first);
+            SetBoards(first);
             yield return new WaitForSeconds(delay);
             _intro = false;
             if (_score != null) then = $"{_score.ScoreSouth} - {_score.ScoreNorth}";
-            _board.SetText(then);
+            SetBoards(then);
         }
 
         bool _showingWinner;
 
         void OnScoreChanged(int south, int north)
         {
-            // Keep the "BLUE WINS" message (and any announcement) up until it's done.
-            if (_board != null && Live && !_intro && !_showingWinner && Time.time >= _announceUntil)
-                _board.SetText($"{south} - {north}");
+            // Keep the "YOU WIN" / "CPU WINS" message (and any announcement) up until it's done.
+            if (HasBoard && Live && !_intro && !_showingWinner && Time.time >= _announceUntil)
+                SetBoards($"{south} - {north}");
         }
 
         // ---------------- Shot announcements ----------------
@@ -154,7 +174,7 @@ namespace PingPong.GameFeel
         /// <summary>Show a short message on the scoreboard, then go back to the score.</summary>
         public void Announce(string text, float duration = -1f, Color? flash = null)
         {
-            if (_board == null || !Live || !announcements || _showingWinner || _intro) return;
+            if (!HasBoard || !Live || !announcements || _showingWinner || _intro) return;
             if (duration <= 0f) duration = announceDuration;
             if (_announce != null) StopCoroutine(_announce);
             _announce = StartCoroutine(AnnounceRoutine(text, duration));
@@ -168,15 +188,15 @@ namespace PingPong.GameFeel
             // blink twice, then hold
             for (int i = 0; i < 2; i++)
             {
-                _board.SetText(text);
+                SetBoards(text);
                 yield return new WaitForSeconds(0.12f);
-                _board.SetText("");
+                SetBoards("");
                 yield return new WaitForSeconds(0.06f);
             }
-            _board.SetText(text);
+            SetBoards(text);
             yield return new WaitForSeconds(Mathf.Max(0f, duration - 0.36f));
             _announce = null;
-            if (!_showingWinner && _score != null) _board.SetText($"{_score.ScoreSouth} - {_score.ScoreNorth}");
+            if (!_showingWinner && _score != null) SetBoards($"{_score.ScoreSouth} - {_score.ScoreNorth}");
         }
 
         void OnPaddleHit(int side, float kmh, float strength)
@@ -205,16 +225,19 @@ namespace PingPong.GameFeel
 
         void OnPointScored(int winner, int south, int north)
         {
-            if (_board != null && Live) _board.SetText($"{south} - {north}");
+            // The point beats any announcement still blinking (e.g. NET!), so the new score isn't overwritten.
+            if (_announce != null) { StopCoroutine(_announce); _announce = null; }
+            _announceUntil = 0f;
+            if (HasBoard && Live) SetBoards($"{south} - {north}");
             if (_cfg == null || _cfg.pointFlash) Flash(TeamColor(winner), pointFlashDuration, 2);
         }
 
         void OnGameWon(int winner)
         {
-            if (_board != null && Live)
+            if (HasBoard && Live)
             {
                 _showingWinner = true;
-                _board.SetText(winner == GameFeelScore.South ? "YOU WIN" : (_cfg != null ? _cfg.northName : "CPU") + " WINS");
+                SetBoards(winner == GameFeelScore.South ? "YOU WIN" : (_cfg != null ? _cfg.northName : "CPU") + " WINS");
             }
             if (_cfg == null || _cfg.pointFlash) Flash(TeamColor(winner), winFlashDuration, 8);
             if (_cfg != null && _cfg.confetti && _cfg.Effects != null) _cfg.Effects.Confetti(TableCenter(), 1f);

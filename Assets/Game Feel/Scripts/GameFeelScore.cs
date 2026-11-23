@@ -79,6 +79,8 @@ namespace PingPong.GameFeel
         public bool PracticeMode { get; set; }
         public int PracticeStreak => _practiceStreak;
         public bool GameOver => _gameOver;
+        /// <summary>True once the first game has started.</summary>
+        public bool Started { get; private set; }
 
         bool _inPlay;
         bool _gameOver;
@@ -104,6 +106,7 @@ namespace PingPong.GameFeel
         /// <summary>A new game: hit points and rally reset, the crowd cheers.</summary>
         public void StartGame(int scoreSouth = 0, int scoreNorth = 0)
         {
+            Started = true;
             ScoreSouth = scoreSouth;
             ScoreNorth = scoreNorth;
             HitPointsSouth = HitPointsNorth = 0;
@@ -129,28 +132,9 @@ namespace PingPong.GameFeel
             {
                 case BallGameFeel.ContactKind.Paddle:
                 {
-                    int side = ball.SideOf(paddlePos);
-                    // One swing can touch the paddle's colliders more than once: count it once.
-                    if (side == _lastPaddleSide && Time.time - _lastPaddleTime < 0.25f) return;
-                    _lastPaddleTime = Time.time;
-                    _lastPaddleSide = side;
-
-                    // The combo grows when the ball goes back and forth between players.
-                    // In practice mode the machine is the opponent: the combo is your run of good returns.
-                    if (PracticeMode) _rallyHits = _practiceStreak + 1;
-                    else if (_inPlay && side != _hitter) _rallyHits++;
-                    else _rallyHits = 1;
-                    LongestRally = Mathf.Max(LongestRally, _rallyHits);
-
-                    _hitter = side;
-                    _inPlay = true;
-                    _awaitingLanding = true;
-                    _landedThisShot = false;
-                    _lastBounceSide = 0;
-
-                    int mult = Mathf.Clamp(_rallyHits, 1, Mathf.Max(1, maxMultiplier));
-                    PaddleHit?.Invoke(side, ball.LastImpactSpeed * 3.6f, ball.LastImpactStrength);
-                    AddHitPoints(side, pointsPerHit * mult, mult, false, ballPos);
+                    // In a real match the project's rules decide which hits count (MatchLink calls RegisterPaddleHit).
+                    if (Linked && !PracticeMode) return;
+                    RegisterPaddleHit(ball.SideOf(paddlePos), ballPos, ball.LastImpactSpeed, ball.LastImpactStrength);
                     break;
                 }
 
@@ -183,6 +167,36 @@ namespace PingPong.GameFeel
                     if (_inPlay) EndRally();
                     break;
             }
+        }
+
+        /// <summary>
+        /// A paddle hit that counts: hit points, combo and the SMASH announcement. From the ball's paddle contacts
+        /// without a match (test scene, practice), or from the project's MatchController.PaddleHit in a match.
+        /// </summary>
+        public void RegisterPaddleHit(int side, Vector3 ballPos, float speed, float strength)
+        {
+            if (_gameOver) return;
+            // One swing can touch the paddle's colliders more than once: count it once.
+            if (side == _lastPaddleSide && Time.time - _lastPaddleTime < 0.25f) return;
+            _lastPaddleTime = Time.time;
+            _lastPaddleSide = side;
+
+            // The combo grows when the ball goes back and forth between players.
+            // In practice mode the machine is the opponent: the combo is your run of good returns.
+            if (PracticeMode) _rallyHits = _practiceStreak + 1;
+            else if (_inPlay && side != _hitter) _rallyHits++;
+            else _rallyHits = 1;
+            LongestRally = Mathf.Max(LongestRally, _rallyHits);
+
+            _hitter = side;
+            _inPlay = true;
+            _awaitingLanding = true;
+            _landedThisShot = false;
+            _lastBounceSide = 0;
+
+            int mult = Mathf.Clamp(_rallyHits, 1, Mathf.Max(1, maxMultiplier));
+            PaddleHit?.Invoke(side, speed * 3.6f, strength);
+            AddHitPoints(side, pointsPerHit * mult, mult, false, ballPos);
         }
 
         /// <summary>Practice mode: the ball machine fed a ball, i.e. the "opponent" hit it.</summary>

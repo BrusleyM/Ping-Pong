@@ -59,7 +59,8 @@ namespace PingPong.GameFeel
             if (_score != null)
             {
                 _score.PracticeMode = on;
-                _score.StartGame();
+                // Leaving practice with a match: modes.Restart() below starts the new game (and its cheer) itself.
+                if (on || modes == null) _score.StartGame();
             }
 
             if (on)

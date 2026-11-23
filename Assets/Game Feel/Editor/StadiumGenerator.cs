@@ -202,6 +202,15 @@ namespace PingPong.GameFeel.EditorTools
 
         static readonly Dictionary<string, Material> _mats = new Dictionary<string, Material>();
 
+        /// <summary>Rebuilds the stadium of the open scene (same as the Build / Rebuild button on the Stadium object).</summary>
+        [MenuItem("Tools/Game Feel/Rebuild Stadium In Open Scene")]
+        public static void RebuildOpenScene()
+        {
+            var b = Object.FindFirstObjectByType<StadiumBuilder>(FindObjectsInactive.Include);
+            if (b == null) { Debug.LogWarning("[Game Feel] No Stadium (StadiumBuilder) in the open scene."); return; }
+            Build(b);
+        }
+
         public static void Clear(StadiumBuilder b)
         {
             var old = b.transform.Find(GeneratedName);
@@ -228,12 +237,26 @@ namespace PingPong.GameFeel.EditorTools
                 rotation = GameFeelTable.Rotation(f);
                 groundY = f.SurfaceCenter.y - 0.76f; // regulation table height
             }
+            // The court goes where the player stands (the VR rig's floor), so their feet are on it in the headset.
+            // Without a rig, use the table's feet, then the floor object.
+            var tableBounds = ppTable != null ? TableModelBounds(ppTable.transform) : null;
             var floor = FindInScene(b, b.floorObjectNamed);
-            if (floor != null)
-            {
-                var fb = BoundsOf(floor);
-                groundY = fb.HasValue ? fb.Value.max.y : floor.position.y;
-            }
+            var fbLog = floor != null ? BoundsOf(floor) : null;
+            Transform rig = null;
+            foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (t.name == "TrackingSpace" && t.gameObject.scene == b.gameObject.scene) { rig = t; break; }
+            if (rig != null)
+                groundY = rig.position.y;
+            else if (tableBounds.HasValue)
+                groundY = tableBounds.Value.min.y;
+            else if (fbLog.HasValue)
+                groundY = fbLog.Value.max.y;
+            else if (floor != null)
+                groundY = floor.position.y;
+            Debug.Log($"[Game Feel] Court at y {groundY:0.000}. Table feet {(tableBounds.HasValue ? tableBounds.Value.min.y.ToString("0.000") : "-")}, " +
+                      $"table top {(ppTable != null ? ppTable.Frame.SurfaceCenter.y.ToString("0.000") : "-")}, " +
+                      $"floor top {(fbLog.HasValue ? fbLog.Value.max.y.ToString("0.000") : "-")}, " +
+                      $"player floor {(rig != null ? rig.position.y.ToString("0.000") : "-")}");
 
             var root = new GameObject(GeneratedName).transform;
             root.SetParent(b.transform, false);
@@ -266,9 +289,11 @@ namespace PingPong.GameFeel.EditorTools
             if (adMats.Count == 0) adMats.Add(mSeatA);
             if (crowdMats.Count == 0) crowdMats.Add(mSeatB);
 
-            // ---- Ground & court (no colliders: the original floor keeps doing that job) ----
+            // ---- Ground & court ----
             var floorGroup = Group(root, "Ground");
-            Cube("Ground", floorGroup, new Vector3(0, -0.06f, 0), new Vector3(outerX * 2 + 10, 0.1f, outerZ * 2 + 10), mGround, false, false);
+            // The ground has a collider so a ball that leaves the table lands on the court (and the rally ends) instead of
+            // falling through to the floor underneath.
+            Cube("Ground", floorGroup, new Vector3(0, -0.06f, 0), new Vector3(outerX * 2 + 10, 0.1f, outerZ * 2 + 10), mGround, true, false);
             Cube("Court", floorGroup, new Vector3(0, -0.025f, 0), new Vector3(b.courtSize.x, 0.04f, b.courtSize.y), mCourt, false, false);
             float lw = 0.07f, inset = 0.35f, ly = -0.003f;
             Cube("Line N", floorGroup, new Vector3(0, ly, hz - inset), new Vector3(b.courtSize.x - inset * 2, 0.01f, lw), mLine, false, false);
@@ -393,9 +418,12 @@ namespace PingPong.GameFeel.EditorTools
             }
 
             // ---- Scoreboard ----
-            if (b.scoreboard)
+            for (int end = 0; end < (b.scoreboardBothEnds ? 2 : 1); end++)
             {
-                var board = Group(root, "Scoreboard");
+                if (!b.scoreboard) break;
+                // End 0: far (north) end, facing the near player. End 1: the same board turned round at the near end.
+                var board = Group(root, end == 0 ? "Scoreboard" : "Scoreboard (Near End)");
+                if (end == 1) board.localRotation = Quaternion.Euler(0f, 180f, 0f);
                 var mScreen = Mat("Screen", b.screenColor, smooth: 0.8f);
                 var mText = Mat("Screen Text", b.screenTextColor, emission: 2.5f);
                 float px = 0.17f;
@@ -591,6 +619,21 @@ namespace PingPong.GameFeel.EditorTools
                 }
             }
             return null;
+        }
+
+        /// <summary>Bounds of the table model's visible parts (the model also has bats and a ball: those are left out).</summary>
+        static Bounds? TableModelBounds(Transform t)
+        {
+            Bounds? bb = null;
+            foreach (var r in t.GetComponentsInChildren<Renderer>(false))
+            {
+                if (!r.enabled) continue;
+                string n = r.name.ToLowerInvariant();
+                if (n.Contains("bat") || n.Contains("ball") || n.Contains("paddle")) continue;
+                if (bb.HasValue) { var b = bb.Value; b.Encapsulate(r.bounds); bb = b; }
+                else bb = r.bounds;
+            }
+            return bb;
         }
 
         static Bounds? BoundsOf(Transform t)
