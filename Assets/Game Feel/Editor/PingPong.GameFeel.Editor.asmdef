@@ -1,0 +1,22 @@
+{
+    "name": "PingPong.GameFeel.Editor",
+    "rootNamespace": "PingPong.GameFeel.EditorTools",
+    "references": [
+        "PingPong.GameFeel",
+        "PingPong.Core",
+        "PingPong.Gameplay",
+        "PingPong.Presentation",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
