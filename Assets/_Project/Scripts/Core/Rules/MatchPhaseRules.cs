@@ -13,6 +13,8 @@ namespace PingPong.Core
         public static bool ContactMatters(this MatchPhase phase, Side server, Side player) =>
             phase.AllowsHits() && (phase != MatchPhase.WaitingForServe || player == server);
 
+        public static bool HoldsServe(this MatchPhase phase, bool serveHeld) => serveHeld && phase == MatchPhase.WaitingForServe;
+
         /// <summary>Whether the match controller must watch the ball and the clock: a rally, a serve, or the pause before the next serve.</summary>
         public static bool NeedsWatching(this MatchPhase phase) => phase is MatchPhase.Rally or MatchPhase.WaitingForServe or MatchPhase.PointOver;
     }

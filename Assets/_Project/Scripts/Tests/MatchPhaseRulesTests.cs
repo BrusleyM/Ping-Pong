@@ -37,6 +37,15 @@ namespace PingPong.Tests
         }
 
         [Test]
+        public void HoldsServe_OnlyBeforeTheServeAndOnlyWhileHeld()
+        {
+            Assert.That(MatchPhase.WaitingForServe.HoldsServe(true), Is.True, "held before the serve");
+            Assert.That(MatchPhase.WaitingForServe.HoldsServe(false), Is.False, "released");
+            Assert.That(MatchPhase.Rally.HoldsServe(true), Is.False, "a rally already in progress is never held");
+            Assert.That(MatchPhase.PointOver.HoldsServe(true), Is.False, "the pause after a point is not the held serve");
+        }
+
+        [Test]
         public void ContactMatters_OnlyWhereTheRulesCare()
         {
             Assert.That(MatchPhase.PointOver.ContactMatters(Side.Near, Side.Near), Is.False, "point over");

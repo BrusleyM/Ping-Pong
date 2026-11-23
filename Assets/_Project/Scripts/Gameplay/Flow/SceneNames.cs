@@ -4,5 +4,6 @@ namespace PingPong.Gameplay
     {
         public const string Menu = "Menu";
         public const string Game = "Game";
+        public const string PxGame="Game_GameFeel";
     }
 }
