@@ -97,7 +97,7 @@ namespace PingPong.Gameplay
             if (!playing && _atRest) return; // idle between points and after a game: nothing to move
             switch (phase)
             {
-                case MatchPhase.WaitingForServe when _match.Server == _player:
+                case MatchPhase.WaitingForServe when _match.Server == _player && !_match.ServeHeld:
                     _target = ball.transform.position + Table.Forward * (_player.Sign() * Behaviour.BehindBall * 1.5f);
                     _serveTimer += Time.deltaTime;
                     if (_serveTimer > Behaviour.ServeDelay) { _serveTimer = 0f; Serve(); }

@@ -46,7 +46,7 @@ namespace PingPong.Presentation
 
             AppServices.PendingMatch = new MatchRequest(level, AppServices.Profile.Current.Team);
             _loading.SetActive(true);
-            loader.Load(SceneNames.Game);
+            loader.Load(SceneNames.PxGame);
         }
     }
 }

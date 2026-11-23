@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using PingPong.Gameplay;
 using UnityEngine;
 
 namespace PingPong.GameFeel
@@ -12,8 +13,12 @@ namespace PingPong.GameFeel
     /// </summary>
     public class MatchPresentation : MonoBehaviour
     {
-        [Tooltip("Seconds 'PING PONG' stays on the board before the score appears.")]
-        public float introDuration = 2f;
+        [Header("Start sequence")]
+        public float getReadyDuration = 1.2f;
+        public int countFrom = 3;
+        public float countStepDuration = 0.8f;
+        public float goDuration = 0.8f;
+        [Header("Points")]
         public float pointFlashDuration = 1.2f;
         public float winFlashDuration = 5f;
         [Tooltip("Brightness of the lights at the peak of a flash.")]
@@ -27,6 +32,8 @@ namespace PingPong.GameFeel
         GameFeelBootstrap _cfg;
         GameFeelScore _score;
         ScoreboardDisplay _board;
+        MatchController _match;
+        Coroutine _startSequence;
 
         Material _lightMat, _screenMat;
         Color _lightBase, _lightEmission, _screenBase, _screenEmission;
@@ -39,6 +46,7 @@ namespace PingPong.GameFeel
             _cfg = GetComponent<GameFeelBootstrap>();
             _score = GetComponent<GameFeelScore>();
             _board = FindFirstObjectByType<ScoreboardDisplay>();
+            _match = FindFirstObjectByType<MatchController>();
             SetupMaterials();
 
             if (_score != null)
@@ -51,6 +59,7 @@ namespace PingPong.GameFeel
                 _score.HitScored += OnHitScored;
                 _score.NetTouched += OnNetTouched;
                 _score.LetCalled += OnLet;
+                if (_score.GameBegun) OnGameStarted();
             }
 
             // The score keeper starts the first game shortly after load; show the intro first.
@@ -70,6 +79,7 @@ namespace PingPong.GameFeel
                 _score.NetTouched -= OnNetTouched;
                 _score.LetCalled -= OnLet;
             }
+            ReleaseServe();
             if (_lightMat != null) Destroy(_lightMat);
             if (_screenMat != null) Destroy(_screenMat);
         }
@@ -114,19 +124,39 @@ namespace PingPong.GameFeel
         void OnGameStarted()
         {
             _showingWinner = false;
-            if (_board != null && Live) StartCoroutine(ShowAfter(_board.idleText, $"{_score.ScoreSouth} - {_score.ScoreNorth}", introDuration));
+            if (_board == null || !Live) return;
+            if (_startSequence != null) StopCoroutine(_startSequence);
+            _startSequence = StartCoroutine(StartSequence());
+        }
+
+        void OnDisable() => ReleaseServe();
+
+        void ReleaseServe()
+        {
+            if (_match != null) _match.ServeHeld = false;
         }
 
         bool _intro;
 
-        IEnumerator ShowAfter(string first, string then, float delay)
+        IEnumerator StartSequence()
         {
             _intro = true;
-            _board.SetText(first);
-            yield return new WaitForSeconds(delay);
+            if (_match != null) _match.ServeHeld = true;
+            _board.SetText("GET READY");
+            yield return new WaitForSeconds(getReadyDuration);
+            for (int n = countFrom; n > 0; n--)
+            {
+                _board.SetText(n.ToString());
+                Flash(TeamColor(GameFeelScore.South), countStepDuration, 1);
+                yield return new WaitForSeconds(countStepDuration);
+            }
+            ReleaseServe();
+            _board.SetText("GO!");
+            Flash(TeamColor(GameFeelScore.South), goDuration, 2);
+            yield return new WaitForSeconds(goDuration);
             _intro = false;
-            if (_score != null) then = $"{_score.ScoreSouth} - {_score.ScoreNorth}";
-            _board.SetText(then);
+            _startSequence = null;
+            _board.SetText($"{_score.ScoreSouth} - {_score.ScoreNorth}");
         }
 
         bool _showingWinner;
