@@ -37,14 +37,16 @@ namespace PingPong.GameFeel
 
         static readonly NetClearRetry Retry = new NetClearRetry(4, 0.85f);
 
-        GameFeelScore _score;
+        MatchFeed _feed;
+        RallyFeed _rally;
         Transform _machine, _muzzle;
         float _timer;
         bool _aiWasOn;
 
         void Start()
         {
-            _score = GetComponent<GameFeelScore>();
+            _feed = GetComponent<MatchFeed>();
+            _rally = GetComponent<RallyFeed>();
             if (match == null) match = FindFirstObjectByType<MatchController>();
             if (ball == null) ball = match != null ? match.Ball : FindFirstObjectByType<PingPongBall>();
             if (ai == null) ai = FindFirstObjectByType<AIOpponent>();
@@ -55,12 +57,10 @@ namespace PingPong.GameFeel
         {
             if (on == Active) return;
             Active = on;
-            if (_score == null) _score = GetComponent<GameFeelScore>();
-            if (_score != null)
-            {
-                _score.PracticeMode = on;
-                _score.StartGame();
-            }
+            if (_feed == null) _feed = GetComponent<MatchFeed>();
+            if (_rally == null) _rally = GetComponent<RallyFeed>();
+            if (_rally != null) _rally.PracticeMode = on;
+            if (_feed != null) _feed.StartGame();
 
             if (on)
             {
@@ -138,7 +138,7 @@ namespace PingPong.GameFeel
             rb.linearVelocity = v;
             rb.angularVelocity = Vector3.zero;
             foreach (var tr in ball.GetComponentsInChildren<TrailRenderer>()) tr.Clear();
-            if (_score != null) _score.RegisterFeed();
+            if (_rally != null) _rally.RegisterFeed();
         }
     }
 }

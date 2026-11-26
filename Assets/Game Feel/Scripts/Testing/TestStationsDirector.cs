@@ -30,7 +30,10 @@ namespace PingPong.GameFeel.Testing
         [Tooltip("Ball and table of the PRACTICE station.")]
         public PingPongBall practiceBall;
 
-        GameFeelScore _score;
+        MatchFeed _feed;
+        RallyFeed _rally;
+        HitPoints _points;
+        DemoMatch _demo;
         PracticeMode _practice;
         TargetGame _targets;
         MatchPresentation _show;
@@ -49,7 +52,10 @@ namespace PingPong.GameFeel.Testing
             var cfg = GameFeelBootstrap.Instance;
             if (cfg != null)
             {
-                _score = cfg.GetComponent<GameFeelScore>();
+                _feed = cfg.GetComponent<MatchFeed>();
+                _rally = cfg.GetComponent<RallyFeed>();
+                _points = cfg.GetComponent<HitPoints>();
+                _demo = cfg.GetComponent<DemoMatch>();
                 _practice = cfg.GetComponent<PracticeMode>();
                 _targets = cfg.GetComponent<TargetGame>();
                 _show = cfg.GetComponent<MatchPresentation>();
@@ -114,20 +120,20 @@ namespace PingPong.GameFeel.Testing
                     if (streakLauncher != null) { streakLauncher.Fire(); Say("LOB"); }
                     break;
                 case TestStation.Demo.HitPoints:
-                    if (!_rallyRunning && _score != null) StartCoroutine(ScriptedRally(Focus(station)));
+                    if (!_rallyRunning && _rally != null) StartCoroutine(ScriptedRally(Focus(station)));
                     break;
                 case TestStation.Demo.Point:
-                    if (_score == null) break;
-                    if (_score.GameOver) _score.StartGame();
-                    _score.DemoPoint(_pointSide);
-                    Say("POINT TO " + Name(_pointSide) + $"  {_score.ScoreSouth} - {_score.ScoreNorth}");
+                    if (_demo == null) break;
+                    if (_feed.GameOver) _feed.StartGame();
+                    _demo.Point(_pointSide);
+                    Say("POINT TO " + Name(_pointSide) + $"  {_feed.ScoreSouth} - {_feed.ScoreNorth}");
                     _pointSide = -_pointSide;
                     break;
                 case TestStation.Demo.Win:
-                    if (_score == null) break;
+                    if (_feed == null) break;
                     if (_show != null) _show.confettiCenter = station.focus;
-                    if (_score.GameOver) _score.StartGame();
-                    _score.EndGame(_winSide);
+                    if (_feed.GameOver) _feed.StartGame();
+                    _feed.EndGame(_winSide);
                     Say(_winSide == GameFeelTable.South ? "YOU WIN" : Name(_winSide) + " WINS");
                     _winSide = -_winSide;
                     break;
@@ -161,13 +167,13 @@ namespace PingPong.GameFeel.Testing
         {
             _rallyRunning = true;
             Say("SCRIPTED RALLY");
-            if (_score.GameOver) _score.StartGame();
+            if (_feed.GameOver) _feed.StartGame();
             int side = GameFeelTable.South;
             for (int hit = 1; hit <= 5; hit++)
             {
-                _score.DemoHit(side, hit, false, p + Vector3.right * (side == GameFeelTable.South ? -0.25f : 0.25f));
+                _rally.ShowDemoHit(side, hit, p + Vector3.right * (side == GameFeelTable.South ? -0.25f : 0.25f));
                 yield return new WaitForSeconds(0.35f);
-                _score.DemoHit(side, hit, true, p + Vector3.right * (side == GameFeelTable.South ? 0.25f : -0.25f));
+                _rally.ShowDemoLanding(side, hit, p + Vector3.right * (side == GameFeelTable.South ? 0.25f : -0.25f));
                 yield return new WaitForSeconds(0.35f);
                 side = -side;
             }
@@ -197,11 +203,10 @@ namespace PingPong.GameFeel.Testing
             GUILayout.Label("<b>GAME FEEL TEST STATIONS</b>", _small);
             GUILayout.Label("<b>1-8</b> or <b>Left/Right</b> go to a station · <b>E</b> runs it", _small);
             GUILayout.Label("RMB look · WASD move · Space/Q up/down · Shift fast · F1 overview", _small);
-            if (_score != null)
-            {
-                GUILayout.Label($"Score  {Name(GameFeelTable.South)} {_score.ScoreSouth}  -  {Name(GameFeelTable.North)} {_score.ScoreNorth}", _small);
-                GUILayout.Label($"Hit points  {_score.HitPointsSouth}  -  {_score.HitPointsNorth}", _small);
-            }
+            if (_feed != null)
+                GUILayout.Label($"Score  {Name(GameFeelTable.South)} {_feed.ScoreSouth}  -  {Name(GameFeelTable.North)} {_feed.ScoreNorth}", _small);
+            if (_points != null)
+                GUILayout.Label($"Hit points  {_points.South}  -  {_points.North}", _small);
             GUILayout.EndArea();
 
             float w = Mathf.Min(820f, sw - 40f);

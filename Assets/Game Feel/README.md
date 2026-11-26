@@ -8,12 +8,24 @@ Nothing in `Assets/_Project` is changed: these scripts only listen to the projec
 | Game Feel | Listens to |
 |---|---|
 | Hit effects, streak, squash, table markers | `PingPongBall.Impact` (paddle, table, net, other) |
-| Points, lets, game won, match started | `MatchController.PointWon / Let / GameWon`, `GameModeController.MatchStarted` (via `MatchLink`) |
+| Points, lets, game won, match started | `MatchController.PointWon / Let / GameWon`, `GameModeController.MatchStarted` (via `MatchFeed`) |
 | Landing ring, ball machine aim | `BallFlightModel.Simulate / SolveLaunchClearingNet` |
 | High scores | `JsonFileStore` (same as the profile and settings) |
 | Stadium hides in passthrough | `IPassthrough.IsOn` |
 
 Ball sounds and controller vibration are the project's own (`BallImpactAudio`, `PaddleHaptics`).
+
+## Scoring pieces
+
+| Component | Owns | Added when |
+|---|---|---|
+| `MatchFeed` | The match score and game start, point, let and win events | always |
+| `RallyFeed` (logic in `RallyTracker`) | Paddle hits, combo, landings, net touches, practice streak | always |
+| `HitPoints` | The extra hit-point score | `hitPoints` is on |
+| `CrowdCheer` | Crowd jumps on start, point and win | `crowdReactions` is on |
+| `DemoMatch` | Demo points and games | the scene has no match |
+
+With `hitPoints` off nothing counts points and high scores keep only the longest rally.
 
 ## Scenes
 

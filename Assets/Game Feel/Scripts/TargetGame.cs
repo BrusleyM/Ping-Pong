@@ -26,11 +26,11 @@ namespace PingPong.GameFeel
         const int Rings = 3, Segments = 32;
 
         GameFeelBootstrap _cfg;
-        GameFeelScore _score;
+        HitPoints _points;
         PracticeMode _practice;
         PingPongTable Table => table != null ? table : GameFeelTable.Main;
         readonly Target[] _targets = new Target[2];
-        int _lastHitter = GameFeelScore.South;
+        int _lastHitter = GameFeelTable.South;
 
         class Target
         {
@@ -45,7 +45,7 @@ namespace PingPong.GameFeel
         void Start()
         {
             _cfg = GetComponent<GameFeelBootstrap>();
-            _score = GetComponent<GameFeelScore>();
+            _points = GetComponent<HitPoints>();
             _practice = GetComponent<PracticeMode>();
             BallGameFeel.Contact += OnContact;
         }
@@ -65,7 +65,7 @@ namespace PingPong.GameFeel
             for (int i = 0; i < 2; i++)
             {
                 if (_targets[i] != null) continue;
-                var tg = new Target { side = i == 0 ? GameFeelScore.North : GameFeelScore.South, rings = new LineRenderer[Rings] };
+                var tg = new Target { side = i == 0 ? GameFeelTable.North : GameFeelTable.South, rings = new LineRenderer[Rings] };
                 tg.root = new GameObject("Target " + (tg.side > 0 ? "North" : "South")).transform;
                 tg.root.SetParent(transform, false);
                 for (int r = 0; r < Rings; r++)
@@ -111,7 +111,7 @@ namespace PingPong.GameFeel
             if (!Active || t == null) return false;
             bool practice = _practice != null && _practice.Active;
             // Practice: only the machine's half (that's where your returns land).
-            return !practice || t.side == GameFeelScore.North;
+            return !practice || t.side == GameFeelTable.North;
         }
 
         void Refresh()
@@ -189,7 +189,7 @@ namespace PingPong.GameFeel
             Vector3 lp = Table.Frame.ToLocal(point);
             bool bullseye = new Vector2(lp.x - t.local.x, lp.z - t.local.z).magnitude < radius / Rings;
             int pts = bullseye ? targetPoints * 2 : targetPoints;
-            if (_score != null) _score.AddBonus(_lastHitter, pts, point);
+            if (_points != null) _points.AddBonus(_lastHitter, pts, point);
 
             var popups = GetComponent<HitScorePopups>();
             if (popups != null && _cfg != null)

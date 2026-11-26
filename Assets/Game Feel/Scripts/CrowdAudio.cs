@@ -26,7 +26,7 @@ namespace PingPong.GameFeel
         const int SampleRate = 22050;
 
         AudioSource _ambience, _roar, _applause, _ooh;
-        GameFeelScore _score;
+        MatchFeed _match;
 
         void Start()
         {
@@ -43,22 +43,22 @@ namespace PingPong.GameFeel
             _applause = MakeSource("Crowd Applause", applauseClip, false);
             _ooh = MakeSource("Crowd Ooh", oohClip, false);
 
-            _score = GetComponent<GameFeelScore>();
-            if (_score != null)
+            _match = GetComponent<MatchFeed>();
+            if (_match != null)
             {
-                _score.GameStarted += OnGameStarted;
-                _score.PointScored += OnPointScored;
-                _score.GameWon += OnGameWon;
+                _match.GameStarted += OnGameStarted;
+                _match.PointScored += OnPointScored;
+                _match.GameWon += OnGameWon;
             }
         }
 
         void OnDestroy()
         {
-            if (_score != null)
+            if (_match != null)
             {
-                _score.GameStarted -= OnGameStarted;
-                _score.PointScored -= OnPointScored;
-                _score.GameWon -= OnGameWon;
+                _match.GameStarted -= OnGameStarted;
+                _match.PointScored -= OnPointScored;
+                _match.GameWon -= OnGameWon;
             }
         }
 
