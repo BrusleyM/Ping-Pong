@@ -42,7 +42,7 @@ namespace PingPong.GameFeel
 
         public void RegisterFeed()
         {
-            if (!_match.GameOver) _tracker.Feed(GameFeelTable.North);
+            if (!_match.GameOver) _tracker.Feed();
         }
 
         public void ShowDemoHit(int side, int combo, Vector3 where)

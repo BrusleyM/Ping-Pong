@@ -1,3 +1,5 @@
+using System;
+
 namespace PingPong.GameFeel
 {
     public enum BounceOutcome { None, Landed, RallyOver }
@@ -5,6 +7,7 @@ namespace PingPong.GameFeel
     public sealed class RallyTracker
     {
         const float RepeatedContactWindow = 0.25f;
+        const int BallMachineSide = GameFeelTable.North;
 
         bool _awaitingLanding;
         bool _landedThisShot;
@@ -50,7 +53,7 @@ namespace PingPong.GameFeel
         public int Combo(int highest)
         {
             if (Hits < 1) return 1;
-            return Hits > highest && highest >= 1 ? highest : Hits;
+            return Math.Min(Hits, Math.Max(1, highest));
         }
 
         public BounceOutcome TableBounce(int side)
@@ -73,14 +76,14 @@ namespace PingPong.GameFeel
             return outcome;
         }
 
-        public void Feed(int feederSide)
+        public void Feed()
         {
-            if (InPlay && Hitter == feederSide)
+            if (InPlay && Hitter == BallMachineSide)
             {
                 PracticeStreak = 0;
                 End();
             }
-            Hitter = feederSide;
+            Hitter = BallMachineSide;
             InPlay = true;
             _awaitingLanding = false;
             _lastBounceSide = 0;
@@ -92,7 +95,7 @@ namespace PingPong.GameFeel
             InPlay = false;
             _awaitingLanding = false;
             Hits = 0;
-            bool streakBroken = Hitter == GameFeelTable.North || !_landedThisShot;
+            bool streakBroken = Hitter == BallMachineSide || !_landedThisShot;
             if (PracticeMode && streakBroken) PracticeStreak = 0;
         }
     }

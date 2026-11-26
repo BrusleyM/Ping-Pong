@@ -10,7 +10,7 @@ namespace PingPong.GameFeel
     /// Hit-point high scores, saved as a small JSON file in the game's data folder on the device
     /// (Application.persistentDataPath/gamefeel_highscores.json) through the project's own JsonFileStore,
     /// the same way the profile and settings are saved. Keeps your top N games (your hit points, won or lost)
-    /// and the longest rally. Shows them on the stadium screen after a game and announces "NEW BEST!".
+    /// and the longest rally (only the rally when hit points are off). Shows them on the stadium screen after a game and announces "NEW BEST!".
     /// Added automatically by GameFeelBootstrap.
     /// </summary>
     public class HighScores : MonoBehaviour

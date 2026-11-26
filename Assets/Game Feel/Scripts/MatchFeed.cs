@@ -35,7 +35,7 @@ namespace PingPong.GameFeel
                 _match.GameWon += OnGameWon;
                 _match.Let += ApplyLet;
             }
-            if (_modes != null) _modes.MatchStarted += StartFromMatch;
+            if (_match != null && _modes != null) _modes.MatchStarted += StartFromMatch;
         }
 
         void OnDisable()
