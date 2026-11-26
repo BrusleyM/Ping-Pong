@@ -6,7 +6,7 @@ using UnityEngine;
 namespace PingPong.GameFeel
 {
     /// <summary>
-    /// Reacts to GameFeelScore events (the project's match points, fed in by MatchLink): live score and
+    /// Reacts to MatchFeed and RallyFeed events: live score and
     /// announcements on the stadium screen, floodlights and screen flashing in the winner's colour on each point,
     /// and confetti when the game is won.
     /// Added automatically by GameFeelBootstrap.
@@ -30,7 +30,8 @@ namespace PingPong.GameFeel
         static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
 
         GameFeelBootstrap _cfg;
-        GameFeelScore _score;
+        MatchFeed _feed;
+        RallyFeed _rally;
         ScoreboardDisplay _board;
         MatchController _match;
         Coroutine _startSequence;
@@ -44,22 +45,26 @@ namespace PingPong.GameFeel
         IEnumerator Start()
         {
             _cfg = GetComponent<GameFeelBootstrap>();
-            _score = GetComponent<GameFeelScore>();
+            _feed = GetComponent<MatchFeed>();
+            _rally = GetComponent<RallyFeed>();
             _board = FindFirstObjectByType<ScoreboardDisplay>();
             _match = FindFirstObjectByType<MatchController>();
             SetupMaterials();
 
-            if (_score != null)
+            if (_rally != null)
             {
-                _score.GameStarted += OnGameStarted;
-                _score.PointScored += OnPointScored;
-                _score.GameWon += OnGameWon;
-                _score.ScoreChanged += OnScoreChanged;
-                _score.PaddleHit += OnPaddleHit;
-                _score.HitScored += OnHitScored;
-                _score.NetTouched += OnNetTouched;
-                _score.LetCalled += OnLet;
-                if (_score.GameBegun) OnGameStarted();
+                _rally.PaddleHit += OnPaddleHit;
+                _rally.ComboHit += OnComboHit;
+                _rally.NetTouched += OnNetTouched;
+            }
+            if (_feed != null)
+            {
+                _feed.GameStarted += OnGameStarted;
+                _feed.PointScored += OnPointScored;
+                _feed.GameWon += OnGameWon;
+                _feed.ScoreChanged += OnScoreChanged;
+                _feed.LetCalled += OnLet;
+                if (_feed.GameBegun) OnGameStarted();
             }
 
             // The score keeper starts the first game shortly after load; show the intro first.
@@ -68,16 +73,19 @@ namespace PingPong.GameFeel
 
         void OnDestroy()
         {
-            if (_score != null)
+            if (_rally != null)
             {
-                _score.GameStarted -= OnGameStarted;
-                _score.PointScored -= OnPointScored;
-                _score.GameWon -= OnGameWon;
-                _score.ScoreChanged -= OnScoreChanged;
-                _score.PaddleHit -= OnPaddleHit;
-                _score.HitScored -= OnHitScored;
-                _score.NetTouched -= OnNetTouched;
-                _score.LetCalled -= OnLet;
+                _rally.PaddleHit -= OnPaddleHit;
+                _rally.ComboHit -= OnComboHit;
+                _rally.NetTouched -= OnNetTouched;
+            }
+            if (_feed != null)
+            {
+                _feed.GameStarted -= OnGameStarted;
+                _feed.PointScored -= OnPointScored;
+                _feed.GameWon -= OnGameWon;
+                _feed.ScoreChanged -= OnScoreChanged;
+                _feed.LetCalled -= OnLet;
             }
             ReleaseServe();
             if (_lightMat != null) Destroy(_lightMat);
@@ -147,16 +155,16 @@ namespace PingPong.GameFeel
             for (int n = countFrom; n > 0; n--)
             {
                 _board.SetText(n.ToString());
-                Flash(TeamColor(GameFeelScore.South), countStepDuration, 1);
+                Flash(TeamColor(GameFeelTable.South), countStepDuration, 1);
                 yield return new WaitForSeconds(countStepDuration);
             }
             ReleaseServe();
             _board.SetText("GO!");
-            Flash(TeamColor(GameFeelScore.South), goDuration, 2);
+            Flash(TeamColor(GameFeelTable.South), goDuration, 2);
             yield return new WaitForSeconds(goDuration);
             _intro = false;
             _startSequence = null;
-            _board.SetText($"{_score.ScoreSouth} - {_score.ScoreNorth}");
+            _board.SetText($"{_feed.ScoreSouth} - {_feed.ScoreNorth}");
         }
 
         bool _showingWinner;
@@ -206,7 +214,7 @@ namespace PingPong.GameFeel
             _board.SetText(text);
             yield return new WaitForSeconds(Mathf.Max(0f, duration - 0.36f));
             _announce = null;
-            if (!_showingWinner && _score != null) _board.SetText($"{_score.ScoreSouth} - {_score.ScoreNorth}");
+            if (!_showingWinner && _feed != null) _board.SetText($"{_feed.ScoreSouth} - {_feed.ScoreNorth}");
         }
 
         void OnPaddleHit(int side, float kmh, float strength)
@@ -216,11 +224,11 @@ namespace PingPong.GameFeel
             Announce(t, -1f, TeamColor(side));
         }
 
-        void OnHitScored(int side, int points, int multiplier, bool bonus, Vector3 where)
+        void OnComboHit(int side, int combo, Vector3 where)
         {
-            if (bonus || multiplier < announceRallyFrom) return;
+            if (combo < announceRallyFrom) return;
             if (_announceFrame == Time.frameCount) return; // a smash was just announced on this hit
-            string t = _score != null && _score.PracticeMode ? $"STREAK X{multiplier}" : $"RALLY X{multiplier}!";
+            string t = _rally.PracticeMode ? $"STREAK X{combo}" : $"RALLY X{combo}!";
             Announce(t);
         }
 
@@ -244,7 +252,7 @@ namespace PingPong.GameFeel
             if (_board != null && Live)
             {
                 _showingWinner = true;
-                _board.SetText(winner == GameFeelScore.South ? "YOU WIN" : (_cfg != null ? _cfg.northName : "CPU") + " WINS");
+                _board.SetText(winner == GameFeelTable.South ? "YOU WIN" : (_cfg != null ? _cfg.northName : "CPU") + " WINS");
             }
             if (_cfg == null || _cfg.pointFlash) Flash(TeamColor(winner), winFlashDuration, 8);
             if (_cfg != null && _cfg.confetti && _cfg.Effects != null) _cfg.Effects.Confetti(TableCenter(), 1f);

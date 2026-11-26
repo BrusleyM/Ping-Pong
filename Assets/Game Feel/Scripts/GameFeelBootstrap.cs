@@ -122,8 +122,11 @@ namespace PingPong.GameFeel
             if (match != null && match.Ball != null) GameFeelTable.Main = match.Ball.Table;
 
             // Score first: the others listen to it.
-            GetOrAdd<GameFeelScore>();
-            if (match != null) GetOrAdd<MatchLink>();
+            GetOrAdd<MatchFeed>();
+            GetOrAdd<RallyFeed>();
+            if (hitPoints) GetOrAdd<HitPoints>();
+            if (match == null) GetOrAdd<Testing.DemoMatch>();
+            if (crowdReactions) GetOrAdd<CrowdCheer>();
             if (confetti || pointFlash || liveScoreboard || crowdReactions) GetOrAdd<MatchPresentation>();
             if (crowdSounds) GetOrAdd<CrowdAudio>();
             if (hitPoints && hitPointPopups) GetOrAdd<HitScorePopups>();

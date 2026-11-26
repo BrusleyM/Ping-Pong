@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace PingPong.GameFeel
 {
@@ -14,7 +15,8 @@ namespace PingPong.GameFeel
         [Tooltip("Ring that predicts where the ball will bounce.")]
         public bool landingRing = true;
         [Tooltip("Hits with this ball earn hit points (and show popups).")]
-        public bool hitPoints = true;
+        [FormerlySerializedAs("hitPoints")]
+        public bool countsForRally = true;
         [Tooltip("Only paddle hits get effects (no table/net/floor sparks, squash or markers).")]
         public bool onlyPaddleEffects = false;
     }

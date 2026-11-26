@@ -5,7 +5,7 @@ using UnityEngine;
 namespace PingPong.GameFeel
 {
     /// <summary>
-    /// Floating "+20 X2" labels above the ball whenever hit points are earned (GameFeelScore.HitScored).
+    /// Floating "+20 X2" labels above the ball whenever hit points are earned (HitPoints.Scored).
     /// Each label is bold white text (the game's own Fredoka font) on a dark plate in the scoring player's colour,
     /// so it reads against any background. Labels always face the player.
     /// Added automatically by GameFeelBootstrap.
@@ -47,7 +47,7 @@ namespace PingPong.GameFeel
         }
 
         GameFeelBootstrap _cfg;
-        GameFeelScore _score;
+        HitPoints _points;
         readonly List<Popup> _pool = new List<Popup>();
         Camera _cam;
         int _next;
@@ -55,7 +55,7 @@ namespace PingPong.GameFeel
         void Start()
         {
             _cfg = GetComponent<GameFeelBootstrap>();
-            _score = GetComponent<GameFeelScore>();
+            _points = GetComponent<HitPoints>();
             var font = _cfg != null && _cfg.popupFont != null ? _cfg.popupFont : TMP_Settings.defaultFontAsset;
             var plateShader = Shader.Find("Universal Render Pipeline/Unlit");
 
@@ -91,7 +91,7 @@ namespace PingPong.GameFeel
                 _pool.Add(new Popup { root = root, text = tmp, plate = plate.transform, plateMat = mat });
             }
 
-            if (_score != null) _score.HitScored += OnHitScored;
+            if (_points != null) _points.Scored += OnHitScored;
         }
 
         static void MakeTransparent(Material m)
@@ -108,7 +108,7 @@ namespace PingPong.GameFeel
 
         void OnDestroy()
         {
-            if (_score != null) _score.HitScored -= OnHitScored;
+            if (_points != null) _points.Scored -= OnHitScored;
             foreach (var p in _pool) if (p.plateMat != null) Destroy(p.plateMat);
         }
 

@@ -45,34 +45,41 @@ namespace PingPong.GameFeel
         public int Best => Scores.entries.Count > 0 ? Scores.entries[0].score : 0;
 
         GameFeelBootstrap _cfg;
-        GameFeelScore _score;
+        MatchFeed _match;
+        RallyFeed _rally;
+        HitPoints _points;
         MatchPresentation _show;
         ScoreboardDisplay _board;
 
         void Start()
         {
             _cfg = GetComponent<GameFeelBootstrap>();
-            _score = GetComponent<GameFeelScore>();
+            _match = GetComponent<MatchFeed>();
+            _rally = GetComponent<RallyFeed>();
+            _points = GetComponent<HitPoints>();
             _show = GetComponent<MatchPresentation>();
             _board = FindFirstObjectByType<ScoreboardDisplay>();
             Load();
-            if (_score != null) _score.GameWon += OnGameWon;
+            if (_match != null) _match.GameWon += OnGameWon;
         }
 
         void OnDestroy()
         {
-            if (_score != null) _score.GameWon -= OnGameWon;
+            if (_match != null) _match.GameWon -= OnGameWon;
         }
 
         void OnGameWon(int winner)
         {
-            if (_score == null) return;
-            // Your hit points count, whether you won or lost.
-            int s = _score.HitPointsSouth;
-            string name = _cfg != null ? _cfg.southName : "YOU";
-            bool newBest = s > Best;
-            bool newRally = _score.LongestRally > Scores.longestRally;
-            Add(name, s, _score.LongestRally, (_score.PracticeMode ? "Practice" : "Match") + (winner == GameFeelScore.South ? " won" : " lost"));
+            if (_rally == null) return;
+            bool newRally = _rally.LongestRally > Scores.longestRally;
+            bool newBest = _points != null && _points.South > Best;
+            if (_points != null)
+            {
+                string name = _cfg != null ? _cfg.southName : "YOU";
+                string mode = (_rally.PracticeMode ? "Practice" : "Match") + (winner == GameFeelTable.South ? " won" : " lost");
+                Add(name, _points.South, _rally.LongestRally, mode);
+            }
+            else RecordRally(_rally.LongestRally);
             if (showBetweenGames) StartCoroutine(ShowRecords(newBest, newRally));
         }
 
@@ -86,14 +93,23 @@ namespace PingPong.GameFeel
             Save();
         }
 
+        void RecordRally(int longestRally)
+        {
+            Scores.longestRally = Mathf.Max(Scores.longestRally, longestRally);
+            Save();
+        }
+
         // Runs after the "YOU WIN" message on the stadium screen.
         IEnumerator ShowRecords(bool newBest, bool newRally)
         {
             yield return new WaitForSeconds(2.5f);
             if (_board == null) yield break;
             if (newBest) { _board.SetText("NEW BEST!"); yield return new WaitForSeconds(1.5f); }
-            _board.SetText($"BEST {Best}");
-            yield return new WaitForSeconds(1.5f);
+            if (_points != null)
+            {
+                _board.SetText($"BEST {Best}");
+                yield return new WaitForSeconds(1.5f);
+            }
             _board.SetText($"RALLY {Scores.longestRally}" + (newRally ? "!" : ""));
         }
 

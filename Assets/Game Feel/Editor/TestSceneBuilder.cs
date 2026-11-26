@@ -92,7 +92,7 @@ namespace PingPong.GameFeel.EditorTools
                 var opts = ball.gameObject.AddComponent<GameFeelBallOptions>();
                 opts.streak = false;
                 opts.landingRing = false;
-                opts.hitPoints = false;
+                opts.countsForRally = false;
                 opts.onlyPaddleEffects = true;
                 Vector3 paddlePos = f.PointOnSide(Side.Near, 0f, f.HalfLength - 0.15f, 0.3f);
                 var paddle = MakePaddle(g, paddlePos, mRubber, mWood);
