@@ -37,6 +37,14 @@ namespace PingPong.Tests
         }
 
         [Test]
+        public void TheRigNeverMovesDuringARally()
+        {
+            Assert.That(MatchPhase.Rally.AllowsRigMoves(), Is.False, "the paddle and ball are live");
+            Assert.That(MatchPhase.WaitingForServe.AllowsRigMoves(), Is.True, "between rallies");
+            Assert.That(MatchPhase.GameOver.AllowsRigMoves(), Is.True, "after the game");
+        }
+
+        [Test]
         public void HoldsServe_OnlyBeforeTheServeAndOnlyWhileHeld()
         {
             Assert.That(MatchPhase.WaitingForServe.HoldsServe(true), Is.True, "held before the serve");

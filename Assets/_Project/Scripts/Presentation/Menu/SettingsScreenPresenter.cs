@@ -13,6 +13,10 @@ namespace PingPong.Presentation
         [SerializeField] private PopButton _right;
         [SerializeField] private GameObject _leftSelected;
         [SerializeField] private GameObject _rightSelected;
+        [SerializeField] private PopButton _standing;
+        [SerializeField] private PopButton _seated;
+        [SerializeField] private GameObject _standingSelected;
+        [SerializeField] private GameObject _seatedSelected;
 
         private bool _refreshing;
 
@@ -21,6 +25,8 @@ namespace PingPong.Presentation
             _effects.onValueChanged.AddListener(value => Apply(settings => settings.EffectsVolume = value));
             _left.Activated += () => Apply(settings => settings.DominantHand = Hand.Left);
             _right.Activated += () => Apply(settings => settings.DominantHand = Hand.Right);
+            _standing.Activated += () => Apply(settings => settings.Posture = PlayPosture.Standing);
+            _seated.Activated += () => Apply(settings => settings.Posture = PlayPosture.Seated);
         }
 
         private void OnEnable()
@@ -46,6 +52,8 @@ namespace PingPong.Presentation
             _effectsValue.text = Mathf.RoundToInt(settings.EffectsVolume * 100f) + "%";
             _leftSelected.SetActive(settings.DominantHand == Hand.Left);
             _rightSelected.SetActive(settings.DominantHand == Hand.Right);
+            _standingSelected.SetActive(settings.Posture == PlayPosture.Standing);
+            _seatedSelected.SetActive(settings.Posture == PlayPosture.Seated);
             _refreshing = false;
         }
     }

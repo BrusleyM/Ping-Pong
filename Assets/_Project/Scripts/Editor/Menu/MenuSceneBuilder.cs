@@ -111,6 +111,7 @@ namespace PingPong.EditorTools
             var trigger = GetOrAdd<PlaceOnHeadTracking>(canvas.gameObject);
             Set(trigger, "_placer", placer);
             SetSeam(trigger, "_tracking", tracking);
+            ViewHeightSetup.Wire(scene, null, canvas.gameObject, placer);
 
             var loader = GetOrAdd<UnitySceneLoader>(GetOrCreate("SceneLoader"));
             var difficulty = canvas.GetComponentInChildren<DifficultyScreenPresenter>(true);
@@ -349,17 +350,23 @@ namespace PingPong.EditorTools
             var t = panel.transform;
             Heading(t, "MAKE IT YOURS", "Settings", "Changes apply right away.");
             back = BackButton(t);
-            var card = Picture(t, "Card", "ui_panel_inner", new Vector2(0f, -120f), new Vector2(1180f, 330f));
+            var card = Picture(t, "Card", "ui_panel_inner", new Vector2(0f, -195f), new Vector2(1180f, 480f));
 
-            Label(card.transform, "EffectsLabel", "Sound effects", 44f, true, Color.white, new Vector2(-380f, 90f), new Vector2(420f, 60f), TextAlignmentOptions.Left);
-            var effects = SliderRow(card.transform, "Effects", new Vector2(150f, 90f), 480f);
-            var effectsValue = Label(card.transform, "EffectsValue", "100%", 40f, true, Theme.Accent, new Vector2(450f, 90f), new Vector2(160f, 60f));
+            Label(card.transform, "EffectsLabel", "Sound effects", 44f, true, Color.white, new Vector2(-380f, 150f), new Vector2(420f, 60f), TextAlignmentOptions.Left);
+            var effects = SliderRow(card.transform, "Effects", new Vector2(150f, 150f), 480f);
+            var effectsValue = Label(card.transform, "EffectsValue", "100%", 40f, true, Theme.Accent, new Vector2(450f, 150f), new Vector2(160f, 60f));
 
-            Label(card.transform, "HandLabel", "Paddle hand", 44f, true, Color.white, new Vector2(-380f, -60f), new Vector2(420f, 60f), TextAlignmentOptions.Left);
-            var left = Button(card.transform, "HandLeft", "Left", "ui_button_secondary", new Vector2(200f, -60f), new Vector2(220f, 84f), 40f, Color.white);
-            var right = Button(card.transform, "HandRight", "Right", "ui_button_secondary", new Vector2(450f, -60f), new Vector2(220f, 84f), 40f, Color.white);
+            Label(card.transform, "HandLabel", "Paddle hand", 44f, true, Color.white, new Vector2(-380f, 0f), new Vector2(420f, 60f), TextAlignmentOptions.Left);
+            var left = Button(card.transform, "HandLeft", "Left", "ui_button_secondary", new Vector2(200f, 0f), new Vector2(220f, 84f), 40f, Color.white);
+            var right = Button(card.transform, "HandRight", "Right", "ui_button_secondary", new Vector2(450f, 0f), new Vector2(220f, 84f), 40f, Color.white);
             var leftRing = Picture(left.transform, "Selected", "ui_ring", Vector2.zero, new Vector2(240f, 104f));
             var rightRing = Picture(right.transform, "Selected", "ui_ring", Vector2.zero, new Vector2(240f, 104f));
+
+            Label(card.transform, "PostureLabel", "Play posture", 44f, true, Color.white, new Vector2(-380f, -150f), new Vector2(420f, 60f), TextAlignmentOptions.Left);
+            var standing = Button(card.transform, "PostureStanding", "Standing", "ui_button_secondary", new Vector2(200f, -150f), new Vector2(220f, 84f), 40f, Color.white);
+            var seated = Button(card.transform, "PostureSeated", "Seated", "ui_button_secondary", new Vector2(450f, -150f), new Vector2(220f, 84f), 40f, Color.white);
+            var standingRing = Picture(standing.transform, "Selected", "ui_ring", Vector2.zero, new Vector2(240f, 104f));
+            var seatedRing = Picture(seated.transform, "Selected", "ui_ring", Vector2.zero, new Vector2(240f, 104f));
 
             var presenter = GetOrAdd<SettingsScreenPresenter>(panel.gameObject);
             Set(presenter, "_effects", effects);
@@ -368,6 +375,10 @@ namespace PingPong.EditorTools
             Set(presenter, "_right", right);
             Set(presenter, "_leftSelected", leftRing.gameObject);
             Set(presenter, "_rightSelected", rightRing.gameObject);
+            Set(presenter, "_standing", standing);
+            Set(presenter, "_seated", seated);
+            Set(presenter, "_standingSelected", standingRing.gameObject);
+            Set(presenter, "_seatedSelected", seatedRing.gameObject);
             return panel;
         }
 

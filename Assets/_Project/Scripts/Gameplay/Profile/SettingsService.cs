@@ -29,7 +29,8 @@ namespace PingPong.Gameplay
         private static GameSettings Copy(GameSettings source) => new GameSettings
         {
             EffectsVolume = source.EffectsVolume,
-            DominantHand = source.DominantHand
+            DominantHand = source.DominantHand,
+            Posture = source.Posture
         };
 
         private static GameSettings Sanitised(GameSettings settings)
@@ -38,6 +39,11 @@ namespace PingPong.Gameplay
             if (settings.DominantHand == Hand.None)
             {
                 settings.DominantHand = Hand.Right;
+            }
+
+            if (!Enum.IsDefined(typeof(PlayPosture), settings.Posture))
+            {
+                settings.Posture = PlayPosture.Standing;
             }
 
             return settings;
