@@ -30,6 +30,7 @@ namespace PingPong.Gameplay
     public interface IHeadTracking
     {
         bool IsTracked { get; }
+        float EyeHeight { get; }
         event System.Action Acquired;
         event System.Action Recentered;
         event System.Action PoseUpdated;

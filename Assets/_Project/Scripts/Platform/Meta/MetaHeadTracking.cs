@@ -11,6 +11,8 @@ namespace PingPong.Platform.Meta
 
         public bool IsTracked => OVRManager.tracker != null && OVRManager.tracker.isPositionTracked;
 
+        public float EyeHeight => _rig != null ? _rig.transform.InverseTransformPoint(_rig.centerEyeAnchor.position).y : 0f;
+
         public event Action Acquired;
 
         public event Action Recentered;

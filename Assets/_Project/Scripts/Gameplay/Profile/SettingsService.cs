@@ -29,7 +29,8 @@ namespace PingPong.Gameplay
         private static GameSettings Copy(GameSettings source) => new GameSettings
         {
             EffectsVolume = source.EffectsVolume,
-            DominantHand = source.DominantHand
+            DominantHand = source.DominantHand,
+            Posture = source.Posture
         };
 
         private static GameSettings Sanitised(GameSettings settings)

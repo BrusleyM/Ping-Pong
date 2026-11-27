@@ -158,6 +158,7 @@ namespace PingPong.EditorTools
             SetF(placer, "_heightOffset", -0.05f);
             SetEnum(placer, "_facing", (int)PlacementFacing.SameAsViewDirection);
             Set(presenter, "_placer", placer);
+            ViewHeightSetup.Wire(canvasObject.scene, modes, canvasObject, placer);
             Set(presenter, "_resume", resume);
             Set(presenter, "_restart", restart);
             Set(presenter, "_passthrough", passthrough);

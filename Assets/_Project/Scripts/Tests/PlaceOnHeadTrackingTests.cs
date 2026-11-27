@@ -12,6 +12,8 @@ namespace PingPong.Tests
         {
             public bool IsTracked { get; set; }
 
+            public float EyeHeight { get; set; }
+
             public event System.Action Acquired;
 
             public event System.Action Recentered;
