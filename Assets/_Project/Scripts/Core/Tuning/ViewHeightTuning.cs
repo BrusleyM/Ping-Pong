@@ -8,13 +8,17 @@ namespace PingPong.Core
         public float StandingEyeHeight;
         public float LowestSeatedEyeHeight;
         public float HighestLift;
+        public float SmallestChange;
 
         public static ViewHeightTuning Default => new ViewHeightTuning
         {
             StandingEyeHeight = 1.6f,
             LowestSeatedEyeHeight = 0.7f,
-            HighestLift = 0.8f
+            HighestLift = 0.8f,
+            SmallestChange = 0.03f
         };
+
+        public bool IsWorthMoving(float from, float to) => Math.Abs(to - from) >= SmallestChange;
 
         public bool TryGetSeatedLift(float eyeHeight, out float lift)
         {

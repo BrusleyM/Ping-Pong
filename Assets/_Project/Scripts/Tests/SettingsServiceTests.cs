@@ -44,6 +44,14 @@ namespace PingPong.Tests
         }
 
         [Test]
+        public void An_unknown_saved_posture_falls_back_to_standing()
+        {
+            _service.Update(settings => settings.Posture = (PlayPosture)7);
+
+            Assert.AreEqual(PlayPosture.Standing, _service.Current.Posture);
+        }
+
+        [Test]
         public void The_effects_volume_is_kept_between_zero_and_one()
         {
             _service.Update(settings => settings.EffectsVolume = 3f);

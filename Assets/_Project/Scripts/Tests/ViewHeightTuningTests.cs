@@ -32,6 +32,13 @@ namespace PingPong.Tests
         }
 
         [Test]
+        public void Head_noise_does_not_move_the_view_again()
+        {
+            Assert.IsFalse(_tuning.IsWorthMoving(0.45f, 0.46f));
+            Assert.IsTrue(_tuning.IsWorthMoving(0.45f, 0.3f));
+        }
+
+        [Test]
         public void A_headset_that_is_lying_around_gives_no_lift()
         {
             Assert.IsFalse(_tuning.TryGetSeatedLift(0.1f, out _));

@@ -1,4 +1,5 @@
 using System;
+using PingPong.Core;
 using UnityEngine;
 
 namespace PingPong.Gameplay
@@ -9,6 +10,7 @@ namespace PingPong.Gameplay
         [SerializeField] Transform _rig;
         [SerializeField] ViewHeightProfile _profile;
         [SerializeField] GameModeController _modes;
+        [SerializeField] MatchController _match;
 
         PlayPosture _posture;
         float _floorHeight;
@@ -56,13 +58,6 @@ namespace PingPong.Gameplay
 
         void Calibrate()
         {
-            if (_posture == PlayPosture.Standing)
-            {
-                StopWaiting();
-                SetLift(0f);
-                return;
-            }
-
             if (_waitingForPose) return;
             _waitingForPose = true;
             _tracking.Value.PoseUpdated += LiftFromPose;
@@ -70,10 +65,18 @@ namespace PingPong.Gameplay
 
         void LiftFromPose()
         {
+            if (_match != null && !_match.Phase.AllowsRigMoves()) return;
+            if (_posture == PlayPosture.Standing)
+            {
+                StopWaiting();
+                MoveRig(0f);
+                return;
+            }
+
             var tracking = _tracking.Value;
             if (!tracking.IsTracked || !_profile.Tuning.TryGetSeatedLift(tracking.EyeHeight, out float lift)) return;
             StopWaiting();
-            SetLift(lift);
+            if (_profile.Tuning.IsWorthMoving(_lift, lift)) MoveRig(lift);
         }
 
         void StopWaiting()
@@ -83,7 +86,7 @@ namespace PingPong.Gameplay
             if (_tracking.Value != null) _tracking.Value.PoseUpdated -= LiftFromPose;
         }
 
-        void SetLift(float lift)
+        void MoveRig(float lift)
         {
             if (Mathf.Approximately(lift, _lift)) return;
             _lift = lift;

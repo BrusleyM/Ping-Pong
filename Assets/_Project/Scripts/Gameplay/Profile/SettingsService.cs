@@ -41,6 +41,11 @@ namespace PingPong.Gameplay
                 settings.DominantHand = Hand.Right;
             }
 
+            if (!Enum.IsDefined(typeof(PlayPosture), settings.Posture))
+            {
+                settings.Posture = PlayPosture.Standing;
+            }
+
             return settings;
         }
     }

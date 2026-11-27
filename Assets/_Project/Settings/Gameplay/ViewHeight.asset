@@ -16,3 +16,4 @@ MonoBehaviour:
     StandingEyeHeight: 1.6
     LowestSeatedEyeHeight: 0.7
     HighestLift: 0.8
+    SmallestChange: 0.03

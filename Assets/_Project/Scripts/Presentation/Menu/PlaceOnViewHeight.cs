@@ -17,7 +17,7 @@ namespace PingPong.Presentation
 
         private void OnEnable()
         {
-            if (_viewHeight == null)
+            if (_viewHeight == null || _placer == null)
             {
                 return;
             }
@@ -27,7 +27,7 @@ namespace PingPong.Presentation
 
         private void OnDisable()
         {
-            if (_viewHeight != null)
+            if (_viewHeight != null && _placer != null)
             {
                 _viewHeight.Adjusted -= _placer.Place;
             }

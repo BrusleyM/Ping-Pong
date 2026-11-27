@@ -65,8 +65,9 @@ namespace PingPong.Tests
         }
 
         [Test]
-        public void Standing_leaves_the_rig_on_the_floor()
+        public void Standing_leaves_the_rig_on_the_floor_whatever_the_head_height()
         {
+            _head.EyeHeight = 1f;
             _head.RaisePoseUpdated();
 
             Assert.AreEqual(0f, _rig.transform.position.y);
@@ -102,6 +103,20 @@ namespace PingPong.Tests
         }
 
         [Test]
+        public void A_headset_reading_that_is_too_low_is_waited_out()
+        {
+            _head.EyeHeight = 0.2f;
+            _settings.Update(settings => settings.Posture = PlayPosture.Seated);
+            _head.RaisePoseUpdated();
+            Assert.AreEqual(0f, _rig.transform.position.y);
+
+            _head.EyeHeight = 1.15f;
+            _head.RaisePoseUpdated();
+
+            Assert.AreEqual(0.45f, _rig.transform.position.y, 1e-4f);
+        }
+
+        [Test]
         public void Recentering_measures_the_seated_player_again()
         {
             _settings.Update(settings => settings.Posture = PlayPosture.Seated);
@@ -121,6 +136,7 @@ namespace PingPong.Tests
             _head.RaisePoseUpdated();
 
             _settings.Update(settings => settings.Posture = PlayPosture.Standing);
+            _head.RaisePoseUpdated();
 
             Assert.AreEqual(0f, _rig.transform.position.y);
         }

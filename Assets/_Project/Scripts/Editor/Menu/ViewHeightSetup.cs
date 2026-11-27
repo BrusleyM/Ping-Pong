@@ -22,6 +22,7 @@ namespace PingPong.EditorTools
             Set(adjuster, "_rig", eyes.GetComponentInParent<OVRCameraRig>(true).transform);
             Set(adjuster, "_profile", Profile());
             Set(adjuster, "_modes", modes);
+            Set(adjuster, "_match", modes != null ? modes.GetComponent<MatchController>() : null);
 
             var follow = GetOrAdd<PlaceOnViewHeight>(canvas);
             Set(follow, "_placer", placer);

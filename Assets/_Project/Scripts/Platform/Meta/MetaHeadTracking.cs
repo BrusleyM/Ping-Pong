@@ -23,6 +23,7 @@ namespace PingPong.Platform.Meta
         {
             OVRManager.TrackingAcquired += OnAcquired;
             SubscribeToRecenter();
+            SubscribeToRig();
         }
 
         private void Start()
