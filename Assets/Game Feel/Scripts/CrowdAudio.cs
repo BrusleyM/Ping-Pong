@@ -19,6 +19,8 @@ namespace PingPong.GameFeel
 
         [Header("Volumes")]
         [Range(0f, 1f)] public float ambienceVolume = 0.18f;
+        [Range(0f, 1f)] public float attentiveVolume = 0.1f;
+        [Min(0.1f)] public float settleSeconds = 3f;
         [Range(0f, 1f)] public float roarVolume = 0.7f;
         [Range(0f, 1f)] public float applauseVolume = 0.5f;
         [Range(0f, 1f)] public float oohVolume = 0.6f;
@@ -27,6 +29,9 @@ namespace PingPong.GameFeel
 
         AudioSource _ambience, _roar, _applause, _ooh;
         MatchFeed _match;
+        Coroutine _swell;
+
+        float RestingVolume => _match != null && _match.GameBegun && !_match.GameOver ? attentiveVolume : ambienceVolume;
 
         void Start()
         {
@@ -36,14 +41,14 @@ namespace PingPong.GameFeel
             if (applauseClip == null) applauseClip = MakeApplause(rng, 5f);
             if (oohClip == null) oohClip = MakeOoh(rng, 1.7f);
 
+            _match = GetComponent<MatchFeed>();
             _ambience = MakeSource("Crowd Ambience", ambienceClip, true);
-            _ambience.volume = ambienceVolume;
+            _ambience.volume = RestingVolume;
             _ambience.Play();
             _roar = MakeSource("Crowd Roar", roarClip, false);
             _applause = MakeSource("Crowd Applause", applauseClip, false);
             _ooh = MakeSource("Crowd Ooh", oohClip, false);
 
-            _match = GetComponent<MatchFeed>();
             if (_match != null)
             {
                 _match.GameStarted += OnGameStarted;
@@ -90,7 +95,8 @@ namespace PingPong.GameFeel
             if (_roar == null) return;
             _roar.pitch = Random.Range(0.94f, 1.06f);
             _roar.PlayOneShot(_roar.clip, roarVolume * Mathf.Clamp01(intensity));
-            StartCoroutine(Duck());
+            if (_swell != null) StopCoroutine(_swell);
+            _swell = StartCoroutine(SwellThenSettle());
         }
 
         public void Applause(float intensity)
@@ -107,18 +113,16 @@ namespace PingPong.GameFeel
             _ooh.PlayOneShot(_ooh.clip, oohVolume * Mathf.Clamp01(intensity));
         }
 
-        // Swell the background murmur up under a roar, then settle.
-        IEnumerator Duck()
+        IEnumerator SwellThenSettle()
         {
-            float t = 0f;
-            while (t < 3f)
+            float from = _ambience.volume;
+            for (float elapsed = 0f; elapsed < settleSeconds; elapsed += Time.deltaTime)
             {
-                t += Time.deltaTime;
-                float k = Mathf.Sin(Mathf.Clamp01(t / 3f) * Mathf.PI);
-                _ambience.volume = ambienceVolume * (1f + 0.8f * k);
+                _ambience.volume = CrowdAmbienceCurve.Volume(elapsed / settleSeconds, from, RestingVolume, ambienceVolume);
                 yield return null;
             }
-            _ambience.volume = ambienceVolume;
+            _ambience.volume = RestingVolume;
+            _swell = null;
         }
 
         // ---------------- Sound generation ----------------

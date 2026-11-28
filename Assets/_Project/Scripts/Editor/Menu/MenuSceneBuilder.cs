@@ -344,6 +344,8 @@ namespace PingPong.EditorTools
             return null;
         }
 
+        internal const string AudioCredit = "Crowd audio: Gregor Quendel, CC BY 4.0 (edited)";
+
         internal static PanelPop BuildSettings(Transform canvas, out PopButton back)
         {
             var panel = Panel(canvas, "Settings");
@@ -367,6 +369,8 @@ namespace PingPong.EditorTools
             var seated = Button(card.transform, "PostureSeated", "Seated", "ui_button_secondary", new Vector2(450f, -150f), new Vector2(220f, 84f), 40f, Color.white);
             var standingRing = Picture(standing.transform, "Selected", "ui_ring", Vector2.zero, new Vector2(240f, 104f));
             var seatedRing = Picture(seated.transform, "Selected", "ui_ring", Vector2.zero, new Vector2(240f, 104f));
+
+            Label(card.transform, "AudioCredit", AudioCredit, 22f, false, Color.white, new Vector2(0f, -218f), new Vector2(1100f, 30f));
 
             var presenter = GetOrAdd<SettingsScreenPresenter>(panel.gameObject);
             Set(presenter, "_effects", effects);
