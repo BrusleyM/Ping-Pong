@@ -41,14 +41,14 @@ namespace PingPong.GameFeel
             if (applauseClip == null) applauseClip = MakeApplause(rng, 5f);
             if (oohClip == null) oohClip = MakeOoh(rng, 1.7f);
 
+            _match = GetComponent<MatchFeed>();
             _ambience = MakeSource("Crowd Ambience", ambienceClip, true);
-            _ambience.volume = ambienceVolume;
+            _ambience.volume = RestingVolume;
             _ambience.Play();
             _roar = MakeSource("Crowd Roar", roarClip, false);
             _applause = MakeSource("Crowd Applause", applauseClip, false);
             _ooh = MakeSource("Crowd Ooh", oohClip, false);
 
-            _match = GetComponent<MatchFeed>();
             if (_match != null)
             {
                 _match.GameStarted += OnGameStarted;

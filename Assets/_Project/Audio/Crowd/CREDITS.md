@@ -8,7 +8,7 @@ The files here are edited: trimmed, faded, peak-normalised and, for the ambience
 
 | File | Source track | Seconds used |
 |---|---|---|
-| CrowdAmbience.wav | 10 - Ambience | 12.0 to 28.0 |
+| CrowdAmbience.wav | 10 - Ambience | 12.0 to 28.0, 14 s after a 2 s loop crossfade |
 | CrowdRoar.wav | 04 - Strong cheering II, short | 3.0 to 9.0 |
 | CrowdApplause.wav | 03 - Strong cheering I | 3.0 to 15.0 |
 | CrowdOoh.wav | 09 - Ambience and cheering | 17.8 to 20.4 |

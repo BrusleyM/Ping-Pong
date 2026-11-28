@@ -9,7 +9,8 @@ namespace PingPong.GameFeel
         public static float Volume(float progress, float from, float resting, float lively)
         {
             float t = Mathf.Clamp01(progress);
-            return Mathf.Lerp(from, resting, t) + lively * SwellStrength * Mathf.Sin(t * Mathf.PI);
+            float peak = lively * (1f + SwellStrength);
+            return Mathf.Lerp(Mathf.Lerp(from, resting, t), peak, Mathf.Sin(t * Mathf.PI));
         }
     }
 }
